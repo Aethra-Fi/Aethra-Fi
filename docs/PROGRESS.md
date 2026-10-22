@@ -15,7 +15,7 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 | 7 | Launchpad & stock pools | ✅ | Contracts + UI (launch list/create/trade, oracle panel) |
 | 8 | DAMM/DLMM, limit orders, credit, buyback | ✅ | Contracts + UI |
 | 9 | UI modification (style guide → tokens, 2 themes) | ✅ | Tokens + 2 themes; Playwright dark/light screenshots in `docs/ui-style/screens/` |
-| 10 | Testnet deploy | ⬜ | |
+| 10 | Testnet deploy | 🔄 | Contracts ✅ live on 46630 (start block 11970288); Vercel + Supabase hosted pending |
 | 11 | Mainnet dry run (no broadcast) | ⬜ | optional per the user (2026-10-22) |
 
 ## Setup checklist
@@ -78,6 +78,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 - ✅ Supabase schema committed (migrations, shared indexer helpers).
 - ✅ All 18 app routes built (landing, swap, pools, pool detail, create pool, positions, launch, launch token, credit, orders, analytics, events, buyback, contracts, developers). `next build`, lint, typecheck, 26 vitest + 10 Playwright tests green.
 - ✅ `Deploy.s.sol` deploys every module; `DeployCredit.s.sol` adds credit; full local deploy (`scripts/local-deploy.sh`) verified on the Anvil fork.
+- ✅ Testnet contracts deployed by the user via `scripts/testnet-deploy.sh` (77/77 tx ok, 0.00052 ETH gas); verified owners, registrars, wiring and a live router quote.
 - 🔄 Next: Edge Functions (`indexer`, `api`) → testnet (B1–B3) → mainnet dry run.
 
 ## Session 1 checkpoint (2026-10-22): resume here

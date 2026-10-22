@@ -39,7 +39,9 @@ Ambil ETH di https://faucet.testnet.chain.robinhood.com ke alamat itu. Cek:
 cast balance 0xd09D9c87ECfe008B4D6D3cEbeAd25103c16d9a7C --rpc-url https://rpc.testnet.chain.robinhood.com -e
 ```
 
-## B4 · Deploy testnet (butuh password keystore) — `OPEN`
+## B4 · Deploy testnet (butuh password keystore) — `DONE`
+
+Selesai 2026-10-22: 77/77 transaksi sukses, biaya ±0.00052 ETH + 0.005 ETH seed. Semua proxy dimiliki deployer; quote router live berhasil.
 
 Sudah disimulasikan di testnet asli tanpa broadcast: core ±45M gas, maks ±0.0009 ETH; total semua langkah < 0.002 ETH + 0.005 ETH seed likuiditas. Saldo 0.01 ETH cukup.
 Jalankan di terminal kamu sendiri (minta password keystore 4×). Langkah pertama memastikan keystore = `0xd09D…9a7C`; jika tidak cocok, script berhenti tanpa deploy apa pun.
