@@ -58,7 +58,7 @@ interface IAethraPositions {
         uint64 cliff; // no withdrawals before this timestamp
         uint64 end; // fully unlocked at this timestamp; type(uint64).max = permanent
         uint128 lockedLiquidity; // liquidity covered by the schedule
-        uint128 withdrawn; // locked liquidity already withdrawn
+        uint128 withdrawn; // informational: liquidity removed while this lock was active
     }
 
     struct MintParams {

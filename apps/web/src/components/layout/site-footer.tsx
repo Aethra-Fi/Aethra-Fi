@@ -1,0 +1,44 @@
+import Link from "next/link";
+import { MORE_NAV, PRIMARY_NAV } from "./nav";
+import { Logo } from "./site-header";
+
+export function SiteFooter() {
+  return (
+    <footer className="mt-24 border-t">
+      <div className="container grid gap-10 py-12 md:grid-cols-[1.5fr_1fr_1fr]">
+        <div className="space-y-3">
+          <Logo />
+          <p className="max-w-sm text-sm text-muted">
+            An experimental liquidity layer on Robinhood Chain. Dynamic fees, oracle-guarded stock pools, launch
+            markets and credit on LP positions.
+          </p>
+        </div>
+        <FooterCol title="Trade" items={PRIMARY_NAV} />
+        <FooterCol title="Protocol" items={MORE_NAV} />
+      </div>
+      <div className="border-t">
+        <div className="container flex h-12 items-center justify-between font-mono text-[11px] uppercase tracking-eyebrow text-muted">
+          <span>Aethra Fi · {new Date().getFullYear()}</span>
+          <span>Built on Robinhood Chain</span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+function FooterCol({ title, items }: { title: string; items: { href: string; label: string }[] }) {
+  return (
+    <div>
+      <p className="eyebrow mb-4">{title}</p>
+      <ul className="space-y-2">
+        {items.map((i) => (
+          <li key={i.href}>
+            <Link href={i.href} className="text-sm text-fg-2 transition-ui hover:text-primary-text">
+              {i.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

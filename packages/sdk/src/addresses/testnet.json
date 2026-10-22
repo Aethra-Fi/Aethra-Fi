@@ -1,0 +1,104 @@
+{
+  "deployer": "0xd09D9c87ECfe008B4D6D3cEbeAd25103c16d9a7C",
+  "poolManager": "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+  "weth": "0x33e4191705c386532ba27cBF171Db86919200B94",
+  "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
+  "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+  "hub": "0x71Bb058106b1a226a6f66e2152719a6B827c783a",
+  "hook": "0xE1eD1ECC79dc893A3A0D8ac9EF90f00819587ACC",
+  "router": "0xEE8AE4155C653B664727CA5EF0757914aA4769CE",
+  "positions": "0x9aC6782D82D980f2623bBE78C8882832baC94903",
+  "dlmmFactory": "0x170ed757E332547d27b7ca0644Fee22259A25279",
+  "dlmmLimitOrders": "0xf7Ce817965156A308b0Cdf1FED554e35055f3190",
+  "dammFactory": "0x7bd8f7D7E615A692821d6A31275dB38BC6836980",
+  "launchpad": "0x498249bC18986216FEC0BECd2f6130D162C970eD",
+  "lendingVault": "0x9a9DB6f013E2D5478F9C1BEA9948431A1c6C5bAD",
+  "creditManager": "0x467c64AbA2e336542B9F9AaC75d91FD024F6c374",
+  "buyback": "0x9f6207312aA6D431f51235DfFF3884EAaa14218D",
+  "aeth": "0xfe97357eBa1dED613A3E7A560c35cF2DB360e939",
+  "tokens": {
+    "AMD": {
+      "address": "0x71178BAc73cBeb415514eB542a8995b82669778d",
+      "decimals": 18,
+      "kind": "stock",
+      "name": "AMD",
+      "symbol": "AMD"
+    },
+    "AMZN": {
+      "address": "0x5884aD2f920c162CFBbACc88C9C51AA75eC09E02",
+      "decimals": 18,
+      "kind": "stock",
+      "name": "AMZN",
+      "symbol": "AMZN"
+    },
+    "NFLX": {
+      "address": "0x3b8262A63d25f0477c4DDE23F83cfe22Cb768C93",
+      "decimals": 18,
+      "kind": "stock",
+      "name": "NFLX",
+      "symbol": "NFLX"
+    },
+    "PLTR": {
+      "address": "0x1FBE1a0e43594b3455993B5dE5Fd0A7A266298d0",
+      "decimals": 18,
+      "kind": "stock",
+      "name": "PLTR",
+      "symbol": "PLTR"
+    },
+    "TSLA": {
+      "address": "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E",
+      "decimals": 18,
+      "kind": "stock",
+      "name": "TSLA",
+      "symbol": "TSLA"
+    },
+    "WETH": {
+      "address": "0x33e4191705c386532ba27cBF171Db86919200B94",
+      "decimals": 18,
+      "kind": "canonical",
+      "name": "Wrapped Ether",
+      "symbol": "WETH"
+    },
+    "aAAPL": {
+      "address": "0x7ACFE2CD7724b9Cb9Ef7005a183F12E6Df690dA0",
+      "decimals": 18,
+      "kind": "stock",
+      "name": "Aethra Test Apple",
+      "symbol": "aAAPL"
+    },
+    "aNVDA": {
+      "address": "0x1f9903f49b80E58fDcc7bFC90f8a9c1373C5eaD2",
+      "decimals": 18,
+      "kind": "stock",
+      "name": "Aethra Test NVIDIA",
+      "symbol": "aNVDA"
+    },
+    "aTSLA": {
+      "address": "0xBA5256Ca177a797600BAe6Fe666b2171c6C776e4",
+      "decimals": 18,
+      "kind": "stock",
+      "name": "Aethra Test Tesla",
+      "symbol": "aTSLA"
+    },
+    "aUSD": {
+      "address": "0x73261B27AFca7110cB3b591Ca3B3376223678425",
+      "decimals": 6,
+      "kind": "test",
+      "name": "Aethra Test USD",
+      "symbol": "aUSD"
+    }
+  },
+  "oracles": {
+    "AMD": "0xE1417498254F8A57398402ACD0BfA19dA1f1Ba79",
+    "AMZN": "0x13b0F467c6314615f3ae49dBeBfD44c4627A4c82",
+    "NFLX": "0x367Ed874c573C788461F2Abc8158c716485545ea",
+    "PLTR": "0x1C05BeF9561045A8F3ec00e54219806d13AD9f18",
+    "TSLA": "0x518fB77828e48476ad9E11A6b5CeF45d2f27d53A",
+    "WETH": "0x3e46dBCa6916B13512b705Eb58FFf2994b4a3857",
+    "aAAPL": "0xF46c15ef18b152D4af5658A1D8ba2ebA617515Da",
+    "aNVDA": "0x44D68f1eD1Bb5a352062f451Cf6689fE6BcC9587",
+    "aTSLA": "0x113b7E4E7B70797f25B8A95627c0a3439089E565",
+    "aUSD": "0xCD077cb2CAD5f4c7B9b06FB9958dB36535A0aEd2"
+  },
+  "startBlock": 140811858
+}
