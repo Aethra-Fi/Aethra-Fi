@@ -15,7 +15,7 @@ ffi = true
 ast = true
 build_info = true
 extra_output = ["storageLayout"]
-fs_permissions = [{ access = "read-write", path = "./" }, { access = "read", path = "../sdk" }]
+fs_permissions = [{ access = "read-write", path = "./" }, { access = "read-write", path = "../sdk" }]
 gas_reports = ["*"]
 # PoolManager (tests only) needs its upstream optimizer setting to avoid stack-too-deep
 additional_compiler_profiles = [{ name = "v4core", via_ir = true, optimizer_runs = 44444444 }]
