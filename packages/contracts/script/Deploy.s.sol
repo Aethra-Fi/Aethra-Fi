@@ -9,6 +9,18 @@ import {AethraHub} from "../src/core/AethraHub.sol";
 import {AethraHook} from "../src/hooks/AethraHook.sol";
 import {AethraPositions} from "../src/periphery/AethraPositions.sol";
 import {AethraRouter} from "../src/periphery/AethraRouter.sol";
+import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {IAethraHub} from "../src/interfaces/IAethraHub.sol";
+import {IAethraRouter} from "../src/interfaces/IAethraPeriphery.sol";
+import {DLMMPool} from "../src/dlmm/DLMMPool.sol";
+import {DLMMFactory} from "../src/dlmm/DLMMFactory.sol";
+import {DLMMLimitOrders} from "../src/dlmm/DLMMLimitOrders.sol";
+import {DAMMPool} from "../src/damm/DAMMPool.sol";
+import {DAMMFactory} from "../src/damm/DAMMFactory.sol";
+import {AethraLaunchpad} from "../src/launchpad/AethraLaunchpad.sol";
+import {LaunchToken} from "../src/launchpad/LaunchToken.sol";
+import {AethraToken} from "../src/token/AethraToken.sol";
+import {AethraBuyback} from "../src/buyback/AethraBuyback.sol";
 
 /// @notice Deploys the Aethra Fi protocol (proxies + implementations) and writes addresses to the SDK.
 /// @dev Usage (see scripts/local-deploy.sh and docs/BLOCKERS.md):
@@ -30,10 +42,22 @@ contract Deploy is Script {
         address hookImpl;
     }
 
+    /// @dev Pools are BeaconProxy instances; the beacons are owned by the deployer.
+    struct Modules {
+        address dlmmBeacon;
+        address dlmmFactory;
+        address dlmmLimitOrders;
+        address dammBeacon;
+        address dammFactory;
+        address launchpad;
+        address aeth;
+        address buyback;
+    }
+
     string internal network;
     string internal addressesPath;
 
-    function run() external returns (Core memory c) {
+    function run() external returns (Core memory c, Modules memory m) {
         network = vm.envOr("NETWORK", string("local"));
         addressesPath = string.concat(vm.projectRoot(), "/../sdk/src/addresses/", network, ".json");
         require(msg.sender == DEPLOYER, "Deploy: sender must be the Aethra deployer");
@@ -44,10 +68,11 @@ contract Deploy is Script {
 
         vm.startBroadcast();
         c = _deployCore(weth);
+        m = _deployModules(c, weth);
         vm.stopBroadcast();
 
-        _log(c);
-        if (_shouldWrite()) _write(c);
+        _log(c, m);
+        if (_shouldWrite()) _write(c, m);
     }
 
     function _deployCore(address weth) internal returns (Core memory c) {
@@ -76,6 +101,46 @@ contract Deploy is Script {
         hub.setFeeConfig(address(0), DEPLOYER, 2000); // buyback wired once deployed
     }
 
+    function _deployModules(Core memory c, address weth) internal returns (Modules memory m) {
+        AethraHub hub = AethraHub(c.hub);
+        IAethraHub ihub = IAethraHub(c.hub);
+
+        m.dlmmBeacon = address(new UpgradeableBeacon(address(new DLMMPool()), DEPLOYER));
+        m.dlmmFactory = address(
+            new ERC1967Proxy(address(new DLMMFactory()), abi.encodeCall(DLMMFactory.initialize, (DEPLOYER, c.hub, m.dlmmBeacon)))
+        );
+        m.dlmmLimitOrders = address(
+            new ERC1967Proxy(address(new DLMMLimitOrders()), abi.encodeCall(DLMMLimitOrders.initialize, (DEPLOYER, m.dlmmFactory)))
+        );
+
+        m.dammBeacon = address(new UpgradeableBeacon(address(new DAMMPool(ihub)), DEPLOYER));
+        m.dammFactory = address(
+            new ERC1967Proxy(address(new DAMMFactory()), abi.encodeCall(DAMMFactory.initialize, (DEPLOYER, ihub, m.dammBeacon)))
+        );
+
+        m.launchpad = address(
+            new ERC1967Proxy(
+                address(new AethraLaunchpad()),
+                abi.encodeCall(
+                    AethraLaunchpad.initialize, (DEPLOYER, ihub, weth, address(new LaunchToken()), POOL_MANAGER, c.positions, c.hook)
+                )
+            )
+        );
+
+        m.aeth = address(new AethraToken(DEPLOYER));
+        m.buyback = address(
+            new ERC1967Proxy(
+                address(new AethraBuyback()),
+                abi.encodeCall(AethraBuyback.initialize, (DEPLOYER, ihub, IAethraRouter(c.router), m.aeth))
+            )
+        );
+
+        hub.setRegistrar(m.dlmmFactory, true);
+        hub.setRegistrar(m.dammFactory, true);
+        hub.setRegistrar(m.launchpad, true);
+        hub.setFeeConfig(m.buyback, DEPLOYER, 2000); // 20% of LP fees to the protocol; treasury = deployer
+    }
+
     /// @dev Find a CREATE2 salt so the hook proxy's address encodes exactly HOOK_FLAGS in its low 14 bits.
     function _mineHook(address impl, bytes memory initData) internal view returns (bytes32, address) {
         bytes32 initHash = keccak256(abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(impl, initData)));
@@ -92,11 +157,17 @@ contract Deploy is Script {
         return keccak256(bytes(network)) != keccak256("mainnet") && vm.envOr("WRITE_ADDRESSES", true);
     }
 
-    function _write(Core memory c) internal {
+    function _write(Core memory c, Modules memory m) internal {
         _put(".hub", c.hub);
         _put(".hook", c.hook);
         _put(".router", c.router);
         _put(".positions", c.positions);
+        _put(".dlmmFactory", m.dlmmFactory);
+        _put(".dlmmLimitOrders", m.dlmmLimitOrders);
+        _put(".dammFactory", m.dammFactory);
+        _put(".launchpad", m.launchpad);
+        _put(".aeth", m.aeth);
+        _put(".buyback", m.buyback);
         vm.writeJson(vm.toString(block.number), addressesPath, ".startBlock");
     }
 
@@ -104,10 +175,16 @@ contract Deploy is Script {
         vm.writeJson(string.concat('"', vm.toString(a), '"'), addressesPath, key);
     }
 
-    function _log(Core memory c) internal pure {
+    function _log(Core memory c, Modules memory m) internal pure {
         console2.log("hub        ", c.hub);
         console2.log("positions  ", c.positions);
         console2.log("router     ", c.router);
         console2.log("hook       ", c.hook);
+        console2.log("dlmmFactory", m.dlmmFactory);
+        console2.log("dlmmOrders ", m.dlmmLimitOrders);
+        console2.log("dammFactory", m.dammFactory);
+        console2.log("launchpad  ", m.launchpad);
+        console2.log("aeth       ", m.aeth);
+        console2.log("buyback    ", m.buyback);
     }
 }
