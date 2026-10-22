@@ -48,6 +48,7 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 - 2026-10-22: Router is exact-input only, across all venues. Best-route search happens in the SDK via `router.quote` over eth_call.
 - 2026-10-22: Testnet stock pools use the existing testnet stock tokens (AMZN/TSLA/AMD/PLTR/NFLX) plus Aethra mock price feeds. We also deploy faucet test tokens so anyone can try the app.
 - 2026-10-22: AethraHook `beforeInitialize` only lets the launchpad initialize pools containing a launch token (blocks graduation front-running at a skewed price).
+- 2026-10-23: Landing redesigned as one horizontal page (8 sections) with a single WebGL glyph ribbon (three.js 0.171.0, ~5.3k instanced glyphs) that morphs per section; footer hidden on `/`.
 - 2026-10-22: Supabase testnet project already existed in ap-northeast-1 (created by the user); kept as is, noted as B5.
 - 2026-10-22: Vercel preview env (all branches) points at testnet; production (`mainnet` branch) points at the prepared mainnet API.
 - 2026-10-22: Credit (vault + manager) deploys in `DeployCredit.s.sol` after `SetupMarkets`, because the default vault asset `aUSD` is created there; `VAULT_ASSET` overrides it (required on mainnet).
