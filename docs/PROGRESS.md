@@ -56,3 +56,26 @@ Reference: mainnet gas price 0.02 gwei (2026-10-22), ETH ≈ $2,410. Budget $6�
 | Contract | Est. gas | Est. USD | Status |
 |---|---|---|---|
 | (to be filled from `forge script` dry runs) | | | |
+
+## Session 1 checkpoint (2026-10-22): resume here
+
+**Done and committed on `main` (pushed through `5dca465`; later commits are local only):**
+- Hub, VolatilityFee, AethraHook (dynamic fee, oracle guard, circuit breaker, protocol fee), AethraRouter, AethraPositions (lock + vesting). **41 forge tests green.**
+- `script/Deploy.s.sol` (hook CREATE2 salt mining) and `script/SetupMarkets.s.sol` (faucet tokens, mock feeds, seeded v4 pools). Both verified on an Anvil fork.
+- SDK: chains, addresses, ABI export (`pnpm --filter @aethra/sdk abis`), smart-route finder, price/bin math. 9 vitest tests green.
+- Mainnet dry run of the core alone: 16.86M gas ≈ 0.00034 ETH ≈ $0.81 at 0.02 gwei and $2,410/ETH. **This does not include the Arbitrum L1 data component.** The final dry run must re-estimate it with `eth_estimateGas` / NodeInterface `0xC8`.
+
+**Interrupted when the usage limit hit. Partial work, not merged:**
+- DLMM (worktree branch `worktree-agent-aa246c9a9e7c8c004`): pool tests passing; factory and limit-order tests remain.
+- DAMM + launchpad + AETH (branch `worktree-agent-a1dacfba25f294e94`): builds; tests remain.
+- Credit + buyback (branch `worktree-agent-ae73c95a62f9dff7b`): barely started.
+- Frontend `apps/web/` (uncommitted, on disk): scaffold underway.
+- Supabase `supabase/` (uncommitted, on disk): migrations and indexer underway.
+
+**Next steps:**
+1. Review and finish each worktree branch, then merge it into `main`.
+2. Review, build and commit `apps/web` and `supabase`.
+3. Extend `Deploy.s.sol` with the modules.
+4. Vercel / Supabase hosted setup (after B1).
+5. Testnet deploy (after B2/B3).
+6. Final mainnet dry run.
