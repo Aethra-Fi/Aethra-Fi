@@ -22,3 +22,6 @@ supabase/.temp
 # playwright
 apps/web/test-results/
 apps/web/playwright-report/
+
+# claude worktrees
+.claude/worktrees/
