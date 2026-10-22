@@ -37,6 +37,7 @@
     "recharts": "^2.15.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
+    "three": "0.171.0",
     "viem": "^2.31.0",
     "wagmi": "^2.19.5"
   },
@@ -46,6 +47,7 @@
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "@types/three": "0.171.0",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.30.0",
     "eslint-config-next": "16.4.2",

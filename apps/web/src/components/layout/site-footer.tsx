@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MORE_NAV, PRIMARY_NAV } from "./nav";
 import { Logo } from "./site-header";
 
 export function SiteFooter() {
+  // the landing is a full-height horizontal page with its own bottom bar
+  if (usePathname() === "/") return null;
   return (
     <footer className="mt-24 border-t">
       <div className="container grid gap-10 py-12 md:grid-cols-[1.5fr_1fr_1fr]">
