@@ -5,7 +5,7 @@ const stroke = "stroke-[1.25] [vector-effect:non-scaling-stroke]";
 
 function Frame({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <figure className="relative w-full max-w-[320px] border bg-bg/70 p-3 backdrop-blur-sm">
+    <figure className="relative w-full max-w-[320px] border bg-bg/85 p-3">
       <span className="absolute -left-px -top-px size-2 border-l border-t border-primary" />
       <span className="absolute -right-px -top-px size-2 border-r border-t border-primary" />
       <span className="absolute -bottom-px -left-px size-2 border-b border-l border-primary" />
