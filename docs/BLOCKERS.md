@@ -4,7 +4,7 @@ Status: `OPEN` = masih menunggu, `DONE` = sudah selesai (dicek ulang di awal ses
 
 ---
 
-## B1 · Login Supabase CLI — `OPEN`
+## B1 · Login Supabase CLI — `DONE`
 
 Supabase CLI sudah terpasang (`~/.local/bin/supabase` v2.121.0), tapi belum login. Jalankan:
 
@@ -17,7 +17,7 @@ Perintah ini membuka browser untuk konfirmasi. **Jalankan di terminal biasa di l
 Alternatif: buat token di https://supabase.com/dashboard/account/tokens lalu `supabase login --token <token>`, juga di terminal luar (jangan lewat `!`, supaya token tidak masuk log percakapan).
 Setelah login, project `aethra-fi-testnet` dan `aethra-fi-mainnet` (region `ap-southeast-1`) akan saya buat sendiri.
 
-## B2 · Import keystore `deployer` — `OPEN`
+## B2 · Import keystore `deployer` — `DONE`
 
 `cast wallet list` hanya menampilkan `alphamarkets-mainnet` dan `hume-mainnet`. Keystore `deployer` belum ada.
 Jalankan di terminal kamu sendiri (private key **jangan** ditempel ke chat):
@@ -29,7 +29,7 @@ cast wallet import deployer --interactive
 cast wallet address --account deployer
 ```
 
-## B3 · Dana faucet testnet — `OPEN`
+## B3 · Dana faucet testnet — `DONE`
 
 Saldo `0xd09D9c87ECfe008B4D6D3cEbeAd25103c16d9a7C` di Robinhood Chain Testnet = **0 ETH**.
 Ambil ETH di https://faucet.testnet.chain.robinhood.com ke alamat itu. Cek:
@@ -39,6 +39,18 @@ Ambil ETH di https://faucet.testnet.chain.robinhood.com ke alamat itu. Cek:
 cast balance 0xd09D9c87ECfe008B4D6D3cEbeAd25103c16d9a7C --rpc-url https://rpc.testnet.chain.robinhood.com -e
 ```
 
-## B4 · Deploy testnet (butuh password keystore) — `BELUM SIAP`
+## B4 · Deploy testnet (butuh password keystore) — `OPEN`
 
-Perintah lengkap akan saya tulis di sini setelah kontrak lolos di localhost.
+Sudah disimulasikan di testnet asli tanpa broadcast: core ±45M gas, maks ±0.0009 ETH; total semua langkah < 0.002 ETH + 0.005 ETH seed likuiditas. Saldo 0.01 ETH cukup.
+Jalankan di terminal kamu sendiri (minta password keystore 4×). Langkah pertama memastikan keystore = `0xd09D…9a7C`; jika tidak cocok, script berhenti tanpa deploy apa pun.
+
+```bash
+# Jalankan di: ROOT
+bash scripts/testnet-deploy.sh
+```
+
+Setelah selesai, cukup bilang "B4 selesai": saya baca `packages/contracts/broadcast/` dan `packages/sdk/src/addresses/testnet.json`, lalu commit dan lanjut ke Vercel/Supabase.
+
+## B5 · Region Supabase testnet — `INFO`
+
+Project `Aethra-Fi-testnet` (`zqbnyshzgxhkfxoyrogq`) ada di `ap-northeast-1`, bukan `ap-southeast-1` seperti spesifikasi. Tetap dipakai apa adanya; buat ulang hanya jika kamu mau (project masih kosong).
