@@ -105,6 +105,7 @@ contract AethraHook is IHooks, IUnlockCallback, UUPSUpgradeable, Ownable2StepUpg
     error CircuitBreaker(uint256 deviationBps);
     error OracleUnavailable();
     error HookNotImplemented();
+    error LaunchpadOnly();
 
     constructor(IPoolManager poolManager_) {
         poolManager = poolManager_;
@@ -227,9 +228,18 @@ contract AethraHook is IHooks, IUnlockCallback, UUPSUpgradeable, Ownable2StepUpg
 
     // ------------------------------------------------------------------ hook callbacks
 
-    function beforeInitialize(address, PoolKey calldata key, uint160) external view onlyPoolManager returns (bytes4) {
+    function beforeInitialize(address sender, PoolKey calldata key, uint160) external view onlyPoolManager returns (bytes4) {
         if (!key.fee.isDynamicFee()) revert NotDynamicFee();
+        // A launchpad token's pool is created by its launchpad at graduation. Blocking everyone else stops a
+        // front-runner from initializing it at a skewed price and arbitraging the graduation liquidity.
+        _requireLaunchpad(Currency.unwrap(key.currency0), sender);
+        _requireLaunchpad(Currency.unwrap(key.currency1), sender);
         return IHooks.beforeInitialize.selector;
+    }
+
+    function _requireLaunchpad(address token, address sender) internal view {
+        IAethraHub.PoolInfo memory info = _s().hub.pool(bytes32(uint256(uint160(token))));
+        if (info.venue == Venue.LAUNCH && info.pool != address(0) && info.pool != sender) revert LaunchpadOnly();
     }
 
     function afterInitialize(address sender, PoolKey calldata key, uint160, int24 tick)

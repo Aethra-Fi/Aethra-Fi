@@ -76,6 +76,22 @@ contract CoreV4Test is AethraFixture {
         manager.initialize(k, TickMath.getSqrtPriceAtTick(0));
     }
 
+    function test_onlyLaunchpadInitializesLaunchTokenPools() public {
+        TestToken launched = new TestToken("Launched", "LNCH", 18);
+        address launchpad = makeAddr("launchpad");
+        vm.prank(owner);
+        hub.setRegistrar(address(this), true);
+        hub.registerPool(
+            bytes32(uint256(uint160(address(launched)))), Venue.LAUNCH, launchpad, address(weth), address(launched), alice
+        );
+        PoolKey memory k = keyFor(address(weth), address(launched), 60);
+        // a front-runner cannot pre-initialize the graduation pool at a skewed price
+        vm.expectRevert();
+        manager.initialize(k, TickMath.getSqrtPriceAtTick(50_000));
+        vm.prank(launchpad);
+        manager.initialize(k, TickMath.getSqrtPriceAtTick(0));
+    }
+
     function test_onlyPositionsCanAddLiquidity() public {
         // a direct modifyLiquidity through a foreign router must be rejected by beforeAddLiquidity
         Adder adder = new Adder(manager);
