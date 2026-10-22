@@ -13,7 +13,8 @@ Supabase CLI sudah terpasang (`~/.local/bin/supabase` v2.121.0), tapi belum logi
 supabase login
 ```
 
-Perintah ini membuka browser untuk konfirmasi. Di prompt Claude Code bisa juga diketik `! supabase login`.
+Perintah ini membuka browser untuk konfirmasi. **Jalankan di terminal biasa di luar Claude Code**: `! supabase login` gagal karena prompt Claude Code bukan TTY (`LoginMissingTokenError`).
+Alternatif: buat token di https://supabase.com/dashboard/account/tokens lalu `supabase login --token <token>`, juga di terminal luar (jangan lewat `!`, supaya token tidak masuk log percakapan).
 Setelah login, project `aethra-fi-testnet` dan `aethra-fi-mainnet` (region `ap-southeast-1`) akan saya buat sendiri.
 
 ## B2 · Import keystore `deployer` — `OPEN`
