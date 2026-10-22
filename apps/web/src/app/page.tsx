@@ -1,5 +1,5 @@
-import { HorizontalLanding } from "@/components/landing/horizontal-landing";
+import { LandingSections } from "@/components/landing/landing-sections";
 
 export default function Home() {
-  return <HorizontalLanding />;
+  return <LandingSections />;
 }
