@@ -25,8 +25,6 @@ const BIN_STEPS = [1, 5, 10, 25, 50, 100];
 const DAMM_RANGES = [0, 50, 90];
 const FEES = [500, 3000, 10_000]; // pips
 
-const deadline = () => BigInt(Math.floor(Date.now() / 1000) + 600);
-
 export function CreatePool() {
   const { tokens } = useTokenList();
   const erc20s = tokens.filter((t) => !t.native);

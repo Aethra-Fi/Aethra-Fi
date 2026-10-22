@@ -28,18 +28,14 @@ export function SwapCard() {
   const params = useSearchParams();
   const { tokens } = useTokenList();
   const { address } = useAccount();
-  const [tokenIn, setTokenIn] = React.useState<TokenOption>();
-  const [tokenOut, setTokenOut] = React.useState<TokenOption>();
+  // user picks override the defaults derived from ?in=&out= (else ETH → first stock token)
+  const [pickedIn, setTokenIn] = React.useState<TokenOption>();
+  const [pickedOut, setTokenOut] = React.useState<TokenOption>();
+  const tokenIn = pickedIn ?? pick(tokens, params.get("in"), "ETH");
+  const tokenOut = pickedOut ?? pick(tokens, params.get("out"), "") ?? tokens.find((t) => t.kind === "stock") ?? tokens[2];
   const [amount, setAmount] = React.useState("");
   const [slippage, setSlippage] = React.useState(0.5);
   const tx = useTx();
-
-  // initial pair from ?in=&out=, else ETH → first stock / stable token
-  React.useEffect(() => {
-    if (tokenIn || !tokens.length) return;
-    setTokenIn(pick(tokens, params.get("in"), "ETH"));
-    setTokenOut(pick(tokens, params.get("out"), "") ?? tokens.find((t) => t.kind === "stock") ?? tokens[2]);
-  }, [tokens, tokenIn, params]);
 
   const amountIn = tokenIn ? parseAmount(amount, tokenIn.decimals) : null;
   const { best, routes, isQuoting, poolsState, wrapOnly } = useBestRoute(tokenIn?.address, tokenOut?.address, amountIn);
