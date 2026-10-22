@@ -11,11 +11,11 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 | 3 | Monorepo foundation & environments | 🔄 | |
 | 4 | Landing + wallet + swap | ✅ | Smart-route swap via router.quote |
 | 5 | Core contracts (hub, hook, router, positions) | ✅ | 181 forge tests green (all modules) |
-| 6 | Indexer & data pages | 🔄 | Data pages ✅; Edge Functions `indexer` + `api` todo |
+| 6 | Indexer & data pages | ✅ | `indexer` + `api` Edge Functions verified on testnet and on a local fork with real activity |
 | 7 | Launchpad & stock pools | ✅ | Contracts + UI (launch list/create/trade, oracle panel) |
 | 8 | DAMM/DLMM, limit orders, credit, buyback | ✅ | Contracts + UI |
 | 9 | UI modification (style guide → tokens, 2 themes) | ✅ | Tokens + 2 themes; Playwright dark/light screenshots in `docs/ui-style/screens/` |
-| 10 | Testnet deploy | 🔄 | Contracts ✅ live on 46630 (start block 11970288); Vercel + Supabase hosted pending |
+| 10 | Testnet deploy | 🔄 | Contracts ✅ on 46630 (start block 140811858); Vercel project ✅ (waiting B7 git); Supabase hosted waiting B6 |
 | 11 | Mainnet dry run (no broadcast) | ⬜ | optional per the user (2026-10-22) |
 
 ## Setup checklist
@@ -48,6 +48,8 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 - 2026-10-22: Router is exact-input only, across all venues. Best-route search happens in the SDK via `router.quote` over eth_call.
 - 2026-10-22: Testnet stock pools use the existing testnet stock tokens (AMZN/TSLA/AMD/PLTR/NFLX) plus Aethra mock price feeds. We also deploy faucet test tokens so anyone can try the app.
 - 2026-10-22: AethraHook `beforeInitialize` only lets the launchpad initialize pools containing a launch token (blocks graduation front-running at a skewed price).
+- 2026-10-22: Supabase testnet project already existed in ap-northeast-1 (created by the user); kept as is, noted as B5.
+- 2026-10-22: Vercel preview env (all branches) points at testnet; production (`mainnet` branch) points at the prepared mainnet API.
 - 2026-10-22: Credit (vault + manager) deploys in `DeployCredit.s.sol` after `SetupMarkets`, because the default vault asset `aUSD` is created there; `VAULT_ASSET` overrides it (required on mainnet).
 - 2026-10-22: Web ABIs now come from the SDK (generated from forge artifacts); hand-written partial ABIs removed.
 - 2026-10-22: `@x402/*` optional deps of `@coinbase/cdp-sdk` (via RainbowKit Base Account) aliased to an inert stub so Next/Turbopack builds.
@@ -79,7 +81,10 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 - ✅ All 18 app routes built (landing, swap, pools, pool detail, create pool, positions, launch, launch token, credit, orders, analytics, events, buyback, contracts, developers). `next build`, lint, typecheck, 26 vitest + 10 Playwright tests green.
 - ✅ `Deploy.s.sol` deploys every module; `DeployCredit.s.sol` adds credit; full local deploy (`scripts/local-deploy.sh`) verified on the Anvil fork.
 - ✅ Testnet contracts deployed by the user via `scripts/testnet-deploy.sh` (77/77 tx ok, 0.00052 ETH gas); verified owners, registrars, wiring and a live router quote.
-- 🔄 Next: Edge Functions (`indexer`, `api`) → testnet (B1–B3) → mainnet dry run.
+- ✅ Edge Functions `indexer` + `api` written; local Supabase run against real testnet (4 pools, TVL $26.4k, matches seeds) and against the Anvil fork with real activity from `scripts/local-activity.sh` (7 pools, swaps on every venue, filled limit order, launch at 28%, loans). Live-data screenshots checked.
+- ✅ Fixed during integration: L1-vs-L2 `startBlock`, v4 liquidity amounts, launch threshold meta overwrite, analytics response shape, per-network indexer badge.
+- ✅ Vercel project `aethra-fi` created with env vars; PR #1 merged `main` → `testnet`.
+- ⏳ Next: B6 → push migrations, deploy Edge Functions, Vault secrets, sync testnet deployment; B7 → connect Git, testnet alias; then mainnet dry run.
 
 ## Session 1 checkpoint (2026-10-22): resume here
 
