@@ -53,7 +53,7 @@ async function chainClient(chain: number) {
 
 async function health() {
   const rows = await q(db.from("indexer_state").select("chain_id,last_block,head_block,status,updated_at"));
-  const live = rows.filter((r) => r.status !== "disabled");
+  const live = rows.filter((r) => r.status !== "disabled" && r.last_block !== null);
   const stale = live.some((r) => Date.now() - Date.parse(r.updated_at) > 5 * 60_000 || r.status === "error");
   const lag = live.some((r) => r.head_block && r.last_block && r.head_block - r.last_block > 500);
   return {
@@ -147,19 +147,25 @@ function eventName(type: string, action: string) {
 
 async function events(chain: number, params: URLSearchParams) {
   const limit = Math.min(200, Math.max(1, Number(params.get("limit") ?? 50)));
-  let query = db.from("event_feed").select("*").eq("chain_id", chain).neq("type", "route").order("block_number", { ascending: false }).order("log_index", { ascending: false }).limit(limit);
+  // route rows duplicate their swaps; vault Borrowed/Repaid/InterestAccrued mirror credit Borrow/Repay
+  let query = db.from("event_feed").select("*").eq("chain_id", chain).neq("type", "route")
+    .not("action", "in", "(borrowed,repaid,interestaccrued)").order("block_number", { ascending: false }).order("log_index", { ascending: false }).limit(limit);
   const type = params.get("type");
   if (type && EVENT_TYPES[type]) query = query.in("type", EVENT_TYPES[type]);
   const poolId = params.get("pool");
   if (poolId) query = query.eq("pool_id", poolId.toLowerCase());
-  const [rows, tokens] = await Promise.all([q(query), tokenMap(chain)]);
+  const [rows, tokens, poolRows] = await Promise.all([q(query), tokenMap(chain), q(db.from("pools").select("pool_id,token0,token1").eq("chain_id", chain))]);
+  const poolTokens = new Map(poolRows.map((p) => [p.pool_id, p]));
   const sym = (a: string | undefined) => (a && tokens.get(a)?.symbol) || "?";
   const dec = (a: string | undefined) => (a && tokens.get(a)?.decimals) ?? 18;
   return rows.map((e) => {
     const d = e.data ?? {};
     let summary: string | null = null;
     if (e.type === "swap") summary = `${fmt(d.amount_in, dec(d.token_in))} ${sym(d.token_in)} → ${fmt(d.amount_out, dec(d.token_out))} ${sym(d.token_out)}`;
-    else if (e.type === "launch") summary = `${d.symbol ? `$${d.symbol}` : ""} ${d.name ?? ""}`.trim();
+    else if (e.type === "liquidity" && e.pool_id && poolTokens.has(e.pool_id) && (d.amount0 !== "0" || d.amount1 !== "0")) {
+      const p = poolTokens.get(e.pool_id)!;
+      summary = `${fmt(d.amount0, dec(p.token0))} ${sym(p.token0)} + ${fmt(d.amount1, dec(p.token1))} ${sym(p.token1)}`;
+    } else if (e.type === "launch") summary = `${d.symbol ? `$${d.symbol}` : ""} ${d.name ?? ""}`.trim();
     else if (e.type === "buyback" && d.token) summary = `${fmt(d.amount, dec(d.token))} ${sym(d.token)}${d.aeth_burned ? ` · ${fmt(d.aeth_burned, 18)} AETH burned` : ""}`;
     else if (e.type === "loan" || e.type === "vault") summary = d.token_id ? `Position #${d.token_id}` : null;
     else if (e.type === "order") summary = `Order #${d.order_id} · bin ${d.bin_id}`;
@@ -190,7 +196,7 @@ async function launches(chain: number) {
   const [rows, poolRows, trades, state, tokensBy, dep] = await Promise.all([
     q(db.from("launches").select("*").eq("chain_id", chain).order("created_at", { ascending: false }).limit(200)),
     q(db.from("pools").select("pool_id,reserve0,reserve1,token0,price").eq("chain_id", chain).eq("venue", "LAUNCH")),
-    q(db.from("launch_trades").select("token,amount_usd").eq("chain_id", chain).gte("ts", since)),
+    q(db.from("launch_trades").select("token,amount_usd,weth_amount").eq("chain_id", chain).gte("ts", since)),
     q<Row>(db.from("indexer_state").select("meta").eq("chain_id", chain).single()),
     tokenMap(chain),
     q<Row>(db.from("deployments").select("addresses").eq("chain_id", chain).single()),
@@ -202,7 +208,7 @@ async function launches(chain: number) {
   const vol = new Map<string, { usd: number; n: number }>();
   for (const t of trades) {
     const v = vol.get(t.token) ?? { usd: 0, n: 0 };
-    v.usd += t.amount_usd ?? 0;
+    v.usd += t.amount_usd ?? (wethUsd ? toHuman(BigInt(t.weth_amount), 18) * wethUsd : 0);
     v.n += 1;
     vol.set(t.token, v);
   }
@@ -226,9 +232,18 @@ async function launches(chain: number) {
 }
 
 async function analytics(chain: number, range: string) {
-  const data = await q<Row>(db.rpc("api_analytics", { p_chain: chain, p_range: range }));
-  const top = (data.top_pools ?? []).map((p: Row) => pool(p));
-  return { ...data, top_pools: top };
+  const [data, ov] = await Promise.all([q<Row>(db.rpc("api_analytics", { p_chain: chain, p_range: range })), overview(chain)]);
+  const byId = new Map(ov.map((p) => [p.pool_id, p]));
+  const top: Row[] = data.top_pools ?? [];
+  const feesByVenue = new Map<string, number>();
+  for (const p of top) feesByVenue.set(p.venue, (feesByVenue.get(p.venue) ?? 0) + (p.fees_usd ?? 0));
+  return {
+    range: data.range,
+    totals: data.totals,
+    series: (data.series ?? []).map((s: Row) => ({ t: s.timestamp, tvl_usd: s.tvl_usd ?? 0, volume_usd: s.volume_usd ?? 0, fees_usd: s.fees_usd ?? 0, trades: s.trades ?? 0 })),
+    venues: (data.venues ?? []).map((v: Row) => ({ venue: v.venue, tvl_usd: v.tvl_usd ?? 0, volume_usd: v.volume_usd ?? 0, fees_usd: feesByVenue.get(v.venue) ?? 0 })),
+    top_pools: top.map((p) => byId.get(p.pool_id)).filter(Boolean),
+  };
 }
 
 const dlmmAbi = parseAbi(["function sharesOf(int24 id, address account) view returns (uint256)"]);
@@ -263,8 +278,12 @@ async function positions(chain: number, owner: string) {
     for (const poolId of dlmmPools) {
       const bins = [...new Set(adds.filter((a) => a.pool_id === poolId).flatMap((a) => a.bin_ids ?? []))].sort((a, b) => a - b).slice(0, 200);
       const shares: bigint[] = [];
-      for (const part of chunked(bins, 50)) {
-        shares.push(...await Promise.all(part.map((id) => client.readContract({ address: poolId as Hex, abi: dlmmAbi, functionName: "sharesOf", args: [id, o as Hex] }))));
+      try {
+        for (const part of chunked(bins, 50)) {
+          shares.push(...await Promise.all(part.map((id) => client.readContract({ address: poolId as Hex, abi: dlmmAbi, functionName: "sharesOf", args: [id, o as Hex] }))));
+        }
+      } catch {
+        continue; // RPC unavailable: skip this pool rather than failing the whole response
       }
       const live = bins.map((id, i) => ({ id, shares: String(shares[i] ?? 0n) })).filter((b) => b.shares !== "0");
       if (live.length) dlmm.push({ pool_address: poolId, pool: byId.get(poolId) ?? null, bins: live });

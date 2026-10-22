@@ -10,7 +10,7 @@ import type { AnalyticsRange } from "@/lib/api";
 import { formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const RANGES: AnalyticsRange[] = ["24h", "7d", "30d", "90d"];
+const RANGES: AnalyticsRange[] = ["24h", "7d", "30d"];
 const usd = (v: number) => formatUsd(v, { compact: true });
 
 export function AnalyticsView() {

@@ -15,7 +15,7 @@ import { useAllowance, useTokenBalance, type TokenOption } from "@/hooks/use-tok
 import { useTx } from "@/hooks/use-tx";
 import { ApiError, type ApiPool } from "@/lib/api";
 import { formatTokenAmount, shortAddress } from "@/lib/format";
-import { explorerAddress, explorerTx } from "@/lib/network";
+import { CHAIN_ID, explorerAddress, explorerTx } from "@/lib/network";
 import { VENUE_LABEL } from "@/lib/routing";
 import { cn } from "@/lib/utils";
 
@@ -105,7 +105,11 @@ export function StatusDot({ state, className }: { state: DotState; className?: s
 
 export function IndexerStatus({ className }: { className?: string }) {
   const h = useHealth();
-  const state: DotState = h.isError ? "down" : !h.data ? "idle" : h.data.status === "ok" ? "live" : h.data.status === "degraded" ? "degraded" : "down";
+  // only this app's network matters; other chains in the same indexer may be idle or behind
+  const own = h.data?.indexing.find((i) => i.chain_id === CHAIN_ID);
+  const stale = own && h.data ? Date.parse(h.data.timestamp) - Date.parse(own.updated_at) > 5 * 60_000 : true;
+  const behind = own?.head_block && own.last_block ? own.head_block - own.last_block > 500 : false;
+  const state: DotState = h.isError ? "down" : !h.data ? "idle" : !own ? "down" : stale || behind ? "degraded" : "live";
   const label = { live: "Indexer live", degraded: "Indexer lagging", down: "Indexer offline", idle: "Indexer…" }[state];
   return (
     <span className={cn("items-center gap-2 font-mono text-[11px] uppercase tracking-eyebrow text-muted", className)}>

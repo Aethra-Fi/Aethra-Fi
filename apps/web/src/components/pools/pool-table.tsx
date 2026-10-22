@@ -40,7 +40,7 @@ export function PoolTable({ pools }: { pools: ApiPool[] }) {
                   <ModeBadge mode={p.mode} />
                 </span>
               </TableCell>
-              <TableCell className="num text-right">{formatFeePips(p.fee_pips)}</TableCell>
+              <TableCell className="num text-right">{p.fee_pips === 0 && p.mode !== "plain" ? "Dynamic" : formatFeePips(p.fee_pips)}</TableCell>
               <TableCell className="num text-right">{formatUsd(p.tvl_usd, { compact: true })}</TableCell>
               <TableCell className="num text-right">{formatUsd(p.volume_24h_usd, { compact: true })}</TableCell>
               <TableCell className="num text-right">{formatNumber(p.trades_24h)}</TableCell>

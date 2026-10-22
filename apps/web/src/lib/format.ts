@@ -5,7 +5,7 @@ const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFra
 export function formatUsd(v: number | null | undefined, opts: { compact?: boolean } = {}): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return "—";
   const abs = Math.abs(v);
-  if (opts.compact && abs >= 10_000) return `$${compact.format(v)}`;
+  if (opts.compact && abs >= 1_000) return `$${compact.format(v)}`;
   const digits = abs > 0 && abs < 1 ? Math.min(6, Math.max(2, 1 - Math.floor(Math.log10(abs)) + 2)) : 2;
   return new Intl.NumberFormat("en-US", {
     style: "currency",

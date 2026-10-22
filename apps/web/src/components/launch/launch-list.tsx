@@ -34,7 +34,7 @@ export function Progress({ value, className }: { value: number; className?: stri
 
 function LaunchCard({ l }: { l: ApiLaunch }) {
   return (
-    <Link href={`/launch/${l.token}`} className="group block space-y-4 bg-surface p-5 transition-ui hover:bg-surface-2">
+    <Link href={`/launch/${l.token}`} className="group block space-y-4 border bg-surface p-5 transition-ui hover:border-primary/60 hover:bg-surface-2">
       <div className="flex items-center gap-3">
         <TokenIcon symbol={l.symbol} className="size-10 text-[11px]" />
         <div className="min-w-0 flex-1">
@@ -155,7 +155,7 @@ export function LaunchList() {
                   sort === "progress" ? b.progress - a.progress : sort === "volume" ? b.volume_24h_usd - a.volume_24h_usd : +new Date(b.created_at) - +new Date(a.created_at),
                 );
               return list.length ? (
-                <div className="hairline-grid grid border sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {list.map((l) => (
                     <LaunchCard key={l.token} l={l} />
                   ))}

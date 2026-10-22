@@ -69,7 +69,7 @@ export interface ApiAnalytics {
   top_pools: ApiPool[];
 }
 
-export type AnalyticsRange = "24h" | "7d" | "30d" | "90d";
+export type AnalyticsRange = "24h" | "7d" | "30d";
 
 export interface ApiV4Position {
   token_id: string;

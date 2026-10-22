@@ -17,7 +17,7 @@ import {
   type Role,
 } from "../_shared/abis.ts";
 import { backoffMs, ChunkSizer, chunked, DEFAULT_CHUNK, nextRange, planStart, safeHead } from "../_shared/chunking.ts";
-import { big, isStableToken, priceFromBin, priceFromSqrtX96, swapUsd, toHuman } from "../_shared/math.ts";
+import { amountsForLiquidity, big, isStableToken, priceFromBin, priceFromSqrtX96, swapUsd, toHuman } from "../_shared/math.ts";
 import { decodeLog, dedupeRawLogs, type DecodedLog, type RawLog, sortLogs, TOPICS, UINT64_MAX, ZERO_ADDRESS } from "../_shared/normalize.ts";
 import { derivePrices, scaleE18 } from "../_shared/pricing.ts";
 
@@ -168,8 +168,10 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
   await db.from("indexer_state").upsert({ chain_id: chainId, status: "running", updated_at: new Date().toISOString() });
 
   // known pools and tokens
-  const { data: poolRows } = await db.from("pools").select("pool_id,venue,pool_address,token0,token1,bin_step_bps").eq("chain_id", chainId);
+  const { data: poolRows } = await db.from("pools").select("pool_id,venue,pool_address,token0,token1,bin_step_bps,sqrt_price_x96").eq("chain_id", chainId);
   const binSteps = new Map<string, number>((poolRows ?? []).filter((p) => p.bin_step_bps).map((p) => [p.pool_id, p.bin_step_bps]));
+  // current v4 sqrt prices, advanced by Initialize/Swap so ModifyLiquidity can be converted into token amounts
+  const sqrtOf = new Map<string, bigint>((poolRows ?? []).filter((p) => p.venue === "V4" && p.sqrt_price_x96).map((p) => [p.pool_id, BigInt(p.sqrt_price_x96)]));
   const pools = new Map<string, PoolRow>((poolRows ?? []).map((p) => [p.pool_id, p]));
   const { data: tokenRows } = await db.from("tokens").select("address,symbol,decimals,kind,asset_class,price_usd").eq("chain_id", chainId);
   const tokens = new Map<string, TokenRow>((tokenRows ?? []).map((t) => [t.address, t]));
@@ -330,6 +332,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
         if (!hook || a.hooks !== hook) break;
         const id = hexId(a.id);
         v4Ids.add(id);
+        sqrtOf.set(id, BigInt(a.sqrtPriceX96));
         const t0 = token(a.currency0);
         const t1 = token(a.currency1);
         b.add("v4_pool_keys", id, {
@@ -357,6 +360,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
         const fee = Number(a.fee);
         const feeAmount = (amountIn * BigInt(fee)) / 1_000_000n;
         const price = priceOf(p.token0, p.token1, a.sqrtPriceX96);
+        sqrtOf.set(id, BigInt(a.sqrtPriceX96));
         b.add("swaps", `${l.txHash}:${l.logIndex}`, {
           ...base(l, t), pool_id: id, venue: "V4", sender: a.sender, recipient: a.sender,
           token_in: zeroForOne ? p.token0 : p.token1, token_out: zeroForOne ? p.token1 : p.token0,
@@ -371,9 +375,11 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
         const id = hexId(a.id);
         if (!v4Ids.has(id)) break;
         const delta = BigInt(a.liquidityDelta);
+        // the event has no token amounts: derive the pool's balance change from the range and current price
+        const { amount0, amount1 } = amountsForLiquidity(sqrtOf.get(id) ?? 0n, Number(a.tickLower), Number(a.tickUpper), delta);
         b.add("liquidity_events", `${l.txHash}:${l.logIndex}`, {
           ...base(l, t), pool_id: id, venue: "V4", source: "v4", kind: delta >= 0n ? "add" : "remove", sender: a.sender,
-          tick_lower: Number(a.tickLower), tick_upper: Number(a.tickUpper), liquidity_delta: big(delta),
+          tick_lower: Number(a.tickLower), tick_upper: Number(a.tickUpper), liquidity_delta: big(delta), amount0: big(amount0), amount1: big(amount1),
         });
         touched.add(id);
         break;
@@ -399,7 +405,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
       }
       case "positions.LiquidityChanged":
         b.add("liquidity_events", `${l.txHash}:${l.logIndex}`, {
-          ...base(l, t), source: "positions", kind: "modify", token_id: String(a.tokenId), liquidity_delta: big(a.liquidityDelta), amount0: big(a.amount0), amount1: big(a.amount1),
+          ...base(l, t), source: "positions", kind: BigInt(a.liquidityDelta) >= 0n ? "add" : "remove", token_id: String(a.tokenId), liquidity_delta: big(a.liquidityDelta), amount0: big(a.amount0), amount1: big(a.amount1),
         });
         break;
       case "positions.FeesCollected":
@@ -640,7 +646,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
   }
 
   // ---------------------------------------------------------------- chain reads + prices
-  await refreshChainState(db, client, chainId, A, pools, tokens, touched);
+  const chainMeta = await refreshChainState(db, client, chainId, A, pools, tokens, touched);
 
   const { data: refreshed, error: refreshErr } = await db.rpc("aethra_refresh", {
     p_chain: chainId,
@@ -659,7 +665,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
     chunk_size: sizer.size,
     last_run_ms: Date.now() - started,
     logs_indexed: (state?.logs_indexed ?? 0) + logsIndexed,
-    meta: { ...meta, deployment: depHash },
+    meta: { ...meta, ...chainMeta, deployment: depHash },
     updated_at: new Date().toISOString(),
   });
   return { chainId, from: lastBlock, to: from - 1, head, logs: logsIndexed, pools: touched.size, caughtUp, refresh: refreshed };
@@ -674,7 +680,8 @@ async function refreshChainState(
   pools: Map<string, PoolRow>,
   tokens: Map<string, TokenRow>,
   touched: Set<string>,
-) {
+): Promise<Record<string, unknown>> {
+  const meta: Record<string, unknown> = {};
   const dec = (a: string) => tokens.get(a)?.decimals ?? 18;
   const updates: Row[] = [];
 
@@ -733,8 +740,7 @@ async function refreshChainState(
     }
     try {
       const threshold = await client.readContract({ address: A.launchpad as Hex, abi: launchpadAbi, functionName: "graduationThreshold" });
-      const { data: st } = await db.from("indexer_state").select("meta").eq("chain_id", chainId).single();
-      await db.from("indexer_state").update({ meta: { ...(st?.meta ?? {}), graduationThreshold: String(threshold) } }).eq("chain_id", chainId);
+      meta.graduationThreshold = String(threshold);
     } catch {
       // ignore
     }
@@ -763,6 +769,7 @@ async function refreshChainState(
     chain_id: chainId, address, price_usd: p.price, price_source: p.via ? `pool:${p.via}` : p.source, price_updated_at: now,
   }));
   await upsertGrouped(db, "tokens", rows);
+  return meta;
 }
 
 // ------------------------------------------------------------------ entry
