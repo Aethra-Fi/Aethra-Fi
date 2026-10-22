@@ -201,7 +201,7 @@ function LiveStats() {
   return (
     <dl className="grid max-w-xl grid-cols-2 border sm:grid-cols-4">
       {cells.map(([k, v]) => (
-        <div key={k} className="border-r bg-bg/60 px-3 py-2 backdrop-blur-sm last:border-r-0">
+        <div key={k} className="border-r bg-bg/80 px-3 py-2 last:border-r-0">
           <dt className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">{k}</dt>
           <dd className="num mt-0.5 text-sm">{v}</dd>
         </div>
@@ -234,7 +234,7 @@ function Panel({ s, i }: { s: Section; i: number }) {
       id={`section-${s.key}`}
       data-section={i}
       aria-label={`${i + 1} of ${SECTIONS.length}: ${s.label}`}
-      className="relative flex min-h-[calc(100dvh-var(--header-h))] scroll-mt-[var(--header-h)] items-center overflow-x-hidden lg:h-[calc(100dvh-var(--header-h))]"
+      className={cn("relative flex min-h-[calc(100dvh-var(--header-h))] scroll-mt-[var(--header-h)] items-center overflow-x-hidden lg:h-[calc(100dvh-var(--header-h))]", !active && "[&_*]:![animation-play-state:paused]")}
     >
       <div className="container grid h-full items-center gap-8 pb-20 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:pb-16 lg:pt-10">
         <div className={cn("relative z-10 max-w-xl space-y-6 transition-[opacity,transform] duration-700 ease-out", active ? "opacity-100" : "opacity-0 lg:translate-y-3")}>
@@ -266,7 +266,7 @@ function Panel({ s, i }: { s: Section; i: number }) {
             <>
               <dl className="grid max-w-lg grid-cols-2 border-l border-t">
                 {s.specs.map(([k, v]) => (
-                  <div key={k} className="border-b border-r bg-bg/50 px-3 py-2 backdrop-blur-sm">
+                  <div key={k} className="border-b border-r bg-bg/75 px-3 py-2">
                     <dt className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">{k}</dt>
                     <dd className="num mt-0.5 text-sm">{v}</dd>
                   </div>
@@ -314,13 +314,15 @@ function DataTag({ text, left, top, delay, active }: { text: string; left: numbe
         <span className="size-1.5 rounded-full bg-primary" />
       </span>
       <span className="h-px w-10 bg-gradient-to-r from-primary/70 to-transparent" />
-      <span className="border border-border-strong bg-bg/70 px-2 py-0.5 font-mono text-[10px] uppercase tracking-button text-fg-2 backdrop-blur-sm">{text}</span>
+      <span className="border border-border-strong bg-bg/85 px-2 py-0.5 font-mono text-[10px] uppercase tracking-button text-fg-2">{text}</span>
     </div>
   );
 }
 
 /** Header height (h-14 + 1px border); sections fill the viewport below the sticky header. */
 const HEADER_H = 57;
+
+const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 export function LandingSections() {
   const rootRef = React.useRef<HTMLDivElement>(null);
@@ -332,18 +334,103 @@ export function LandingSections() {
   const progressRef = React.useRef<HTMLDivElement>(null);
   const n = SECTIONS.length;
 
-  // Snap by settling, not CSS scroll-snap: CSS proximity snapping treats every mouse-wheel notch as a finished
-  // scroll and pulls the page back near an edge, which feels stuck. Instead scrolling stays free, and once it
-  // has fully stopped (wheel, keys, touch momentum) a nearby section edge pulls the page onto it.
+  // One gesture, one section. On desktop a wheel flick, a key press or a nav click flies to the neighbouring
+  // section along an eased rAF tween (native `behavior: "smooth"` has no fixed duration or curve, so it can't be
+  // tuned). While a flight runs, wheel events are swallowed; trackpad inertia keeps streaming after the flick, so
+  // a new wheel gesture only counts after a pause or when it is clearly stronger than the tail before it.
+  // Elsewhere (touch, narrow screens, scrollbar drags) scrolling stays native and a settle pulls a nearby edge in.
+  const flightRef = React.useRef<{ raf: number; index: number } | null>(null);
+
+  const cancelFlight = React.useCallback(() => {
+    if (flightRef.current) cancelAnimationFrame(flightRef.current.raf);
+    flightRef.current = null;
+  }, []);
+
+  const goTo = React.useCallback(
+    (i: number) => {
+      const index = Math.max(0, Math.min(n - 1, i));
+      const el = rootRef.current?.querySelector<HTMLElement>(`[data-section="${index}"]`);
+      if (!el) return;
+      cancelFlight();
+      const from = window.scrollY;
+      const to = Math.round(el.getBoundingClientRect().top + from - HEADER_H);
+      const dist = Math.abs(to - from);
+      if (dist < 1) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        window.scrollTo({ top: to, behavior: "instant" });
+        return;
+      }
+      const duration = Math.min(1300, 750 + (dist / window.innerHeight) * 140);
+      const t0 = performance.now();
+      const flight = { raf: 0, index };
+      const tick = (now: number) => {
+        const p = Math.max(0, Math.min(1, (now - t0) / duration));
+        window.scrollTo({ top: from + (to - from) * easeInOutCubic(p), behavior: "instant" });
+        if (p < 1) flight.raf = requestAnimationFrame(tick);
+        else flightRef.current = null;
+      };
+      flightRef.current = flight;
+      flight.raf = requestAnimationFrame(tick);
+    },
+    [n, cancelFlight],
+  );
+
   React.useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const paged = window.matchMedia("(min-width: 1024px)");
+    const nearest = () => {
+      let idx = 0;
+      let best = Infinity;
+      rootRef.current?.querySelectorAll<HTMLElement>("[data-section]").forEach((el, i) => {
+        const d = Math.abs(el.getBoundingClientRect().top - HEADER_H);
+        if (d < best) {
+          best = d;
+          idx = i;
+        }
+      });
+      return idx;
+    };
+    const current = () => flightRef.current?.index ?? nearest();
+
+    let lastWheel = 0;
+    let lastAbs = 0;
+    const onWheel = (e: WheelEvent) => {
+      if (!paged.matches || e.ctrlKey || e.metaKey) return; // ctrl + wheel is pinch zoom
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      const now = performance.now();
+      const abs = Math.abs(e.deltaY) * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1);
+      const gap = now - lastWheel;
+      const prev = lastAbs;
+      lastWheel = now;
+      lastAbs = abs;
+      if (flightRef.current) return;
+      if ((gap >= 90 && abs >= 3) || (abs >= 20 && abs > prev * 1.4)) goTo(current() + Math.sign(e.deltaY));
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (!paged.matches || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest("input, textarea, select, [contenteditable='true']")) return;
+      let to: number | null = null;
+      if (e.key === "ArrowDown" || e.key === "PageDown") to = current() + 1;
+      else if (e.key === "ArrowUp" || e.key === "PageUp") to = current() - 1;
+      else if (e.key === " " && !t?.closest("a, button, summary")) to = current() + (e.shiftKey ? -1 : 1);
+      else if (e.key === "Home") to = 0;
+      else if (e.key === "End") to = n - 1;
+      if (to === null) return;
+      e.preventDefault();
+      if (!e.repeat) goTo(to);
+    };
+
+    // settle: once scrolling has fully stopped (scrollbar drag, touch momentum, narrow screens) a section edge
+    // within a quarter of the viewport pulls the page onto it
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let timer = 0;
     let touching = false;
     let lastY = -1;
     const settle = () => {
-      if (touching) return;
+      if (touching || flightRef.current) return;
       // only act once the position has stopped moving; on a janky frame scroll events can be >160ms apart
-      // while a wheel or momentum scroll is still running
       if (window.scrollY !== lastY) {
         lastY = window.scrollY;
         timer = window.setTimeout(settle, 120);
@@ -352,47 +439,47 @@ export function LandingSections() {
       const els = rootRef.current?.querySelectorAll<HTMLElement>("[data-section]");
       if (!els?.length) return;
       let best = Infinity;
-      els.forEach((el) => {
+      let idx = 0;
+      els.forEach((el, i) => {
         const d = el.getBoundingClientRect().top - HEADER_H;
-        if (Math.abs(d) < Math.abs(best)) best = d;
+        if (Math.abs(d) < Math.abs(best)) {
+          best = d;
+          idx = i;
+        }
       });
       const reach = (window.innerHeight - HEADER_H) * 0.25;
-      if (Math.abs(best) > 2 && Math.abs(best) < reach) window.scrollBy({ top: best, behavior: "smooth" });
+      if (Math.abs(best) > 2 && Math.abs(best) < reach) goTo(idx);
     };
     const schedule = () => {
       window.clearTimeout(timer);
       lastY = -1;
-      timer = window.setTimeout(settle, 160);
+      if (!reduced) timer = window.setTimeout(settle, 160);
     };
     const down = () => {
       touching = true;
+      cancelFlight(); // grabbing the scrollbar or the screen hands control back to the user
       window.clearTimeout(timer);
     };
     const up = () => {
       touching = false;
       schedule();
     };
-    // any new input postpones settling; scroll events (including momentum) keep postponing it
-    const inputs: [string, () => void][] = [
-      ["scroll", schedule],
-      ["wheel", schedule],
-      ["keydown", schedule],
-      ["touchstart", down],
-      ["touchend", up],
-      ["pointerdown", down], // dragging the scrollbar
-      ["pointerup", up],
+    const inputs: [string, (e: never) => void, boolean][] = [
+      ["wheel", onWheel, false],
+      ["keydown", onKey, false],
+      ["scroll", schedule, true],
+      ["touchstart", down, true],
+      ["touchend", up, true],
+      ["pointerdown", down, true], // dragging the scrollbar
+      ["pointerup", up, true],
     ];
-    for (const [ev, fn] of inputs) window.addEventListener(ev, fn, { passive: true });
+    for (const [ev, fn, passive] of inputs) window.addEventListener(ev, fn as EventListener, { passive });
     return () => {
       window.clearTimeout(timer);
-      for (const [ev, fn] of inputs) window.removeEventListener(ev, fn);
+      cancelFlight();
+      for (const [ev, fn] of inputs) window.removeEventListener(ev, fn as EventListener);
     };
-  }, []);
-
-  const goTo = React.useCallback((i: number) => {
-    const el = rootRef.current?.querySelector<HTMLElement>(`[data-section="${Math.max(0, Math.min(n - 1, i))}"]`);
-    el?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
-  }, [n]);
+  }, [n, goTo, cancelFlight]);
 
   // scroll position → continuous section index (ribbon morph), active section, progress rail
   React.useEffect(() => {
@@ -503,7 +590,7 @@ export function LandingSections() {
         </p>
 
         {/* bottom bar */}
-        <div className="pointer-events-auto absolute inset-x-0 bottom-0 border-t bg-bg/75 backdrop-blur-md">
+        <div className="pointer-events-auto absolute inset-x-0 bottom-0 border-t bg-bg/90">
           <div className="container flex h-12 items-center gap-4 font-mono text-[11px] uppercase tracking-button">
             <span className="flex min-w-0 items-center gap-2 text-muted">
               <StatusDot state="live" />
