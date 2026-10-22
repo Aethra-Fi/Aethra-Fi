@@ -27,7 +27,8 @@ Proxy addresses per network are in `packages/sdk/src/addresses/{local,testnet,ma
 - Schema: `supabase/migrations/*` (tables, views, `aethra_refresh`, `api_analytics`, pg_cron job every minute).
 - Edge Functions: `indexer` (service-role only; called by pg_cron through pg_net with the URL and key from Supabase Vault) and `api` (public, read-only, `{ data }` responses).
 - Load addresses: `SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node supabase/scripts/sync-deployments.mjs testnet`.
-- Cron needs two Vault secrets in each hosted project: `project_url` and `service_role_key` (see `supabase/migrations/*_cron.sql`).
+- Cron auth: Vault secrets `project_url` and `indexer_token`, plus the function secret `INDEXER_TOKEN` (same random value, never in the repo). A dedicated token is used because the runtime's service key format differs between projects (legacy JWT vs `sb_secret_`).
+- Status 2026-10-22: testnet has migrations, seed, both functions, Vault secrets and a live cron (indexing every minute). Mainnet has migrations, seed and functions only; with no Vault secrets its cron does nothing.
 - Optional function secret `RPC_URL_<chainId>` overrides the public RPC.
 
 API base URLs:

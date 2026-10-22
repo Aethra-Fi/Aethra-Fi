@@ -57,7 +57,9 @@ Setelah selesai, cukup bilang "B4 selesai": saya baca `packages/contracts/broadc
 
 Project `Aethra-Fi-testnet` (`zqbnyshzgxhkfxoyrogq`) ada di `ap-northeast-1`, bukan `ap-southeast-1` seperti spesifikasi. Tetap dipakai apa adanya; buat ulang hanya jika kamu mau (project masih kosong).
 
-## B6 · Password database Supabase — `OPEN`
+## B6 · Password database Supabase — `DONE`
+
+Selesai 2026-10-22. File dikunci ke chmod 600. Migrasi, Edge Functions dan cron aktif di testnet; mainnet disiapkan (tanpa secret Vault, jadi cron tidak melakukan apa pun).
 
 Dibutuhkan untuk menjalankan migrasi dan menyimpan secret Vault (cron) di project hosted. Simpan di terminal kamu sendiri, **jangan** di chat:
 
