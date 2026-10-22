@@ -44,7 +44,8 @@ API base URLs:
 | Build | `cd ../.. && pnpm turbo run build --filter=@aethra/web` (builds `@aethra/sdk` first) |
 | Production branch | `mainnet` (prepared, not used yet) |
 | Testnet | branch `testnet` → preview, alias `aethra-fi-testnet.vercel.app` |
-| Git | `Aethra-Fi/Aethra-Fi`, waiting on BLOCKERS B7 |
+| Git | `Aethra-Fi/Aethra-Fi`, connected 2026-10-22 |
+| Deployment protection | off (`ssoProtection: null`) so the testnet site is public; env vars are all public `NEXT_PUBLIC_*` values |
 
 Environment variables:
 

@@ -74,7 +74,9 @@ chmod 600 ~/.config/aethra-fi/supabase.env
 
 Lupa password? Supabase dashboard → Project Settings → Database → Reset database password.
 
-## B7 · Akses Vercel ke organisasi GitHub `Aethra-Fi` — `OPEN`
+## B7 · Akses Vercel ke organisasi GitHub `Aethra-Fi` — `DONE`
+
+Selesai 2026-10-22: repo terhubung, production branch `mainnet`, alias `aethra-fi-testnet.vercel.app` → branch `testnet`, live dan publik.
 
 Project Vercel `aethra-fi` sudah dibuat (root `apps/web`, build via turbo, env vars testnet/mainnet terpasang), tapi Vercel tidak bisa melihat repo `Aethra-Fi/Aethra-Fi`.
 Buka https://github.com/apps/vercel/installations/new → pilih organisasi **Aethra-Fi** → akses ke repo **Aethra-Fi** (atau All repositories) → Install/Save.
