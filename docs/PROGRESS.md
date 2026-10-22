@@ -15,7 +15,7 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 | 7 | Launchpad & stock pools | ✅ | Contracts + UI (launch list/create/trade, oracle panel) |
 | 8 | DAMM/DLMM, limit orders, credit, buyback | ✅ | Contracts + UI |
 | 9 | UI modification (style guide → tokens, 2 themes) | ✅ | Tokens + 2 themes; Playwright dark/light screenshots in `docs/ui-style/screens/` |
-| 10 | Testnet deploy | 🔄 | Contracts ✅; Supabase hosted ✅ (cron live); Vercel project ✅, waiting B7 for Git |
+| 10 | Testnet deploy | ✅ | https://aethra-fi-testnet.vercel.app live: contracts on 46630, hosted indexer + API, Vercel Git deploys from `testnet` |
 | 11 | Mainnet dry run (no broadcast) | ⬜ | optional per the user (2026-10-22) |
 
 ## Setup checklist
@@ -85,7 +85,8 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 - ✅ Fixed during integration: L1-vs-L2 `startBlock`, v4 liquidity amounts, launch threshold meta overwrite, analytics response shape, per-network indexer badge.
 - ✅ Vercel project `aethra-fi` created with env vars; PR #1 merged `main` → `testnet`.
 - ✅ Hosted Supabase testnet live: migrations, Edge Functions, Vault + pg_cron indexing every minute; public API returns TVL $26,424 and correct modes. Mainnet project prepared (idle).
-- ⏳ Next: B7 → connect Vercel Git, testnet alias; then mainnet dry run.
+- ✅ Vercel Git connected (production branch `mainnet`), `aethra-fi-testnet.vercel.app` → `testnet`, preview protection off; live site verified in a headless browser (4 pools from the hosted API, no errors). PR #3 promoted `main` → `testnet`.
+- ⏳ Next: in-app faucet + deeper WETH/aUSD liquidity (testnet usability), then mainnet dry run.
 
 ## Session 1 checkpoint (2026-10-22): resume here
 

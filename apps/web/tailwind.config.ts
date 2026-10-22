@@ -73,6 +73,9 @@ const config: Config = {
         caret: { "0%, 49%": { opacity: "1" }, "50%, 100%": { opacity: "0" } },
         rise: { from: { opacity: "0", transform: "translateY(8px)" }, to: { opacity: "1", transform: "none" } },
         tick: { "0%": { opacity: "0.4" }, "100%": { opacity: "1" } },
+        dash: { to: { strokeDashoffset: "-24" } },
+        scan: { from: { transform: "translateX(-60px)" }, to: { transform: "translateX(60px)" } },
+        needle: { from: { transform: "rotate(-70deg)" }, to: { transform: "rotate(8deg)" } },
       },
       animation: {
         marquee: "marquee 40s linear infinite",
