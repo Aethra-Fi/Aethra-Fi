@@ -9,7 +9,7 @@ cast rpc anvil_setBalance "$DEPLOYER_ADDRESS" 0x56BC75E2D63100000 --rpc-url "$RP
 cd "$ROOT/packages/contracts"
 NETWORK=local forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC" --unlocked --sender "$DEPLOYER_ADDRESS" --broadcast --slow "$@"
 if [ -f script/SetupMarkets.s.sol ]; then
-  NETWORK=local forge script script/SetupMarkets.s.sol:SetupMarkets --rpc-url "$RPC" --unlocked --sender "$DEPLOYER_ADDRESS" --broadcast --slow
+  SEED_WETH=${SEED_WETH:-5000000000000000000} NETWORK=local forge script script/SetupMarkets.s.sol:SetupMarkets --rpc-url "$RPC" --unlocked --sender "$DEPLOYER_ADDRESS" --broadcast --slow
 fi
 cd "$ROOT" && pnpm --filter @aethra/sdk abis >/dev/null 2>&1 || true
 echo "Local deployment written to packages/sdk/src/addresses/local.json"
