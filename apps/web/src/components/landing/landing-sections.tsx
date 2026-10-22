@@ -3,7 +3,7 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp } from "lucide-react";
 import { useBlockNumber } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { StatusDot } from "@/components/kit";
@@ -210,15 +210,33 @@ function LiveStats() {
   );
 }
 
-function Panel({ s, i, active }: { s: Section; i: number; active: boolean }) {
+/** True once the element is meaningfully on screen; stays true so reveals play once per visit. */
+function useInView<T extends Element>(threshold = 0.3) {
+  const ref = React.useRef<T>(null);
+  const [inView, setInView] = React.useState(false);
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setInView(Boolean(e?.isIntersecting)), { threshold });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [threshold]);
+  return [ref, inView] as const;
+}
+
+function Panel({ s, i }: { s: Section; i: number }) {
   const Heading = i === 0 ? "h1" : "h2";
+  // reveal as the section scrolls into view, so neighbours are never blank mid-scroll
+  const [ref, active] = useInView<HTMLElement>(0.3);
   return (
     <section
-      aria-roledescription="slide"
+      ref={ref}
+      id={`section-${s.key}`}
+      data-section={i}
       aria-label={`${i + 1} of ${SECTIONS.length}: ${s.label}`}
-      className="relative h-full w-full shrink-0 snap-start snap-always overflow-y-auto overflow-x-hidden"
+      className="relative flex min-h-[calc(100dvh-var(--header-h))] scroll-mt-[var(--header-h)] items-center overflow-x-hidden lg:h-[calc(100dvh-var(--header-h))]"
     >
-      <div className="container grid h-full items-center gap-8 py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:py-10">
+      <div className="container grid h-full items-center gap-8 pb-20 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:pb-16 lg:pt-10">
         <div className={cn("relative z-10 max-w-xl space-y-6 transition-[opacity,transform] duration-700 ease-out", active ? "opacity-100" : "opacity-0 lg:translate-y-3")}>
           <p className="eyebrow flex items-center gap-3">
             <span className="text-primary-text">{pad(i)}</span>
@@ -301,129 +319,120 @@ function DataTag({ text, left, top, delay, active }: { text: string; left: numbe
   );
 }
 
-export function HorizontalLanding() {
-  const scrollerRef = React.useRef<HTMLDivElement>(null);
+/** Header height (h-14 + 1px border); sections fill the viewport below the sticky header. */
+const HEADER_H = 57;
+
+export function LandingSections() {
+  const rootRef = React.useRef<HTMLDivElement>(null);
   const sectionRef = React.useRef(0);
   const [active, setActive] = React.useState(0);
   const coordRef = React.useRef<HTMLSpanElement>(null);
   const morphRef = React.useRef<HTMLSpanElement>(null);
   const crossRef = React.useRef<HTMLDivElement>(null);
   const progressRef = React.useRef<HTMLDivElement>(null);
-  const lockRef = React.useRef(0);
   const n = SECTIONS.length;
 
-  const goTo = React.useCallback((i: number) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const idx = Math.max(0, Math.min(n - 1, i));
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollTo({ left: idx * el.clientWidth, behavior: reduce ? "auto" : "smooth" });
-  }, [n]);
-
-  // scroll position → section float (ribbon), active index (UI), progress bar
+  // Snap by settling, not CSS scroll-snap: CSS proximity snapping treats every mouse-wheel notch as a finished
+  // scroll and pulls the page back near an edge, which feels stuck. Instead scrolling stays free, and once it
+  // has fully stopped (wheel, keys, touch momentum) a nearby section edge pulls the page onto it.
   React.useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const pos = el.scrollLeft / Math.max(1, el.clientWidth);
-      sectionRef.current = pos;
-      setActive((a) => (Math.round(pos) === a ? a : Math.round(pos)));
-      if (progressRef.current) progressRef.current.style.transform = `scaleX(${pos / (n - 1)})`;
-    };
-    onScroll();
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [n]);
-
-  // vertical wheel → one section per gesture; native horizontal trackpad scrolling still works
-  React.useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-      const panel = (e.target as HTMLElement).closest("section");
-      if (panel && panel.scrollHeight > panel.clientHeight + 4) {
-        // let a tall panel (small screens) scroll vertically until its edge
-        const atTop = panel.scrollTop <= 0 && e.deltaY < 0;
-        const atBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 2 && e.deltaY > 0;
-        if (!atTop && !atBottom) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let timer = 0;
+    let touching = false;
+    let lastY = -1;
+    const settle = () => {
+      if (touching) return;
+      // only act once the position has stopped moving; on a janky frame scroll events can be >160ms apart
+      // while a wheel or momentum scroll is still running
+      if (window.scrollY !== lastY) {
+        lastY = window.scrollY;
+        timer = window.setTimeout(settle, 120);
+        return;
       }
-      e.preventDefault();
-      const now = performance.now();
-      if (now < lockRef.current || Math.abs(e.deltaY) < 4) return;
-      lockRef.current = now + 750;
-      goTo(Math.round(el.scrollLeft / el.clientWidth) + (e.deltaY > 0 ? 1 : -1));
+      const els = rootRef.current?.querySelectorAll<HTMLElement>("[data-section]");
+      if (!els?.length) return;
+      let best = Infinity;
+      els.forEach((el) => {
+        const d = el.getBoundingClientRect().top - HEADER_H;
+        if (Math.abs(d) < Math.abs(best)) best = d;
+      });
+      const reach = (window.innerHeight - HEADER_H) * 0.25;
+      if (Math.abs(best) > 2 && Math.abs(best) < reach) window.scrollBy({ top: best, behavior: "smooth" });
     };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, [goTo]);
-
-  // keyboard
-  React.useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest("input, textarea, select, [contenteditable]")) return;
-      const cur = Math.round(sectionRef.current);
-      if (["ArrowRight", "PageDown"].includes(e.key) || (e.key === " " && !e.shiftKey)) goTo(cur + 1);
-      else if (["ArrowLeft", "PageUp"].includes(e.key) || (e.key === " " && e.shiftKey)) goTo(cur - 1);
-      else if (e.key === "Home") goTo(0);
-      else if (e.key === "End") goTo(n - 1);
-      else return;
-      e.preventDefault();
+    const schedule = () => {
+      window.clearTimeout(timer);
+      lastY = -1;
+      timer = window.setTimeout(settle, 160);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [goTo, n]);
-
-  // mouse drag to scrub sideways (touch uses native scrolling)
-  React.useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    let startX = 0;
-    let startLeft = 0;
-    let dragging = false;
-    let moved = false;
-    const down = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse" || e.button !== 0 || (e.target as HTMLElement).closest("a, button, input, select, textarea")) return;
-      dragging = true;
-      moved = false;
-      startX = e.clientX;
-      startLeft = el.scrollLeft;
-    };
-    const move = (e: PointerEvent) => {
-      if (!dragging) return;
-      const dx = e.clientX - startX;
-      if (!moved && Math.abs(dx) < 6) return;
-      if (!moved) el.classList.add("is-dragging");
-      moved = true;
-      el.scrollLeft = startLeft - dx;
+    const down = () => {
+      touching = true;
+      window.clearTimeout(timer);
     };
     const up = () => {
-      if (!dragging) return;
-      dragging = false;
-      if (!moved) return;
-      el.classList.remove("is-dragging");
-      const delta = (el.scrollLeft - startLeft) / el.clientWidth;
-      const base = Math.round(startLeft / el.clientWidth);
-      goTo(Math.abs(delta) > 0.12 ? base + Math.sign(delta) : base);
+      touching = false;
+      schedule();
     };
-    el.addEventListener("pointerdown", down);
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+    // any new input postpones settling; scroll events (including momentum) keep postponing it
+    const inputs: [string, () => void][] = [
+      ["scroll", schedule],
+      ["wheel", schedule],
+      ["keydown", schedule],
+      ["touchstart", down],
+      ["touchend", up],
+      ["pointerdown", down], // dragging the scrollbar
+      ["pointerup", up],
+    ];
+    for (const [ev, fn] of inputs) window.addEventListener(ev, fn, { passive: true });
     return () => {
-      el.removeEventListener("pointerdown", down);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
+      window.clearTimeout(timer);
+      for (const [ev, fn] of inputs) window.removeEventListener(ev, fn);
     };
-  }, [goTo]);
+  }, []);
+
+  const goTo = React.useCallback((i: number) => {
+    const el = rootRef.current?.querySelector<HTMLElement>(`[data-section="${Math.max(0, Math.min(n - 1, i))}"]`);
+    el?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }, [n]);
+
+  // scroll position → continuous section index (ribbon morph), active section, progress rail
+  React.useEffect(() => {
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const els = rootRef.current?.querySelectorAll<HTMLElement>("[data-section]");
+      if (!els?.length) return;
+      // a section counts as "reached" when its top meets the bottom edge of the sticky header
+      let pos = 0;
+      els.forEach((el, i) => {
+        const r = el.getBoundingClientRect();
+        const top = r.top - HEADER_H;
+        if (top <= 0) pos = i + Math.min(1, -top / Math.max(1, r.height));
+      });
+      pos = Math.min(n - 1, pos);
+      sectionRef.current = pos;
+      setActive((a) => (Math.round(pos) === a ? a : Math.round(pos)));
+      if (progressRef.current) progressRef.current.style.transform = `scaleY(${pos / (n - 1)})`;
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [n]);
 
   // crosshair follows the pointer
   React.useEffect(() => {
     const onMove = (e: PointerEvent) => {
       const c = crossRef.current;
       if (!c) return;
-      const r = c.parentElement!.getBoundingClientRect();
-      c.style.setProperty("--x", `${e.clientX - r.left}px`);
-      c.style.setProperty("--y", `${e.clientY - r.top}px`);
+      c.style.setProperty("--x", `${e.clientX}px`);
+      c.style.setProperty("--y", `${e.clientY}px`);
       c.style.opacity = e.pointerType === "mouse" ? "1" : "0";
     };
     window.addEventListener("pointermove", onMove, { passive: true });
@@ -443,47 +452,53 @@ export function HorizontalLanding() {
 
   const s = SECTIONS[active]!;
   return (
-    <div className="relative h-[calc(100dvh-3.5rem-1px)] overflow-hidden" role="region" aria-roledescription="carousel" aria-label="Aethra Fi overview">
-      {/* backdrop: blueprint grid + ribbon */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgb(var(--border)/0.35)_1px,transparent_1px),linear-gradient(90deg,rgb(var(--border)/0.35)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_70%_50%,black,transparent_75%)]" />
-      <GlyphRibbon sectionRef={sectionRef} onFrame={onFrame} className="pointer-events-none absolute inset-0" />
+    <div ref={rootRef} className="relative [--header-h:57px]" aria-label="Aethra Fi overview">
+      {/* fixed backdrop: blueprint grid + ribbon, below the sticky header */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)] bg-[linear-gradient(rgb(var(--border)/0.35)_1px,transparent_1px),linear-gradient(90deg,rgb(var(--border)/0.35)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_70%_50%,black,transparent_75%)]" />
+      <GlyphRibbon sectionRef={sectionRef} onFrame={onFrame} className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)]" />
 
-      {/* panels */}
-      <div
-        ref={scrollerRef}
-        tabIndex={-1}
-        className="relative z-10 flex h-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [scrollbar-width:none] [&.is-dragging]:cursor-grabbing [&.is-dragging]:snap-none [&.is-dragging]:select-none [&::-webkit-scrollbar]:hidden"
-      >
+      {/* sections */}
+      <div className="relative z-10">
         {SECTIONS.map((sec, i) => (
-          <Panel key={sec.key} s={sec} i={i} active={i === active} />
+          <Panel key={sec.key} s={sec} i={i} />
         ))}
       </div>
 
-      {/* HUD: crosshair, frame, rulers, readouts */}
-      <div className="pointer-events-none absolute inset-0 z-20">
-        <div ref={crossRef} className="absolute inset-0 opacity-0 transition-opacity duration-300 [--x:-100px] [--y:-100px]">
+      {/* HUD: crosshair, frame, progress rail, readouts */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)] z-20">
+        <div ref={crossRef} className="fixed inset-0 opacity-0 transition-opacity duration-300 [--x:-100px] [--y:-100px]">
           <span className="absolute left-0 right-0 h-px bg-primary/15" style={{ top: "var(--y)" }} />
           <span className="absolute bottom-0 top-0 w-px bg-primary/15" style={{ left: "var(--x)" }} />
           <span className="absolute size-5 -translate-x-1/2 -translate-y-1/2 border border-primary/50" style={{ left: "var(--x)", top: "var(--y)" }} />
         </div>
 
         {/* corner brackets */}
-        {["left-3 top-3 border-l border-t", "right-3 top-3 border-r border-t", "bottom-3 left-3 border-b border-l", "bottom-3 right-3 border-b border-r"].map((c) => (
+        {["left-3 top-3 border-l border-t", "right-3 top-3 border-r border-t", "bottom-14 left-3 border-b border-l", "bottom-14 right-3 border-b border-r"].map((c) => (
           <span key={c} className={cn("absolute size-4 border-border-strong", c)} />
         ))}
 
-        {/* top ruler */}
-        <div className="absolute inset-x-8 top-3 hidden h-3 md:block">
-          <div className="flex h-full items-start justify-between">
-            {Array.from({ length: 81 }, (_, t) => (
-              <span key={t} className={cn("w-px bg-border-strong", t % 10 === 0 ? "h-3" : t % 5 === 0 ? "h-2" : "h-1")} />
+        {/* right rail: vertical ruler with progress, and section stops */}
+        <div className="absolute bottom-16 right-3 top-10 hidden w-3 md:block">
+          <div className="flex h-full flex-col items-end justify-between">
+            {Array.from({ length: 57 }, (_, t) => (
+              <span key={t} className={cn("h-px bg-border-strong", t % 8 === 0 ? "w-3" : t % 4 === 0 ? "w-2" : "w-1")} />
             ))}
           </div>
-          <div ref={progressRef} className="absolute left-0 top-0 h-px w-full origin-left bg-primary" style={{ transform: "scaleX(0)" }} />
+          <div ref={progressRef} className="absolute right-0 top-0 h-full w-px origin-top bg-primary" style={{ transform: "scaleY(0)" }} />
         </div>
+        <nav aria-label="Sections" className="pointer-events-auto absolute right-8 top-1/2 hidden -translate-y-1/2 flex-col items-end gap-1 md:flex">
+          {SECTIONS.map((sec, i) => (
+            <button key={sec.key} onClick={() => goTo(i)} aria-label={`Go to ${sec.label}`} aria-current={i === active ? "step" : undefined} className="group flex items-center gap-2 py-1">
+              <span className={cn("font-mono text-[10px] uppercase tracking-eyebrow transition-opacity duration-300", i === active ? "text-primary-text opacity-100" : "text-muted opacity-0 group-hover:opacity-100")}>
+                {pad(i)} {sec.label}
+              </span>
+              <span className={cn("w-0.5 transition-all duration-500", i === active ? "h-6 bg-primary" : "h-2.5 bg-border-strong group-hover:bg-fg-2")} />
+            </button>
+          ))}
+        </nav>
 
-        {/* side rail */}
-        <p className="absolute right-4 top-1/2 hidden -translate-y-1/2 font-mono text-[10px] uppercase tracking-eyebrow text-muted [writing-mode:vertical-rl] xl:block">
+        {/* left rail */}
+        <p className="absolute left-4 top-1/2 hidden -translate-y-1/2 rotate-180 font-mono text-[10px] uppercase tracking-eyebrow text-muted [writing-mode:vertical-rl] xl:block">
           Aethra · glyph ribbon v1 · 5,280 glyphs · {CHAIN.name}
         </p>
 
@@ -497,34 +512,21 @@ export function HorizontalLanding() {
             </span>
             <span ref={morphRef} className="hidden text-muted lg:inline" />
             <span ref={coordRef} className="ml-auto hidden text-muted xl:inline" />
-            <div className="ml-auto flex items-center gap-1 xl:ml-4">
-              {SECTIONS.map((sec, i) => (
-                <button
-                  key={sec.key}
-                  onClick={() => goTo(i)}
-                  aria-label={`Go to ${sec.label}`}
-                  aria-current={i === active ? "step" : undefined}
-                  className="group flex h-8 items-center px-0.5"
-                >
-                  <span className={cn("h-0.5 transition-all duration-500", i === active ? "w-8 bg-primary" : "w-3 bg-border-strong group-hover:bg-fg-2")} />
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-1">
+            <div className="ml-auto flex gap-1 xl:ml-4">
               <Button variant="ghost" size="icon-sm" aria-label="Previous section" disabled={active === 0} onClick={() => goTo(active - 1)}>
-                <ArrowLeft />
+                <ArrowUp />
               </Button>
               <Button variant="ghost" size="icon-sm" aria-label="Next section" disabled={active === n - 1} onClick={() => goTo(active + 1)}>
-                <ArrowRight />
+                <ArrowDown />
               </Button>
             </div>
           </div>
         </div>
 
         {/* scroll hint on the first section */}
-        <div className={cn("absolute bottom-16 right-8 hidden items-center gap-3 font-mono text-[10px] uppercase tracking-eyebrow text-muted transition-opacity duration-500 md:flex", active === 0 ? "opacity-100" : "opacity-0")}>
-          <span className="h-px w-10 animate-pulse bg-primary" />
-          scroll · drag · ← →
+        <div className={cn("absolute bottom-16 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 font-mono text-[10px] uppercase tracking-eyebrow text-muted transition-opacity duration-500 md:flex", active === 0 ? "opacity-100" : "opacity-0")}>
+          scroll
+          <span className="h-8 w-px animate-pulse bg-gradient-to-b from-primary to-transparent" />
         </div>
       </div>
     </div>
