@@ -1,0 +1,123 @@
+@import "./tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-bg font-sans text-[15px] leading-[1.6] text-fg antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  h1, h2, h3, h4 {
+    @apply font-medium text-fg;
+  }
+  ::selection {
+    background: rgb(var(--primary) / 0.3);
+    color: rgb(var(--text));
+  }
+  :focus-visible {
+    outline: 1px solid rgb(var(--ring));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgb(var(--ring) / 0.25);
+  }
+  /* lucide icons at 1.5 stroke */
+  .lucide {
+    stroke-width: 1.5;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    @apply font-mono text-eyebrow uppercase text-muted;
+  }
+  .num {
+    @apply font-mono tabular-nums;
+  }
+  .hairline-grid {
+    @apply grid gap-px border bg-border;
+  }
+  .hairline-grid > * {
+    @apply bg-surface;
+  }
+  /* L-shaped corner ticks outside a featured panel */
+  .brackets {
+    position: relative;
+  }
+  .brackets::before,
+  .brackets::after,
+  .brackets > .brackets-b::before,
+  .brackets > .brackets-b::after {
+    content: "";
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    pointer-events: none;
+    border-color: rgb(var(--border-strong));
+    border-style: solid;
+  }
+  .brackets::before {
+    top: -5px;
+    left: -5px;
+    border-width: 1px 0 0 1px;
+  }
+  .brackets::after {
+    top: -5px;
+    right: -5px;
+    border-width: 1px 1px 0 0;
+  }
+  .brackets > .brackets-b::before {
+    bottom: -5px;
+    left: -5px;
+    border-width: 0 0 1px 1px;
+  }
+  .brackets > .brackets-b::after {
+    bottom: -5px;
+    right: -5px;
+    border-width: 0 1px 1px 0;
+  }
+  .section-rule {
+    @apply h-px w-full bg-primary/40;
+  }
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--surface-2)) 0%,
+      rgb(var(--border)) 50%,
+      rgb(var(--surface-2)) 100%
+    );
+    background-size: 200% 100%;
+    @apply animate-shimmer rounded-sm;
+  }
+  .transition-ui {
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
