@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Reject pushes that carry AI attribution, then run the quality gates.
+set -euo pipefail
+zero=0000000000000000000000000000000000000000
+pattern='co-authored-by:.*(claude|anthropic)|claude-session:|generated with .*claude|noreply@anthropic\.com'
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue
+  if [ "$remote_sha" = "$zero" ]; then
+    range="$local_sha --not --remotes=origin"
+  else
+    range="$remote_sha..$local_sha"
+  fi
+  # shellcheck disable=SC2086
+  if git log --format='%an <%ae>%n%cn <%ce>%n%B' $range | grep -qiE "$pattern"; then
+    echo "pre-push: commit with AI attribution found in $local_ref; push rejected." >&2
+    exit 1
+  fi
+done
+
+[ "${SKIP_CHECKS:-0}" = "1" ] && exit 0
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+if [ -f package.json ] && [ -d node_modules ]; then
+  pnpm -s lint
+  pnpm -s typecheck
+  pnpm -s test
+fi
+if [ -f packages/contracts/foundry.toml ]; then
+  (cd packages/contracts && forge test -q)
+fi

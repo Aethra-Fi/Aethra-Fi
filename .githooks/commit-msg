@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Strip AI attribution trailers from commit messages.
+set -euo pipefail
+msg_file="$1"
+tmp="$(mktemp)"
+grep -viE 'co-authored-by:.*(claude|anthropic)|claude-session:|generated with .*claude|🤖' "$msg_file" > "$tmp" || true
+# Trim trailing blank lines.
+sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$tmp" > "$msg_file"
+rm -f "$tmp"

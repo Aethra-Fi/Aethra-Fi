@@ -1,0 +1,10 @@
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
+@openzeppelin/foundry-upgrades/=lib/openzeppelin-foundry-upgrades/src/
+@uniswap/v4-core/=lib/v4-core/
+v4-core/=lib/v4-core/src/
+@uniswap/v4-periphery/=lib/v4-periphery/
+v4-periphery/=lib/v4-periphery/src/
+permit2/=lib/v4-periphery/lib/permit2/
+solady/=lib/solady/src/
+forge-std/=lib/forge-std/src/

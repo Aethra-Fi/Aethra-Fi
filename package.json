@@ -1,0 +1,20 @@
+{
+  "name": "aethra-fi",
+  "private": true,
+  "packageManager": "pnpm@11.9.0",
+  "engines": { "node": ">=22.19" },
+  "scripts": {
+    "dev": "turbo run dev --filter=@aethra/web",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "contracts:test": "cd packages/contracts && forge test",
+    "local:chain": "bash scripts/local-chain.sh",
+    "local:deploy": "bash scripts/local-deploy.sh"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.3"
+  }
+}

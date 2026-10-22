@@ -1,0 +1,22 @@
+{
+    "attribution": { "commit": "", "pr": "" },
+    "permissions": {
+        "allow": [
+            "Bash(pnpm:*)",
+            "Bash(npm:*)",
+            "Bash(npx:*)",
+            "Bash(node:*)",
+            "Bash(forge:*)",
+            "Bash(cast:*)",
+            "Bash(anvil:*)",
+            "Bash(supabase:*)",
+            "Bash(vercel:*)",
+            "Bash(git:*)",
+            "Bash(gh:*)",
+            "Bash(docker:*)",
+            "Bash(curl:*)",
+            "Bash(mkdir:*)",
+            "Bash(chmod:*)"
+        ]
+    }
+}
