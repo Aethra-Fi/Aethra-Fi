@@ -776,7 +776,10 @@ async function refreshChainState(
 
 Deno.serve(async (req) => {
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  if (req.headers.get("authorization") !== `Bearer ${key}`) return new Response("unauthorized", { status: 401 });
+  // pg_cron sends INDEXER_TOKEN (Vault `indexer_token`); the service key also works for manual runs.
+  // A dedicated token avoids depending on which service key format the runtime exposes.
+  const allowed = [Deno.env.get("INDEXER_TOKEN"), key].filter((v): v is string => !!v).map((v) => `Bearer ${v}`);
+  if (!allowed.includes(req.headers.get("authorization") ?? "")) return new Response("unauthorized", { status: 401 });
   const db = createClient(Deno.env.get("SUPABASE_URL")!, key, { auth: { persistSession: false } });
   const url = new URL(req.url);
   const only = url.searchParams.get("chain");

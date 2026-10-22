@@ -56,3 +56,27 @@ Setelah selesai, cukup bilang "B4 selesai": saya baca `packages/contracts/broadc
 ## B5 · Region Supabase testnet — `INFO`
 
 Project `Aethra-Fi-testnet` (`zqbnyshzgxhkfxoyrogq`) ada di `ap-northeast-1`, bukan `ap-southeast-1` seperti spesifikasi. Tetap dipakai apa adanya; buat ulang hanya jika kamu mau (project masih kosong).
+
+## B6 · Password database Supabase — `DONE`
+
+Selesai 2026-10-22. File dikunci ke chmod 600. Migrasi, Edge Functions dan cron aktif di testnet; mainnet disiapkan (tanpa secret Vault, jadi cron tidak melakukan apa pun).
+
+Dibutuhkan untuk menjalankan migrasi dan menyimpan secret Vault (cron) di project hosted. Simpan di terminal kamu sendiri, **jangan** di chat:
+
+```bash
+# Jalankan di: ROOT
+mkdir -p ~/.config/aethra-fi && umask 077 && cat > ~/.config/aethra-fi/supabase.env <<'EOT'
+SUPABASE_DB_PASSWORD_TESTNET=...
+SUPABASE_DB_PASSWORD_MAINNET=...
+EOT
+chmod 600 ~/.config/aethra-fi/supabase.env
+```
+
+Lupa password? Supabase dashboard → Project Settings → Database → Reset database password.
+
+## B7 · Akses Vercel ke organisasi GitHub `Aethra-Fi` — `OPEN`
+
+Project Vercel `aethra-fi` sudah dibuat (root `apps/web`, build via turbo, env vars testnet/mainnet terpasang), tapi Vercel tidak bisa melihat repo `Aethra-Fi/Aethra-Fi`.
+Buka https://github.com/apps/vercel/installations/new → pilih organisasi **Aethra-Fi** → akses ke repo **Aethra-Fi** (atau All repositories) → Install/Save.
+Setelah itu bilang "B7 selesai": saya hubungkan Git, set production branch `mainnet`, dan pasang alias `aethra-fi-testnet.vercel.app` ke branch `testnet`.
+
