@@ -26,3 +26,4 @@ apps/web/playwright-report/
 # claude worktrees
 .claude/worktrees/
 packages/contracts/foundry-pp/
+*.tsbuildinfo
