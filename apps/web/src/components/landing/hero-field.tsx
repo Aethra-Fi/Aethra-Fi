@@ -60,8 +60,9 @@ export function HeroField({ className }: { className?: string }) {
           const n = (v + 1) / 2; // 0..1
           const g = GLYPHS[Math.min(GLYPHS.length - 1, Math.floor(n * GLYPHS.length))]!;
           if (g === " ") continue;
-          // fade toward the left so the headline stays readable
-          const fade = Math.min(1, 0.25 + nx * 1.1);
+          // fade out toward the left so the headline sits on a quiet background
+          const fade = Math.max(0, Math.min(1, (nx - 0.3) * 2));
+          if (fade === 0) continue;
           ctx.fillStyle = `rgba(${rgb},${(min + (max - min) * n) * fade})`;
           ctx.fillText(g, x * CELL + CELL / 2, y * CELL + CELL / 2);
         }

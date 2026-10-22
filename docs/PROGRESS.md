@@ -9,12 +9,12 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 | 1 | Setup (tools, logins, repo, hooks) | 🔄 | Supabase login, keystore and faucet are ⏳ B1–B3 |
 | 2 | REA research | ✅ | `docs/research/notes.md` |
 | 3 | Monorepo foundation & environments | 🔄 | |
-| 4 | Landing + wallet + swap | ⬜ | |
+| 4 | Landing + wallet + swap | ✅ | Smart-route swap via router.quote |
 | 5 | Core contracts (hub, hook, router, positions) | ✅ | 181 forge tests green (all modules) |
-| 6 | Indexer & data pages | ⬜ | |
-| 7 | Launchpad & stock pools | 🔄 | Contracts ✅ (launchpad + v4 graduation); UI pending |
-| 8 | DAMM/DLMM, limit orders, credit, buyback | 🔄 | Contracts ✅ with tests; UI pending |
-| 9 | UI modification (style guide → tokens, 2 themes) | 🔄 | `docs/ui-style/style-guide.md` written |
+| 6 | Indexer & data pages | 🔄 | Data pages ✅; Edge Functions `indexer` + `api` todo |
+| 7 | Launchpad & stock pools | ✅ | Contracts + UI (launch list/create/trade, oracle panel) |
+| 8 | DAMM/DLMM, limit orders, credit, buyback | ✅ | Contracts + UI |
+| 9 | UI modification (style guide → tokens, 2 themes) | ✅ | Tokens + 2 themes; Playwright dark/light screenshots in `docs/ui-style/screens/` |
 | 10 | Testnet deploy | ⬜ | |
 | 11 | Mainnet dry run (no broadcast) | ⬜ | optional per the user (2026-10-22) |
 
@@ -48,6 +48,8 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 - 2026-10-22: Router is exact-input only, across all venues. Best-route search happens in the SDK via `router.quote` over eth_call.
 - 2026-10-22: Testnet stock pools use the existing testnet stock tokens (AMZN/TSLA/AMD/PLTR/NFLX) plus Aethra mock price feeds. We also deploy faucet test tokens so anyone can try the app.
 - 2026-10-22: AethraHook `beforeInitialize` only lets the launchpad initialize pools containing a launch token (blocks graduation front-running at a skewed price).
+- 2026-10-22: Web ABIs now come from the SDK (generated from forge artifacts); hand-written partial ABIs removed.
+- 2026-10-22: `@x402/*` optional deps of `@coinbase/cdp-sdk` (via RainbowKit Base Account) aliased to an inert stub so Next/Turbopack builds.
 - 2026-10-22: Worked sequentially in session 2 (no subagents) per the user; worktree branches merged into `main` and removed.
 - 2026-10-22: Foundry `via_ir`, optimizer 800 runs, `bytecode_hash=none`, solc 0.8.26, evm cancun.
 
@@ -64,7 +66,8 @@ Reference: mainnet gas price 0.02 gwei (2026-10-22), ETH ≈ $2,410. Budget $6�
 - ✅ All contract modules merged and tested on `main`: DLMM (pool, factory, limit orders), DAMM, launchpad + LaunchToken + AETH, LendingVault + CreditManager, Buyback. **181 forge tests green.**
 - ✅ Frontend foundation committed (tokens, UI kit, wallet/RainbowKit, data layer, ABIs); typecheck and 26 vitest tests green.
 - ✅ Supabase schema committed (migrations, shared indexer helpers).
-- 🔄 Next: app pages (layout/nav, landing, swap, pools, positions, create, launchpad, credit, orders, analytics, events, buyback, contracts, developers), then Edge Functions (`indexer`, `api`), then Deploy.s.sol modules.
+- ✅ All 18 app routes built (landing, swap, pools, pool detail, create pool, positions, launch, launch token, credit, orders, analytics, events, buyback, contracts, developers). `next build`, lint, typecheck, 26 vitest + 10 Playwright tests green.
+- 🔄 Next: extend `Deploy.s.sol` with all modules → local full deploy → Edge Functions (`indexer`, `api`) → testnet (B1–B3) → mainnet dry run.
 
 ## Session 1 checkpoint (2026-10-22): resume here
 

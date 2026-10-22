@@ -34,6 +34,25 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+/** RainbowKit connect flow rendered with Aethra buttons so it matches the rest of the UI. */
+function WalletButton() {
+  return (
+    <ConnectButton.Custom>
+      {({ account, chain, mounted, openAccountModal, openChainModal, openConnectModal }) => {
+        if (!mounted) return <Button size="sm" className="invisible" aria-hidden>Connect</Button>;
+        if (!account || !chain) return <Button size="sm" onClick={openConnectModal}>Connect</Button>;
+        if (chain.unsupported) return <Button size="sm" variant="destructive" onClick={openChainModal}>Wrong network</Button>;
+        return (
+          <Button size="sm" variant="secondary" onClick={openAccountModal} className="normal-case tracking-normal">
+            <span className="size-1.5 rounded-full bg-primary" />
+            {account.displayName}
+          </Button>
+        );
+      }}
+    </ConnectButton.Custom>
+  );
+}
+
 export function SiteHeader() {
   const pathname = usePathname();
   return (
@@ -76,7 +95,7 @@ export function SiteHeader() {
           </span>
           <IndexerStatus className="hidden md:flex" />
           <ThemeToggle />
-          <ConnectButton chainStatus="icon" showBalance={false} accountStatus={{ smallScreen: "avatar", largeScreen: "address" }} />
+          <WalletButton />
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon-sm" className="lg:hidden" aria-label="Open menu">
