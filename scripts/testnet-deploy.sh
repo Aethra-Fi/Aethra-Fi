@@ -30,6 +30,7 @@ NETWORK=testnet SEED_WETH="$SEED_WETH" forge script script/SetupMarkets.s.sol:Se
 echo "4/4  Credit: lending vault + credit manager (password prompt)"
 NETWORK=testnet forge script script/DeployCredit.s.sol:DeployCredit "${COMMON[@]}"
 
+cd "$ROOT" && node scripts/set-start-block.mjs testnet
 cd "$ROOT" && pnpm --filter @aethra/sdk build >/dev/null
 echo "Done. Addresses written to packages/sdk/src/addresses/testnet.json"
 echo "Remaining balance: $(cast balance "$DEPLOYER_ADDRESS" --rpc-url "$RPC" -e) ETH"

@@ -27,3 +27,4 @@ apps/web/playwright-report/
 .claude/worktrees/
 packages/contracts/foundry-pp/
 *.tsbuildinfo
+supabase/functions/node_modules/

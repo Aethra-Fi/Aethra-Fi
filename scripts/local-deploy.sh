@@ -12,5 +12,6 @@ if [ -f script/SetupMarkets.s.sol ]; then
   SEED_WETH=${SEED_WETH:-5000000000000000000} NETWORK=local forge script script/SetupMarkets.s.sol:SetupMarkets --rpc-url "$RPC" --unlocked --sender "$DEPLOYER_ADDRESS" --broadcast --slow
 fi
 NETWORK=local forge script script/DeployCredit.s.sol:DeployCredit --rpc-url "$RPC" --unlocked --sender "$DEPLOYER_ADDRESS" --broadcast --slow
+cd "$ROOT" && node scripts/set-start-block.mjs local
 cd "$ROOT" && pnpm --filter @aethra/sdk abis >/dev/null 2>&1 || true
 echo "Local deployment written to packages/sdk/src/addresses/local.json"

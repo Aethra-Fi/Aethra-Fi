@@ -56,7 +56,7 @@ export function decodeLog(raw: RawLog, role: Role): DecodedLog | null {
     return {
       role,
       address: raw.address.toLowerCase(),
-      eventName: decoded.eventName as string,
+      eventName: String(decoded.eventName),
       args: normalizeArgs(decoded.args),
       blockNumber: Number(BigInt(raw.blockNumber)),
       logIndex: Number(BigInt(raw.logIndex)),

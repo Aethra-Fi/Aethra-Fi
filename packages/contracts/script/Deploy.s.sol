@@ -168,7 +168,7 @@ contract Deploy is Script {
         _put(".launchpad", m.launchpad);
         _put(".aeth", m.aeth);
         _put(".buyback", m.buyback);
-        vm.writeJson(vm.toString(block.number), addressesPath, ".startBlock");
+        // startBlock is set from the broadcast receipts by scripts/set-start-block.mjs (L1 vs L2 block numbers)
     }
 
     function _put(string memory key, address a) internal {
