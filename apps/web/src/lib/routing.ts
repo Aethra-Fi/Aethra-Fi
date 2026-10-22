@@ -2,7 +2,7 @@ import { encodeAbiParameters, type Address, type Hex } from "viem";
 import { Venue } from "@aethra/sdk";
 import type { ApiPool } from "./api";
 import { DYNAMIC_FEE_FLAG } from "./v4math";
-import { poolKeyComponents } from "./abis/shared";
+import { poolKeyComponents } from "./abi-shared";
 
 export interface RouteHop {
   venue: number;

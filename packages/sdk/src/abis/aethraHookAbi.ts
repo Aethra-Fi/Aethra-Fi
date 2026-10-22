@@ -609,7 +609,7 @@ export const aethraHookAbi = [
     "name": "beforeInitialize",
     "inputs": [
       {
-        "name": "",
+        "name": "sender",
         "type": "address",
         "internalType": "address"
       },
@@ -1782,6 +1782,11 @@ export const aethraHookAbi = [
   {
     "type": "error",
     "name": "InvalidParams",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "LaunchpadOnly",
     "inputs": []
   },
   {

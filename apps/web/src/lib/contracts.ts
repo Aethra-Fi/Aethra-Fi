@@ -1,28 +1,46 @@
 import type { Address } from "viem";
 import type { Deployment } from "@aethra/sdk";
-import * as abis from "./abis";
+import { erc20Abi } from "viem";
+import {
+  aethraHubAbi,
+  aethraHookAbi,
+  aethraPositionsAbi,
+  aethraRouterAbi,
+  aethTokenAbi,
+  buybackAbi,
+  creditManagerAbi,
+  dammFactoryAbi,
+  dammPoolAbi,
+  dlmmFactoryAbi,
+  dlmmLimitOrdersAbi,
+  dlmmPoolAbi,
+  faucetTokenAbi,
+  launchpadAbi,
+  lendingVaultAbi,
+  poolManagerAbi,
+} from "@aethra/sdk";
 import { DEPLOYMENT } from "./network";
 
-/**
- * Single plug-in point for contract ABIs. Replace a value with the SDK export
- * (e.g. `import { aethraRouterAbi } from "@aethra/sdk"`) once the lead publishes full ABIs.
- */
+/** Full ABIs generated from the Foundry build (`pnpm --filter @aethra/sdk abis`). */
 export const ABIS = {
-  router: abis.aethraRouterAbi,
-  positions: abis.aethraPositionsAbi,
-  dlmmFactory: abis.dlmmFactoryAbi,
-  dlmmLimitOrders: abis.dlmmLimitOrdersAbi,
-  dammFactory: abis.dammFactoryAbi,
-  launchpad: abis.launchpadAbi,
-  lendingVault: abis.lendingVaultAbi,
-  creditManager: abis.creditManagerAbi,
-  buyback: abis.buybackAbi,
-  hub: abis.hubAbi,
-  poolManager: abis.poolManagerAbi,
+  router: aethraRouterAbi,
+  positions: aethraPositionsAbi,
+  hook: aethraHookAbi,
+  dlmmFactory: dlmmFactoryAbi,
+  dlmmLimitOrders: dlmmLimitOrdersAbi,
+  dammFactory: dammFactoryAbi,
+  launchpad: launchpadAbi,
+  lendingVault: lendingVaultAbi,
+  creditManager: creditManagerAbi,
+  buyback: buybackAbi,
+  hub: aethraHubAbi,
+  aeth: aethTokenAbi,
+  poolManager: poolManagerAbi,
   // per-instance contracts (address comes from the pool / token)
-  erc20: abis.erc20Abi,
-  dlmmPool: abis.dlmmPoolAbi,
-  dammPool: abis.dammPoolAbi,
+  erc20: erc20Abi,
+  faucetToken: faucetTokenAbi,
+  dlmmPool: dlmmPoolAbi,
+  dammPool: dammPoolAbi,
 } as const;
 
 export type ContractName = keyof typeof ABIS;
