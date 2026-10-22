@@ -10,10 +10,10 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 | 2 | REA research | ✅ | `docs/research/notes.md` |
 | 3 | Monorepo foundation & environments | 🔄 | |
 | 4 | Landing + wallet + swap | ⬜ | |
-| 5 | Core contracts (hub, hook, router, positions) | 🔄 | Hub + VolatilityFee done with tests |
+| 5 | Core contracts (hub, hook, router, positions) | ✅ | 181 forge tests green (all modules) |
 | 6 | Indexer & data pages | ⬜ | |
-| 7 | Launchpad & stock pools | ⬜ | |
-| 8 | DAMM/DLMM, limit orders, credit, buyback | ⬜ | |
+| 7 | Launchpad & stock pools | 🔄 | Contracts ✅ (launchpad + v4 graduation); UI pending |
+| 8 | DAMM/DLMM, limit orders, credit, buyback | 🔄 | Contracts ✅ with tests; UI pending |
 | 9 | UI modification (style guide → tokens, 2 themes) | 🔄 | `docs/ui-style/style-guide.md` written |
 | 10 | Testnet deploy | ⬜ | |
 | 11 | Mainnet dry run (no broadcast) | ⬜ | optional per the user (2026-10-22) |
@@ -47,6 +47,8 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 - 2026-10-22: Fees use pips (1e-6) everywhere, matching v4.
 - 2026-10-22: Router is exact-input only, across all venues. Best-route search happens in the SDK via `router.quote` over eth_call.
 - 2026-10-22: Testnet stock pools use the existing testnet stock tokens (AMZN/TSLA/AMD/PLTR/NFLX) plus Aethra mock price feeds. We also deploy faucet test tokens so anyone can try the app.
+- 2026-10-22: AethraHook `beforeInitialize` only lets the launchpad initialize pools containing a launch token (blocks graduation front-running at a skewed price).
+- 2026-10-22: Worked sequentially in session 2 (no subagents) per the user; worktree branches merged into `main` and removed.
 - 2026-10-22: Foundry `via_ir`, optimizer 800 runs, `bytecode_hash=none`, solc 0.8.26, evm cancun.
 
 ## Mainnet cost estimate (updated as contracts are added)
@@ -56,6 +58,13 @@ Reference: mainnet gas price 0.02 gwei (2026-10-22), ETH ≈ $2,410. Budget $6�
 | Contract | Est. gas | Est. USD | Status |
 |---|---|---|---|
 | (to be filled from `forge script` dry runs) | | | |
+
+## Session 2 (2026-10-22): resume here
+
+- ✅ All contract modules merged and tested on `main`: DLMM (pool, factory, limit orders), DAMM, launchpad + LaunchToken + AETH, LendingVault + CreditManager, Buyback. **181 forge tests green.**
+- ✅ Frontend foundation committed (tokens, UI kit, wallet/RainbowKit, data layer, ABIs); typecheck and 26 vitest tests green.
+- ✅ Supabase schema committed (migrations, shared indexer helpers).
+- 🔄 Next: app pages (layout/nav, landing, swap, pools, positions, create, launchpad, credit, orders, analytics, events, buyback, contracts, developers), then Edge Functions (`indexer`, `api`), then Deploy.s.sol modules.
 
 ## Session 1 checkpoint (2026-10-22): resume here
 
