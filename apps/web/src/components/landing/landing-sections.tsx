@@ -256,14 +256,24 @@ function Panel({ s, i }: { s: Section; i: number }) {
       className={cn("relative flex min-h-[calc(100dvh-var(--header-h))] scroll-mt-[var(--header-h)] items-center overflow-x-hidden lg:h-[calc(100dvh-var(--header-h))]", !active && "[&_*]:![animation-play-state:paused]")}
     >
       <div className="container grid h-full items-center gap-8 pb-20 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:pb-16 lg:pt-10">
-        <div className={cn("relative z-10 max-w-xl space-y-6 transition-[opacity,transform] duration-700 ease-out", active ? "opacity-100" : "opacity-0 lg:translate-y-3")}>
+        <div className={cn("relative z-10 max-w-2xl space-y-6 transition-[opacity,transform] duration-700 ease-out", active ? "opacity-100" : "opacity-0 lg:translate-y-3")}>
           <p className="eyebrow flex items-center gap-3">
             <span className="text-primary-text">{pad(i)}</span>
             <span className="h-px w-8 bg-border-strong" />
             {s.label}
           </p>
-          <Heading className="whitespace-pre-line text-[clamp(2.4rem,5.2vw,4.4rem)] font-medium leading-[1.02] tracking-[-0.03em]">
-            <ScrambleText text={s.title} active={active} />
+          <Heading className="text-[clamp(2.9rem,6.6vw,5.75rem)] font-semibold leading-[0.98] tracking-[-0.04em]">
+            {s.title.split("\n").map((line, n) => (
+              <ScrambleText
+                key={n}
+                text={line}
+                active={active}
+                className={cn(
+                  "block",
+                  n > 0 && "w-fit bg-gradient-to-r from-primary-text via-primary-text to-accent-text bg-clip-text pb-[0.08em] text-transparent dark:drop-shadow-[0_0_32px_rgb(var(--primary)/0.35)]",
+                )}
+              />
+            ))}
           </Heading>
           <p className="max-w-lg text-base text-fg-2 md:text-lg">{s.body}</p>
 
