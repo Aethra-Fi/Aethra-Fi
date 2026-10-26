@@ -8,10 +8,12 @@ export interface Point {
   v: number;
 }
 
-/** Pads the y range by 10% of its span so moves fill the chart; a flat series gets a 1% band and sits mid-chart. */
+/** Pads the y range by 10% of its span so moves fill the chart; a flat series gets a 1% band and sits mid-chart (never below zero for non-negative data). */
 function padDomain([min, max]: [number, number]): [number, number] {
+  if (min === 0 && max === 0) return [0, 1];
   const pad = max > min ? (max - min) * 0.1 : Math.abs(max) * 0.01 || 1;
-  return [min - pad, max + pad];
+  // volumes and TVL are never negative, so don't draw a negative axis
+  return [min >= 0 ? Math.max(0, min - pad) : min - pad, max + pad];
 }
 
 /** Single-series area chart that follows the active theme's chart tokens. */

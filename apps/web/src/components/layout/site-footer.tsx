@@ -14,7 +14,7 @@ export function SiteFooter() {
         <div className="space-y-3">
           <Logo />
           <p className="max-w-sm text-sm text-muted">
-            An experimental liquidity layer on Robinhood Chain. Dynamic fees, oracle-guarded stock pools and
+            The liquidity layer for Robinhood Chain. Adaptive fees, oracle-guarded stock markets and unified
             multi-venue routing.
           </p>
         </div>

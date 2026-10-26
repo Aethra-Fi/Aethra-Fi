@@ -17,8 +17,8 @@ const FILTERS = [
   { key: "trending", label: "Trending" },
   { key: "most_traded", label: "Most traded" },
   { key: "highest_volume", label: "Highest volume" },
-  { key: "fresh", label: "Fresh" },
-  { key: "stock", label: "Stocks" },
+  { key: "fresh", label: "New" },
+  { key: "stock", label: "Stock pools" },
 ] as const;
 type FilterKey = (typeof FILTERS)[number]["key"];
 
@@ -50,8 +50,8 @@ export function PoolsExplorer() {
     <>
       <PageHeader
         eyebrow="Pools"
-        title="Pool discovery"
-        description="Every Aethra venue in one list: v4 hook pools, DLMM bins and DAMM ranges."
+        title="Liquidity pools"
+        description="Discover every Aethra pool across Uniswap v4 hooks, DLMM bins and DAMM ranges. Rank by TVL, volume and momentum."
         actions={
           <Button asChild>
             <Link href="/pools/create">
@@ -64,7 +64,7 @@ export function PoolsExplorer() {
         <Stat label="TVL" value={s ? formatUsd(s.tvl_usd, { compact: true }) : "—"} />
         <Stat label="24h volume" value={s ? formatUsd(s.volume_24h_usd, { compact: true }) : "—"} />
         <Stat label="24h trades" value={s ? formatNumber(s.trades_24h) : "—"} />
-        <Stat label="Pools" value={s ? s.pools : "—"} />
+        <Stat label="Active pools" value={s ? s.pools : "—"} />
       </StatGrid>
 
       <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

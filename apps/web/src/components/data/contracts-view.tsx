@@ -31,8 +31,8 @@ export function ContractsView() {
     <>
       <PageHeader
         eyebrow="Contracts"
-        title="Deployed contracts"
-        description={`Every Aethra contract on ${CHAIN.name} (chain ${CHAIN.id}). Protocol contracts are upgradeable proxies; these are the proxy addresses.`}
+        title="Protocol contracts"
+        description={`Every Aethra contract on ${CHAIN.name} (chain ${CHAIN.id}). Core contracts are UUPS upgradeable proxies; the addresses below are the stable proxy addresses.`}
         actions={<Badge variant="outline">{NETWORK_LABEL[NETWORK]}</Badge>}
       />
       <div className="mt-8 space-y-10">

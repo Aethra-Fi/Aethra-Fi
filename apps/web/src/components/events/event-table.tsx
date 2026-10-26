@@ -15,9 +15,45 @@ const TYPE_VARIANT = {
   buyback: "default",
 } as const;
 
+/** Phones get stacked cards; the 7-column table only fits from md up. */
+function EventCards({ events, showPool }: { events: ApiEvent[]; showPool: boolean }) {
+  return (
+    <ul className="divide-y border md:hidden">
+      {events.map((e) => (
+        <li key={`${e.tx_hash}-${e.log_index}`} className="space-y-2 px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="flex flex-wrap items-center gap-1.5">
+              <Badge variant={TYPE_VARIANT[e.type] ?? "neutral"}>{e.name}</Badge>
+              {showPool && e.venue && <VenueBadge venue={e.venue} />}
+            </span>
+            <span className="num shrink-0 text-xs text-muted">{timeAgo(e.timestamp)}</span>
+          </div>
+          {e.summary && <p className="break-words text-sm text-fg-2">{e.summary}</p>}
+          <div className="flex items-center justify-between gap-3 text-xs">
+            <span className="num">{formatUsd(e.amount_usd)}</span>
+            <span className="flex items-center gap-3">
+              <AddressLink address={e.actor} />
+              <TxLink hash={e.tx_hash} />
+            </span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function EventTable({ events, showPool = true }: { events: ApiEvent[]; showPool?: boolean }) {
   return (
-    <div className="overflow-x-auto border">
+    <>
+      <EventCards events={events} showPool={showPool} />
+      <EventTableDesktop events={events} showPool={showPool} />
+    </>
+  );
+}
+
+function EventTableDesktop({ events, showPool }: { events: ApiEvent[]; showPool: boolean }) {
+  return (
+    <div className="hidden overflow-x-auto border md:block">
       <Table>
         <TableHeader>
           <TableRow>

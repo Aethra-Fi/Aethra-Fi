@@ -157,8 +157,8 @@ export function PositionsView() {
     <>
       <PageHeader
         eyebrow="Positions"
-        title="Your liquidity"
-        description="v4 position NFTs with locks and vesting, DLMM bin shares and DAMM range shares, in one place."
+        title="Your positions"
+        description="Manage v4 position NFTs (with locks and vesting), DLMM bin shares and DAMM range shares across every venue."
         actions={
           <Button asChild variant="secondary">
             <Link href="/pools">Find a pool</Link>
@@ -174,7 +174,7 @@ export function PositionsView() {
           <QueryState
             query={q}
             isEmpty={(d) => !d.v4.length && !d.dlmm.length && !d.damm.length}
-            empty={<EmptyState title="No positions yet" action={<Button asChild><Link href="/pools">Add liquidity</Link></Button>}>Deposit into any pool and it shows up here.</EmptyState>}
+            empty={<EmptyState title="No positions yet" action={<Button asChild><Link href="/pools">Add liquidity</Link></Button>}>Provide liquidity to any pool and your position appears here.</EmptyState>}
           >
             {(d) => (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

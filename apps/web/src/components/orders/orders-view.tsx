@@ -170,7 +170,7 @@ export function OrdersView() {
       <PageHeader
         eyebrow="Limit orders"
         title="Limit orders on DLMM bins"
-        description="An order is liquidity in one bin above or below the price. It fills as trades cross the bin and earns the bin's swap fees while it waits."
+        description="A limit order is single-sided liquidity in one bin away from the current price. It fills as trades cross the bin and earns swap fees while it waits."
       />
       {!orders ? (
         <div className="mt-8">

@@ -156,9 +156,9 @@ const BLOCKS: Block[] = [
         </p>
         <Dl
           rows={[
-            ["Base fee", "0.30% on the default v4 hook pool"],
-            ["Ceiling", "10% maximum"],
-            ["Decay", "600 s for the default decay window"],
+            ["Base fee", "0.05% on default dynamic v4 pools, 0.30% on stock pools"],
+            ["Fee ceiling", "2% on default dynamic pools, 3% on stock pools; 10% hard protocol cap"],
+            ["Decay", "600 s window back toward the base fee"],
             ["Where", "v4 hook pools, DLMM and DAMM share the same fee model"],
           ]}
         />
@@ -172,7 +172,7 @@ const BLOCKS: Block[] = [
       <>
         <p>
           Pools that hold a stock token read a reference price. A trade that moves the pool toward the oracle price pays the base fee. A trade that moves
-          it away pays more. If the pool and the oracle drift too far apart, or the feed goes stale, a circuit breaker pauses the pool.
+          it away pays more. A circuit breaker reverts any swap that would push the pool too far from the oracle, and swaps revert while the feed is unavailable.
         </p>
         <p>
           Open any stock pool to see the oracle price, the gap to the pool price and the breaker state. Use the <Mono>Stocks</Mono> filter on{" "}
@@ -211,10 +211,10 @@ const BLOCKS: Block[] = [
     body: (
       <Dl
         rows={[
-          ["Is this live money?", "Aethra is an experiment. Testnet tokens have no value. Treat mainnet use as high risk."],
-          ["Why is my swap blocked?", "A stock pool may be paused by its circuit breaker, or the output fell below your slippage tolerance."],
-          ["Why do charts look flat?", "A pool chart moves when trades move the price. A pool with no trades in the last day shows a steady line."],
-          ["Where is my position?", "Connect the wallet that opened it. Positions load by owner address."],
+          ["Is Aethra on mainnet?", "Not yet. Aethra runs on Robinhood Chain Testnet, where tokens carry no value. Mainnet launch will be announced here."],
+          ["Why did my swap revert?", "The output fell below your slippage tolerance, or a stock pool circuit breaker blocked a swap that would push it too far from the oracle."],
+          ["Why is a pool chart flat?", "Charts move when trades move the price. A pool with no trades in the last 24 hours shows a steady line."],
+          ["Where is my position?", "Connect the wallet that opened it. Positions load by owner address across every venue."],
         ]}
       />
     ),

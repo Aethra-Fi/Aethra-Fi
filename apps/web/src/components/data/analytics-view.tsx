@@ -21,7 +21,7 @@ export function AnalyticsView() {
       <PageHeader
         eyebrow="Analytics"
         title="Protocol analytics"
-        description="TVL, volume and fees across every venue, from the Aethra indexer."
+        description="Protocol-wide TVL, volume and fees with a per-venue breakdown, sourced from the Aethra indexer."
         actions={
           <div className="flex border">
             {RANGES.map((r) => (
@@ -57,7 +57,8 @@ export function AnalyticsView() {
                     <ThemedAreaChart data={d.series.map((p) => ({ t: p.t, v: p.volume_usd }))} format={usd} color="accent" />
                   </Panel>
                 </div>
-                <Panel title="By venue">
+                <Panel title="Venue breakdown">
+                  <div className="-m-4">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -80,6 +81,7 @@ export function AnalyticsView() {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </Panel>
                 <div className="space-y-3">
                   <p className="eyebrow">Top pools</p>

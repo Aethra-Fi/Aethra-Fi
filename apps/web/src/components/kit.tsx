@@ -58,7 +58,7 @@ export function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cn("relative border bg-surface", brackets && "brackets", className)}>
+    <section className={cn("relative min-w-0 border bg-surface", brackets && "brackets", className)}>
       {brackets && <span className="brackets-b" aria-hidden />}
       {(title || aside) && (
         <header className="flex min-h-11 items-center justify-between gap-3 border-b px-4">
@@ -135,33 +135,38 @@ export function QueryState<T>({
   isEmpty,
   empty,
   skeleton,
+  stateClassName,
   children,
 }: {
   query: UseQueryResult<T>;
   isEmpty?: (d: T) => boolean;
   empty?: React.ReactNode;
   skeleton?: React.ReactNode;
+  /** spacing for the error and empty states, for pages that render QueryState straight under the header */
+  stateClassName?: string;
   children: (data: T) => React.ReactNode;
 }) {
   if (query.isLoading) return <>{skeleton ?? <div className="skeleton h-40 w-full" />}</>;
   if (query.isError) {
     const offline = query.error instanceof ApiError && query.error.offline;
     return (
-      <EmptyState title={offline ? "Indexer offline" : "Could not load data"}>
-        {offline
-          ? "The indexer API is not reachable right now. On-chain actions still work; lists and charts will fill in once it is back."
-          : (query.error as Error).message}
-      </EmptyState>
+      <div className={stateClassName}>
+        <EmptyState title={offline ? "Indexer unavailable" : "Could not load data"}>
+          {offline
+            ? "The Aethra indexer is not reachable right now. On-chain actions keep working, and pools, positions and charts reappear as soon as it reconnects."
+            : (query.error as Error).message}
+        </EmptyState>
+      </div>
     );
   }
-  if (query.data === undefined || (isEmpty && isEmpty(query.data))) return <>{empty ?? <EmptyState title="Nothing here yet" />}</>;
+  if (query.data === undefined || (isEmpty && isEmpty(query.data))) return <div className={stateClassName}>{empty ?? <EmptyState title="Nothing here yet" />}</div>;
   return <>{children(query.data)}</>;
 }
 
 export function NotDeployed({ name }: { name: string }) {
   return (
     <EmptyState title={`${name} not deployed on this network`}>
-      The contract address is not set for this network yet. It appears here as soon as the deployment is published to the SDK.
+      This contract has not been deployed to the active network yet. It appears here as soon as the deployment is published.
     </EmptyState>
   );
 }

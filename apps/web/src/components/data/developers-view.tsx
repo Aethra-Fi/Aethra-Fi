@@ -30,7 +30,7 @@ export function DevelopersView() {
         title="Build on Aethra"
         description="A typed TypeScript SDK with ABIs and addresses for every network, and a public read-only REST API served by the indexer."
       />
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
         <Panel title="SDK · addresses and ABIs">
           <div className="space-y-3">
             <p className="text-sm text-fg-2">
