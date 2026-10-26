@@ -55,7 +55,10 @@ export interface ApiPool {
   volume_24h_usd: number;
   trades_24h: number;
   price_change_24h: number;
+  /** 24 hourly closing prices, quiet hours carried forward */
   sparkline: number[];
+  /** 24 hourly volumes in USD, aligned with `sparkline` */
+  volume_sparkline?: number[];
   is_fresh: boolean;
   enabled: boolean;
   created_at: string;

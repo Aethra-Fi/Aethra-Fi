@@ -1,6 +1,7 @@
 import type { Address } from "viem";
 import type { Deployment } from "@aethra/sdk";
 import { erc20Abi } from "viem";
+import { FEATURES } from "./features";
 import {
   aethraHubAbi,
   aethraHookAbi,
@@ -46,7 +47,7 @@ export const ABIS = {
 export type ContractName = keyof typeof ABIS;
 export type DeployedContract = Exclude<
   {
-    [K in keyof Deployment]: Deployment[K] extends Address | null ? K : never;
+    [K in keyof Deployment]-?: Deployment[K] extends Address | null ? K : never;
   }[keyof Deployment],
   "deployer"
 >;
@@ -97,7 +98,7 @@ export function contractGroups(d: Deployment): ContractGroup[] {
     },
     {
       category: "Smart router",
-      entries: [e("router", "AethraRouter", "Exact-input multi-venue router across v4, DLMM, DAMM and launch curves.")],
+      entries: [e("router", "AethraRouter", "Exact-input multi-venue router across v4, DLMM and DAMM pools.")],
     },
     {
       category: "Positions & locks",
@@ -111,24 +112,31 @@ export function contractGroups(d: Deployment): ContractGroup[] {
         e("dammFactory", "DAMM factory", "Deploys dynamic single-range pools with optional launch fee schedules."),
       ],
     },
-    {
-      category: "Markets",
-      entries: [e("launchpad", "Launchpad", "Bonding-curve launches that graduate into locked v4 liquidity.")],
-    },
-    {
-      category: "Credit",
-      entries: [
-        e("lendingVault", "Lending vault", "ERC-4626 stablecoin vault lending to the credit manager."),
-        e("creditManager", "Credit manager", "Borrow against pledged position NFTs."),
-      ],
-    },
-    {
-      category: "Buyback & burn",
-      entries: [
-        e("buyback", "Buyback", "Swaps protocol revenue into AETH and burns it."),
-        e("aeth", "AETH", "Protocol token bought back and burned."),
-      ],
-    },
+    ...(FEATURES.launchpad
+      ? [{ category: "Markets", entries: [e("launchpad", "Launchpad", "Bonding-curve launches that graduate into locked v4 liquidity.")] }]
+      : []),
+    ...(FEATURES.credit
+      ? [
+          {
+            category: "Credit",
+            entries: [
+              e("lendingVault", "Lending vault", "ERC-4626 stablecoin vault lending to the credit manager."),
+              e("creditManager", "Credit manager", "Borrow against pledged position NFTs."),
+            ],
+          },
+        ]
+      : []),
+    ...(FEATURES.buyback
+      ? [
+          {
+            category: "Buyback & burn",
+            entries: [
+              e("buyback", "Buyback", "Swaps protocol revenue into AETH and burns it."),
+              e("aeth", "AETH", "Protocol token bought back and burned."),
+            ],
+          },
+        ]
+      : []),
     {
       category: "External",
       entries: [

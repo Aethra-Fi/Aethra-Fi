@@ -178,12 +178,13 @@ void main() {
 
 export const ribbonFragment = /* glsl */ `
 uniform sampler2D uAtlas;
+uniform float uAlphaGain;
 varying vec2 vUv;
 varying vec3 vColor;
 varying float vAlpha;
 
 void main() {
-  float a = texture2D(uAtlas, vUv).a * vAlpha;
+  float a = min(1., texture2D(uAtlas, vUv).a * vAlpha * uAlphaGain);
   if (a < .02) discard;
   gl_FragColor = vec4(vColor, a);
 }

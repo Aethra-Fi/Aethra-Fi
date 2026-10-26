@@ -26,8 +26,8 @@ function OraclePanel({ pool }: { pool: ApiPoolDetail }) {
       <KV label="Fee multiplier" value={o.fee_multiplier ? `${o.fee_multiplier}×` : "—"} />
       <KV label="Feed updated" value={o.updated_at ? timeAgo(o.updated_at) : "—"} />
       <p className="mt-3 text-xs text-muted">
-        Swaps toward the reference pay the base fee; swaps away pay more. The circuit breaker halts swaps that widen the gap past
-        its limit, and the pool pauses if the feed goes stale.
+        Swaps toward the reference price pay the base fee; swaps away pay more. The circuit breaker reverts swaps that widen the
+        gap past its limit, and swaps revert while the price feed is unavailable.
       </p>
     </Panel>
   );
@@ -37,7 +37,7 @@ export function PoolDetail({ poolId }: { poolId: string }) {
   const q = usePool(poolId);
   const events = useEvents({ pool: poolId, limit: 25 });
   return (
-    <QueryState query={q} skeleton={<div className="skeleton mt-10 h-[60vh] w-full" />} empty={<EmptyState title="Pool not found" />}>
+    <QueryState query={q} stateClassName="pt-10" skeleton={<div className="skeleton mt-10 h-[60vh] w-full" />} empty={<EmptyState title="Pool not found" />}>
       {(p) => {
         const series = (p.price_series ?? p.candles?.map((c) => ({ t: c.t, price: c.close })) ?? []).map((x) => ({ t: x.t, v: x.price }));
         return (
@@ -67,7 +67,7 @@ export function PoolDetail({ poolId }: { poolId: string }) {
             <StatGrid className="mt-8">
               <Stat label="TVL" value={formatUsd(p.tvl_usd, { compact: true })} />
               <Stat label="24h volume" value={formatUsd(p.volume_24h_usd, { compact: true })} />
-              <Stat label="Fee now" value={formatFeePips(p.fee_pips)} hint={p.mode === "plain" ? "Static" : "Moves with volatility"} />
+              <Stat label="Current fee" value={p.fee_pips === 0 && p.mode !== "plain" ? "Dynamic" : formatFeePips(p.fee_pips)} hint={p.mode === "plain" ? "Fixed" : "Adapts to volatility"} />
               <Stat
                 label="24h change"
                 value={<span className={cn(p.price_change_24h >= 0 ? "text-primary-text" : "text-danger")}>{formatPct(p.price_change_24h, 2, { sign: true })}</span>}
@@ -104,7 +104,7 @@ export function PoolDetail({ poolId }: { poolId: string }) {
                   {p.tick_spacing !== null && <KV label="Tick spacing" value={p.tick_spacing} />}
                   {p.bin_step_bps !== null && <KV label="Bin step" value={formatBps(p.bin_step_bps)} />}
                   <KV label="Creator" value={<AddressLink address={p.creator} />} />
-                  <KV label="Created" value={timeAgo(p.created_at)} />
+                  {new Date(p.created_at).getFullYear() > 2000 && <KV label="Created" value={timeAgo(p.created_at)} />}
                 </Panel>
               </div>
             </div>

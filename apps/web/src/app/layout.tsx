@@ -8,9 +8,9 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 
 export const metadata: Metadata = {
-  title: { default: "Aethra Fi: liquidity layer on Robinhood Chain", template: "%s · Aethra Fi" },
+  title: { default: "Aethra Fi | Unified liquidity layer on Robinhood Chain", template: "%s · Aethra Fi" },
   description:
-    "Swap, provide liquidity, launch tokens and borrow against LP positions on Robinhood Chain. Dynamic-fee and oracle-guarded pools across v4, DLMM and DAMM venues.",
+    "Aethra Fi is the unified liquidity layer on Robinhood Chain: smart-routed swaps, volatility-adaptive fees, DLMM limit orders and oracle-guarded stock pools.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://aethra-fi-testnet.vercel.app"),
 };
 

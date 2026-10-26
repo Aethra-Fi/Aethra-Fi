@@ -16,6 +16,14 @@ const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SE
 
 type Row = Record<string, any>;
 
+/** Modules that are built but hidden. Set the function secret FEATURES=launchpad,credit,buyback to switch them back on. */
+const FEATURES = new Set((Deno.env.get("FEATURES") ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+const HIDDEN_EVENT_TYPES = [
+  ...(FEATURES.has("launchpad") ? [] : ["launch"]),
+  ...(FEATURES.has("credit") ? [] : ["loan", "vault"]),
+  ...(FEATURES.has("buyback") ? [] : ["buyback"]),
+];
+
 const ok = (data: unknown, maxAge = 10) =>
   new Response(JSON.stringify({ data }), {
     headers: { ...CORS, "content-type": "application/json", "cache-control": `public, max-age=${maxAge}, stale-while-revalidate=30` },
@@ -36,6 +44,7 @@ function pool(r: Row): Row {
     token0: token(r.token0),
     token1: token(r.token1),
     sparkline: r.sparkline ?? [],
+    volume_sparkline: r.volume_sparkline ?? [],
   };
 }
 
@@ -66,7 +75,8 @@ async function health() {
 }
 
 async function overview(chain: number) {
-  return (await q(db.from("pool_overview").select("*").eq("chain_id", chain))).map(pool);
+  const rows = (await q(db.from("pool_overview").select("*").eq("chain_id", chain))).map(pool);
+  return FEATURES.has("launchpad") ? rows : rows.filter((p) => p.venue !== "LAUNCH");
 }
 
 /** Oracle state for stock pools: reference price (hub oracle) vs the pool's implied price. */
@@ -150,8 +160,12 @@ async function events(chain: number, params: URLSearchParams) {
   // route rows duplicate their swaps; vault Borrowed/Repaid/InterestAccrued mirror credit Borrow/Repay
   let query = db.from("event_feed").select("*").eq("chain_id", chain).neq("type", "route")
     .not("action", "in", "(borrowed,repaid,interestaccrued)").order("block_number", { ascending: false }).order("log_index", { ascending: false }).limit(limit);
+  if (HIDDEN_EVENT_TYPES.length) query = query.not("type", "in", `(${HIDDEN_EVENT_TYPES.join(",")})`);
   const type = params.get("type");
-  if (type && EVENT_TYPES[type]) query = query.in("type", EVENT_TYPES[type]);
+  if (type && EVENT_TYPES[type]) {
+    if (EVENT_TYPES[type].every((t) => HIDDEN_EVENT_TYPES.includes(t))) return [];
+    query = query.in("type", EVENT_TYPES[type]);
+  }
   const poolId = params.get("pool");
   if (poolId) query = query.eq("pool_id", poolId.toLowerCase());
   const [rows, tokens, poolRows] = await Promise.all([q(query), tokenMap(chain), q(db.from("pools").select("pool_id,token0,token1").eq("chain_id", chain))]);
@@ -386,14 +400,17 @@ Deno.serve(async (req) => {
       case "tokens":
         return ok(await tokens(chain), 60);
       case "launches":
+        if (!FEATURES.has("launchpad")) return fail(404, "feature not enabled");
         return ok(await launches(chain), 10);
       case "analytics":
         return ok(await analytics(chain, url.searchParams.get("range") ?? "24h"), 60);
       case "buybacks":
+        if (!FEATURES.has("buyback")) return fail(404, "feature not enabled");
         return ok(await buybacks(chain), 30);
       case "positions":
       case "orders":
       case "loans":
+        if (res === "loans" && !FEATURES.has("credit")) return fail(404, "feature not enabled");
         if (!arg || !ADDR.test(arg)) return fail(400, "owner address required");
         return ok(res === "positions" ? await positions(chain, arg) : res === "orders" ? await orders(chain, arg) : await loans(chain, arg), 5);
       default:

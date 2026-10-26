@@ -8,11 +8,11 @@ import { useBlockNumber } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { StatusDot } from "@/components/kit";
 import { useDashboard } from "@/hooks/use-api";
+import { FEATURES } from "@/lib/features";
 import { formatNumber, formatUsd } from "@/lib/format";
 import { CHAIN, CHAIN_ID } from "@/lib/network";
 import { cn } from "@/lib/utils";
 import type { RibbonFrame } from "./glyph-ribbon";
-import { ScrambleText } from "./scramble-text";
 import { BinsSchematic, BurnSchematic, CodeSchematic, CurveSchematic, FeeSchematic, HealthSchematic, RouterSchematic } from "./schematics";
 
 const GlyphRibbon = dynamic(() => import("./glyph-ribbon").then((m) => m.GlyphRibbon), { ssr: false });
@@ -28,14 +28,18 @@ interface Section {
   cta?: { href: string; label: string };
   schematic?: React.ReactNode;
   form: string;
+  /** ribbon shape index this section morphs into (see ribbon-shaders) */
+  shape: number;
+  /** section is dropped while this feature is hidden */
+  feature?: keyof typeof FEATURES;
 }
 
-const SECTIONS: Section[] = [
+const ALL_SECTIONS: Section[] = [
   {
     key: "hero",
     label: "Liquidity layer",
     title: "Every venue.\nOne route.",
-    body: "Aethra routes each trade across hook pools, bins, ranges and launch curves on Robinhood Chain, with fees that follow volatility and stock pools that follow their oracle.",
+    body: "Aethra aggregates liquidity across Uniswap v4 hook pools, DLMM bins and DAMM ranges on Robinhood Chain, with volatility-adaptive fees and oracle-guarded stock markets.",
     specs: [],
     tags: [
       ["MÖBIUS · 1 SURFACE", 24, 18],
@@ -43,17 +47,18 @@ const SECTIONS: Section[] = [
       ["5,280 GLYPHS", 12, 78],
     ],
     form: "Möbius loop",
+    shape: 0,
   },
   {
     key: "router",
-    label: "Smart router",
-    title: "Four venues.\nOne quote.",
-    body: "The router quotes v4 hook pools, DLMM bins, DAMM ranges and launch curves over eth_call, compares direct and two-hop paths, and settles the winner in a single transaction.",
+    label: "Smart order routing",
+    title: "Three venues.\nOne best quote.",
+    body: "The router simulates v4 hook pools, DLMM bins and DAMM ranges with on-chain quotes, compares direct and two-hop paths, and settles the best one atomically in a single transaction.",
     specs: [
-      ["Venues", "4"],
-      ["Max hops", "3"],
-      ["Quote", "eth_call"],
-      ["ETH in/out", "auto wrap"],
+      ["Venues", "3"],
+      ["Path search", "direct + 2-hop"],
+      ["Quotes", "on-chain · eth_call"],
+      ["Native ETH", "auto wrap"],
     ],
     tags: [
       ["hop[0] V4 → aUSD", 20, 22],
@@ -63,15 +68,16 @@ const SECTIONS: Section[] = [
     cta: { href: "/swap", label: "Open swap" },
     schematic: <RouterSchematic />,
     form: "Figure-eight route",
+    shape: 1,
   },
   {
     key: "fees",
-    label: "Dynamic fees · oracle guard",
-    title: "Fees that\nbreathe.",
-    body: "One v4 hook prices every pool. Fees widen as volatility rises and decay as it settles. Stock pools read a reference feed: trades toward the oracle pay the base fee, trades away pay more, and a breaker halts the pool if the gap or the feed goes wrong.",
+    label: "Adaptive fees · Oracle guard",
+    title: "Fees that\nadapt.",
+    body: "One v4 hook prices every pool. The fee rises with realized volatility and decays as the market settles, so LPs are paid for the risk they carry. Stock pools add an oracle guard: swaps toward the reference price pay the base fee, swaps away pay more, and a circuit breaker reverts swaps that push the pool too far from the oracle.",
     specs: [
-      ["Base fee", "0.30%"],
-      ["Ceiling", "10%"],
+      ["Base fee", "0.05% · 0.30% stock"],
+      ["Fee ceiling", "2% · 3% stock"],
       ["Decay", "600 s"],
       ["Stock guard", "oracle + breaker"],
     ],
@@ -80,29 +86,31 @@ const SECTIONS: Section[] = [
       ["oracle Δ 42 bps", 64, 68],
       ["breaker ARMED", 16, 80],
     ],
-    cta: { href: "/pools?filter=stock", label: "Stock pools" },
+    cta: { href: "/pools?filter=stock", label: "Explore stock pools" },
     schematic: <FeeSchematic />,
     form: "Volatility wave",
+    shape: 2,
   },
   {
     key: "bins",
-    label: "DLMM · limit orders",
+    label: "DLMM · Limit orders",
     title: "Liquidity,\nbin by bin.",
-    body: "Discrete price bins with zero slippage inside each bin. Shape a deposit as spot, curve or bid-ask, or park a limit order in a single bin that fills as price crosses it. Keepers claim filled orders for you.",
+    body: "Liquidity sits in discrete price bins with zero slippage inside each bin. Shape a deposit as spot, curve or bid-ask, or place a limit order in a single bin that fills as price crosses it. Filled orders can be claimed by you or by any keeper.",
     specs: [
       ["Bin steps", "1 · 5 · 10 · 25 · 50 · 100 bps"],
       ["Shapes", "spot · curve · bid-ask"],
-      ["Orders", "single bin"],
-      ["Claims", "owner or keeper"],
+      ["Orders", "single-bin limit"],
+      ["Claims", "owner or any keeper"],
     ],
     tags: [
       ["active bin −7949", 26, 18],
       ["token1 ◀", 8, 70],
       ["▶ token0", 72, 70],
     ],
-    cta: { href: "/orders", label: "Place an order" },
+    cta: { href: "/orders", label: "Place a limit order" },
     schematic: <BinsSchematic />,
     form: "Bin histogram",
+    shape: 3,
   },
   {
     key: "launch",
@@ -123,6 +131,8 @@ const SECTIONS: Section[] = [
     cta: { href: "/launch", label: "Launch a token" },
     schematic: <CurveSchematic />,
     form: "Bonding spiral",
+    shape: 4,
+    feature: "launchpad",
   },
   {
     key: "credit",
@@ -143,6 +153,8 @@ const SECTIONS: Section[] = [
     cta: { href: "/credit", label: "Open credit" },
     schematic: <HealthSchematic />,
     form: "Double helix",
+    shape: 5,
+    feature: "credit",
   },
   {
     key: "burn",
@@ -163,17 +175,19 @@ const SECTIONS: Section[] = [
     cta: { href: "/buyback", label: "See burns" },
     schematic: <BurnSchematic />,
     form: "Burn vortex",
+    shape: 6,
+    feature: "buyback",
   },
   {
     key: "build",
-    label: "Build",
+    label: "Developers",
     title: "Typed SDK.\nOpen API.",
-    body: "Addresses and ABIs for every network, route and price helpers, and a public read-only REST API from the indexer. Everything the app does, you can do too.",
+    body: "Typed addresses and ABIs for every network, route and price helpers, and a public read-only REST API backed by the Aethra indexer. Everything the app does, you can build on.",
     specs: [
       ["Package", "@aethra/sdk"],
-      ["API", "REST · { data }"],
-      ["Indexer", "every minute"],
-      ["Contracts", "UUPS proxies"],
+      ["API", "REST · JSON"],
+      ["Indexer", "~1 min sync"],
+      ["Contracts", "UUPS upgradeable"],
     ],
     tags: [
       ["knot(2,3)", 24, 20],
@@ -183,8 +197,12 @@ const SECTIONS: Section[] = [
     cta: { href: "/developers", label: "Developer docs" },
     schematic: <CodeSchematic />,
     form: "Torus knot",
+    shape: 7,
   },
 ];
+
+const SECTIONS = ALL_SECTIONS.filter((s) => !s.feature || FEATURES[s.feature]);
+const SHAPES = SECTIONS.map((s) => s.shape);
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -224,6 +242,29 @@ function useInView<T extends Element>(threshold = 0.3) {
   return [ref, inView] as const;
 }
 
+/**
+ * Soft entrance: rises, fades and sharpens in, staggered by `delay`. Leaving is quick and undelayed so the
+ * next section never waits on the old one. Reduced motion shows everything at once.
+ */
+function Reveal({ active, delay = 0, blur = false, className, children }: { active: boolean; delay?: number; blur?: boolean; className?: string; children: React.ReactNode }) {
+  return (
+    <div
+      className={cn(
+        "transition-[opacity,transform,filter] motion-reduce:!transform-none motion-reduce:!opacity-100 motion-reduce:!blur-0 motion-reduce:transition-none",
+        active ? "translate-y-0 opacity-100 blur-0" : cn("translate-y-8 opacity-0", blur && "blur-[10px]"),
+        className,
+      )}
+      style={{
+        transitionDuration: active ? "1300ms" : "300ms",
+        transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
+        transitionDelay: active ? `${delay}ms` : "0ms",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function Panel({ s, i }: { s: Section; i: number }) {
   const Heading = i === 0 ? "h1" : "h2";
   // reveal as the section scrolls into view, so neighbours are never blank mid-scroll
@@ -237,47 +278,70 @@ function Panel({ s, i }: { s: Section; i: number }) {
       className={cn("relative flex min-h-[calc(100dvh-var(--header-h))] scroll-mt-[var(--header-h)] items-center overflow-x-hidden lg:h-[calc(100dvh-var(--header-h))]", !active && "[&_*]:![animation-play-state:paused]")}
     >
       <div className="container grid h-full items-center gap-8 pb-20 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:pb-16 lg:pt-10">
-        <div className={cn("relative z-10 max-w-xl space-y-6 transition-[opacity,transform] duration-700 ease-out", active ? "opacity-100" : "opacity-0 lg:translate-y-3")}>
-          <p className="eyebrow flex items-center gap-3">
-            <span className="text-primary-text">{pad(i)}</span>
-            <span className="h-px w-8 bg-border-strong" />
-            {s.label}
-          </p>
-          <Heading className="whitespace-pre-line text-[clamp(2.4rem,5.2vw,4.4rem)] font-medium leading-[1.02] tracking-[-0.03em]">
-            <ScrambleText text={s.title} active={active} />
+        <div className="relative z-10 max-w-2xl space-y-6">
+          <Reveal active={active}>
+            <p className="eyebrow flex items-center gap-3">
+              <span className="text-primary-text">{pad(i)}</span>
+              <span className="h-px w-8 bg-border-strong" />
+              {s.label}
+            </p>
+          </Reveal>
+          <Heading className="text-[clamp(2.9rem,6.6vw,5.75rem)] font-semibold leading-[0.98] tracking-[-0.04em]">
+            {s.title.split("\n").map((line, n) => (
+              <Reveal key={n} active={active} delay={90 + n * 110} blur>
+                <span
+                  className={cn(
+                    "block",
+                    n > 0 && "w-fit bg-gradient-to-r from-primary-text via-primary-text to-accent-text bg-clip-text pb-[0.08em] text-transparent dark:drop-shadow-[0_0_32px_rgb(var(--primary)/0.35)]",
+                  )}
+                >
+                  {line}
+                </span>
+              </Reveal>
+            ))}
           </Heading>
-          <p className="max-w-lg text-base text-fg-2 md:text-lg">{s.body}</p>
+          <Reveal active={active} delay={330}>
+            <p className="max-w-lg text-base text-fg-2 md:text-lg">{s.body}</p>
+          </Reveal>
 
           {i === 0 ? (
             <>
-              <div className="flex flex-wrap gap-3">
-                <Button asChild size="lg">
-                  <Link href="/swap">
-                    Launch app <ArrowRight />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="secondary">
-                  <Link href="/pools">Explore pools</Link>
-                </Button>
-              </div>
-              <LiveStats />
+              <Reveal active={active} delay={430}>
+                <div className="flex flex-wrap gap-3">
+                  <Button asChild size="lg">
+                    <Link href="/swap">
+                      Launch app <ArrowRight />
+                    </Link>
+                  </Button>
+                  <Button asChild size="lg" variant="secondary">
+                    <Link href="/pools">Explore pools</Link>
+                  </Button>
+                </div>
+              </Reveal>
+              <Reveal active={active} delay={530}>
+                <LiveStats />
+              </Reveal>
             </>
           ) : (
             <>
-              <dl className="grid max-w-lg grid-cols-2 border-l border-t">
-                {s.specs.map(([k, v]) => (
-                  <div key={k} className="border-b border-r bg-bg/75 px-3 py-2">
-                    <dt className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">{k}</dt>
-                    <dd className="num mt-0.5 text-sm">{v}</dd>
-                  </div>
-                ))}
-              </dl>
+              <Reveal active={active} delay={430}>
+                <dl className="grid max-w-lg grid-cols-2 border-l border-t">
+                  {s.specs.map(([k, v]) => (
+                    <div key={k} className="border-b border-r bg-bg/75 px-3 py-2">
+                      <dt className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">{k}</dt>
+                      <dd className="num mt-0.5 text-sm">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Reveal>
               {s.cta && (
-                <Button asChild variant="secondary">
-                  <Link href={s.cta.href}>
-                    {s.cta.label} <ArrowRight />
-                  </Link>
-                </Button>
+                <Reveal active={active} delay={530}>
+                  <Button asChild variant="secondary">
+                    <Link href={s.cta.href}>
+                      {s.cta.label} <ArrowRight />
+                    </Link>
+                  </Button>
+                </Reveal>
               )}
             </>
           )}
@@ -542,7 +606,7 @@ export function LandingSections() {
     <div ref={rootRef} className="relative [--header-h:57px]" aria-label="Aethra Fi overview">
       {/* fixed backdrop: blueprint grid + ribbon, below the sticky header */}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)] bg-[linear-gradient(rgb(var(--border)/0.35)_1px,transparent_1px),linear-gradient(90deg,rgb(var(--border)/0.35)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_70%_50%,black,transparent_75%)]" />
-      <GlyphRibbon sectionRef={sectionRef} onFrame={onFrame} className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)]" />
+      <GlyphRibbon sectionRef={sectionRef} shapes={SHAPES} onFrame={onFrame} className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)]" />
 
       {/* sections */}
       <div className="relative z-10">

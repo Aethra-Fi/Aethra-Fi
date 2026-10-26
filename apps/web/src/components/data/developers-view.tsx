@@ -13,16 +13,13 @@ function Code({ children }: { children: string }) {
 const ENDPOINTS: [string, string][] = [
   ["GET /health", "Indexer status and head block per chain"],
   [`GET /chains/${CHAIN_ID}/dashboard`, "Stats plus trending, most traded, highest volume and fresh pool lists"],
-  [`GET /chains/${CHAIN_ID}/pools`, "Every pool across v4, DLMM, DAMM and launch"],
+  [`GET /chains/${CHAIN_ID}/pools`, "Every pool across v4, DLMM and DAMM"],
   [`GET /chains/${CHAIN_ID}/pools/{poolId}`, "One pool with price series and oracle state"],
-  [`GET /chains/${CHAIN_ID}/events?type=&pool=&limit=`, "Event feed (swap, liquidity, launch, order, loan, buyback)"],
-  [`GET /chains/${CHAIN_ID}/tokens`, "Known tokens with kind (canonical, stock, launch, test)"],
-  [`GET /chains/${CHAIN_ID}/launches`, "Launch markets with curve progress"],
+  [`GET /chains/${CHAIN_ID}/events?type=&pool=&limit=`, "Event feed (swap, liquidity, order)"],
+  [`GET /chains/${CHAIN_ID}/tokens`, "Known tokens with kind (canonical, stock, test)"],
   [`GET /chains/${CHAIN_ID}/analytics?range=7d`, "TVL, volume and fee series plus venue breakdown"],
   [`GET /chains/${CHAIN_ID}/positions/{owner}`, "An account's v4, DLMM and DAMM positions"],
   [`GET /chains/${CHAIN_ID}/orders/{owner}`, "An account's DLMM limit orders"],
-  [`GET /chains/${CHAIN_ID}/loans/{owner}`, "An account's credit loans"],
-  [`GET /chains/${CHAIN_ID}/buybacks`, "Burn totals, pending revenue and executions"],
 ];
 
 export function DevelopersView() {
@@ -33,7 +30,7 @@ export function DevelopersView() {
         title="Build on Aethra"
         description="A typed TypeScript SDK with ABIs and addresses for every network, and a public read-only REST API served by the indexer."
       />
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
         <Panel title="SDK · addresses and ABIs">
           <div className="space-y-3">
             <p className="text-sm text-fg-2">
@@ -54,7 +51,7 @@ const client = createPublicClient({ chain, transport: http() });
           <div className="space-y-3">
             <p className="text-sm text-fg-2">
               Quotes run through <span className="font-mono">router.quote</span> over <span className="font-mono">eth_call</span>. Each hop names a venue
-              (1 v4, 2 DLMM, 3 DAMM, 4 launch), a pool and venue-specific data.
+              (1 v4, 2 DLMM, 3 DAMM), a pool and venue-specific data.
             </p>
             <Code>{`
 const { result: [amountOut] } = await client.simulateContract({

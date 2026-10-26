@@ -16,9 +16,9 @@ import { cn } from "@/lib/utils";
 type Venue = "V4" | "DLMM" | "DAMM";
 
 const VENUES: { v: Venue; title: string; body: string }[] = [
-  { v: "V4", title: "v4 hook pool", body: "Uniswap v4 pool behind the Aethra hook. Dynamic fee, or oracle guard when a stock token is involved." },
-  { v: "DLMM", title: "DLMM", body: "Discrete price bins. Pick the bin step; deposits can be shaped and limit orders placed in single bins." },
-  { v: "DAMM", title: "DAMM", body: "One range per pool with fungible shares. Optional launch fee that decays to the base fee." },
+  { v: "V4", title: "v4 hook pool", body: "Uniswap v4 pool behind the Aethra hook. Volatility-adaptive fee, plus an oracle guard when a stock token is in the pair." },
+  { v: "DLMM", title: "DLMM", body: "Discrete price bins with zero slippage inside each bin. Choose the bin step, shape deposits and place single-bin limit orders." },
+  { v: "DAMM", title: "DAMM", body: "One price range per pool with fungible LP shares. Optional anti-sniping launch fee that decays to the base fee." },
 ];
 
 const BIN_STEPS = [1, 5, 10, 25, 50, 100];
@@ -98,7 +98,7 @@ export function CreatePool() {
 
   return (
     <>
-      <PageHeader eyebrow="Pools / Create" title="Create a pool" description="Pick a venue, a pair and a starting price. Add liquidity from the pool page once it exists." />
+      <PageHeader eyebrow="Pools / Create" title="Create a pool" description="Choose a venue, a token pair and an initial price. Once the pool is live, seed it with liquidity from its pool page." />
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]">
         <div className="hairline-grid grid border">
           {VENUES.map((v) => (
@@ -114,7 +114,7 @@ export function CreatePool() {
           ))}
         </div>
 
-        <Panel title="Parameters" brackets>
+        <Panel title="Pool parameters" brackets>
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-3">
               <span className="eyebrow w-16">Pair</span>
@@ -165,7 +165,7 @@ export function CreatePool() {
                 </div>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={launchFee} onChange={(e) => setLaunchFee(e.target.checked)} className="accent-[rgb(var(--primary))]" />
-                  Launch fee: start at 10%, decay to the base fee over 6 hours
+                  Launch fee: start at 10% and decay to the base fee over 6 hours
                 </label>
               </>
             )}
@@ -174,7 +174,7 @@ export function CreatePool() {
               {venue === "V4" && <KV label="Fee" value="Dynamic (hook)" />}
               {venue === "V4" && <KV label="Tick spacing" value="60" />}
               {venue === "DLMM" && ready && <KV label="Active bin" value={`${activeId} @ ${formatNumber(aIs0 ? snapped : 1 / snapped)}`} />}
-              {ready && <KV label="Sorted pair" value={`${t0!.symbol} / ${t1!.symbol}`} />}
+              {ready && <KV label="Pair (sorted)" value={`${t0!.symbol} / ${t1!.symbol}`} />}
             </div>
 
             <ConnectGate>

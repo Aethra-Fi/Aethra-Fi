@@ -8,6 +8,14 @@ export interface Point {
   v: number;
 }
 
+/** Pads the y range by 10% of its span so moves fill the chart; a flat series gets a 1% band and sits mid-chart (never below zero for non-negative data). */
+function padDomain([min, max]: [number, number]): [number, number] {
+  if (min === 0 && max === 0) return [0, 1];
+  const pad = max > min ? (max - min) * 0.1 : Math.abs(max) * 0.01 || 1;
+  // volumes and TVL are never negative, so don't draw a negative axis
+  return [min >= 0 ? Math.max(0, min - pad) : min - pad, max + pad];
+}
+
 /** Single-series area chart that follows the active theme's chart tokens. */
 export function ThemedAreaChart({
   data,
@@ -47,6 +55,7 @@ export function ThemedAreaChart({
           stroke={c.border}
           width={72}
           orientation="right"
+          domain={padDomain}
         />
         <Tooltip
           contentStyle={{ background: c.surface, border: `1px solid ${c.border}`, borderRadius: 2, fontFamily: "var(--font-geist-mono)", fontSize: 12 }}

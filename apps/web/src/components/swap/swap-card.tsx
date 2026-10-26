@@ -140,7 +140,7 @@ export function SwapCard() {
               }
             />
             <KV
-              label="Venues"
+              label="Liquidity sources"
               value={
                 <span className="flex flex-wrap justify-end gap-1">
                   {best.pools.map((p, i) => (
@@ -149,9 +149,9 @@ export function SwapCard() {
                 </span>
               }
             />
-            <KV label="Pool fees" value={fees.map((f) => formatFeePips(f)).join(" + ")} />
-            <KV label={`Min received (${slippage}%)`} value={`${formatTokenAmount(minReceived(best.amountOut, slippage), tokenOut.decimals)} ${tokenOut.symbol}`} />
-            {routes.length > 1 && <KV label="Routes compared" value={routes.length} />}
+            <KV label="Swap fees" value={fees.map((f) => formatFeePips(f)).join(" + ")} />
+            <KV label={`Minimum received (${slippage}%)`} value={`${formatTokenAmount(minReceived(best.amountOut, slippage), tokenOut.decimals)} ${tokenOut.symbol}`} />
+            {routes.length > 1 && <KV label="Routes evaluated" value={routes.length} />}
           </div>
         )}
 
@@ -183,7 +183,7 @@ export function SwapCard() {
         </div>
       </Panel>
       <p className="text-center font-mono text-[11px] uppercase tracking-eyebrow text-muted">
-        WETH {DEPLOYMENT.weth.slice(0, 6)}… · routes across v4 · DLMM · DAMM · launch
+        WETH {DEPLOYMENT.weth.slice(0, 6)}… · routes across v4 · DLMM · DAMM
       </p>
     </div>
   );

@@ -39,13 +39,14 @@ function rgbVar(styles: CSSStyleDeclaration, name: string, fallback: [number, nu
   return new THREE.Color(r / 255, g / 255, b / 255);
 }
 
-function buildAtlas(): THREE.CanvasTexture {
+/** Light theme draws dark ink on a pale page, so it needs heavier strokes than additive light on dark. */
+function buildAtlas(weight = 500): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = ATLAS_COLS * CELL;
   canvas.height = RIBBON_SHAPES * CELL;
   const ctx = canvas.getContext("2d")!;
   const mono = getComputedStyle(document.body).getPropertyValue("--font-geist-mono").trim() || "ui-monospace";
-  ctx.font = `500 ${CELL * 0.72}px ${mono}, ui-monospace, monospace`;
+  ctx.font = `${weight} ${CELL * 0.72}px ${mono}, ui-monospace, monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#fff";
@@ -67,21 +68,31 @@ function buildAtlas(): THREE.CanvasTexture {
  */
 export function GlyphRibbon({
   sectionRef,
+  shapes,
   onFrame,
   className,
 }: {
   sectionRef: React.RefObject<number>;
+  /** ribbon shape per landing section; defaults to one shape per section in order */
+  shapes?: number[];
   onFrame?: (f: RibbonFrame) => void;
   className?: string;
 }) {
   const hostRef = React.useRef<HTMLDivElement>(null);
   const materialRef = React.useRef<THREE.ShaderMaterial | null>(null);
   const onFrameRef = React.useRef(onFrame);
+  const shapesKey = (shapes ?? []).join(",");
+  const shapesRef = React.useRef<number[]>(shapes ?? []);
   const { resolvedTheme } = useTheme();
+  const atlasWeightRef = React.useRef(500);
 
   React.useEffect(() => {
     onFrameRef.current = onFrame;
   }, [onFrame]);
+
+  React.useEffect(() => {
+    shapesRef.current = shapesKey ? shapesKey.split(",").map(Number) : [];
+  }, [shapesKey]);
 
   // scene setup, once
   React.useEffect(() => {
@@ -149,13 +160,14 @@ export function GlyphRibbon({
         uPulseAge: { value: -1 },
         uAspect: { value: 1 },
         uGlyphSize: { value: 0.085 },
-        uAtlas: { value: buildAtlas() },
+        uAtlas: { value: buildAtlas(atlasWeightRef.current) },
         uAtlasGrid: { value: new THREE.Vector2(ATLAS_COLS, RIBBON_SHAPES) },
         uColorA: { value: new THREE.Color() },
         uColorB: { value: new THREE.Color() },
         uColorC: { value: new THREE.Color() },
         uColorHot: { value: new THREE.Color() },
         uGlobalAlpha: { value: 1 },
+        uAlphaGain: { value: 1 },
       },
     });
     materialRef.current = material;
@@ -166,7 +178,7 @@ export function GlyphRibbon({
     // fonts may arrive after first paint: rebuild the atlas once they are ready
     void document.fonts?.ready.then(() => {
       const old = material.uniforms.uAtlas!.value as THREE.Texture;
-      material.uniforms.uAtlas!.value = buildAtlas();
+      material.uniforms.uAtlas!.value = buildAtlas(atlasWeightRef.current);
       old.dispose();
     });
 
@@ -234,11 +246,15 @@ export function GlyphRibbon({
       if (!reduce) u.uIntro!.value = Math.min(1, t / 2.2);
 
       // follow the scroll position with a little lag so fast swipes still read as a morph
-      const target = Math.max(0, Math.min(RIBBON_SHAPES - 1, sectionRef.current ?? 0));
+      const map = shapesRef.current;
+      const lastSection = (map.length || RIBBON_SHAPES) - 1;
+      const target = Math.max(0, Math.min(lastSection, sectionRef.current ?? 0));
       section += (target - section) * (reduce ? 1 : ease(5, dt));
-      const a = Math.floor(section);
-      const b = Math.min(RIBBON_SHAPES - 1, a + 1);
-      const k = section - a;
+      const sa = Math.min(lastSection, Math.floor(section));
+      const sb = Math.min(lastSection, sa + 1);
+      const k = section - sa;
+      const a = map[sa] ?? sa;
+      const b = map[sb] ?? sb;
       u.uShapeA!.value = a;
       u.uShapeB!.value = b;
       u.uMix!.value = k;
@@ -286,16 +302,25 @@ export function GlyphRibbon({
     };
   }, [sectionRef]);
 
-  // theme: colors from the design tokens; additive light on dark, normal blending on light
+  // theme: colors from the design tokens. Dark: additive light, overlaps glow. Light: normal blending, so
+  // overlaps don't build up; compensate with deeper ink, a bolder atlas and a higher alpha gain.
   React.useEffect(() => {
     const m = materialRef.current;
     if (!m) return;
     const s = getComputedStyle(document.documentElement);
     const dark = resolvedTheme !== "light";
-    m.uniforms.uColorA!.value.copy(rgbVar(s, dark ? "--primary" : "--primary-text", [134, 246, 31]));
+    m.uniforms.uColorA!.value.copy(dark ? rgbVar(s, "--primary", [134, 246, 31]) : rgbVar(s, "--primary-800", [51, 104, 16]));
     m.uniforms.uColorB!.value.copy(rgbVar(s, dark ? "--accent" : "--accent-text", [46, 211, 183]));
     m.uniforms.uColorC!.value.copy(rgbVar(s, "--warning", [245, 181, 61]));
     m.uniforms.uColorHot!.value.copy(dark ? rgbVar(s, "--primary-200", [208, 251, 161]) : rgbVar(s, "--text", [18, 18, 17]));
+    m.uniforms.uAlphaGain!.value = dark ? 1 : 2.4;
+    const weight = dark ? 500 : 700;
+    if (weight !== atlasWeightRef.current) {
+      atlasWeightRef.current = weight;
+      const old = m.uniforms.uAtlas!.value as THREE.Texture;
+      m.uniforms.uAtlas!.value = buildAtlas(weight);
+      old.dispose();
+    }
     m.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
     m.needsUpdate = true;
   }, [resolvedTheme]);

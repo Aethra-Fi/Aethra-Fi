@@ -11,16 +11,11 @@ import {AethraPositions} from "../src/periphery/AethraPositions.sol";
 import {AethraRouter} from "../src/periphery/AethraRouter.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IAethraHub} from "../src/interfaces/IAethraHub.sol";
-import {IAethraRouter} from "../src/interfaces/IAethraPeriphery.sol";
 import {DLMMPool} from "../src/dlmm/DLMMPool.sol";
 import {DLMMFactory} from "../src/dlmm/DLMMFactory.sol";
 import {DLMMLimitOrders} from "../src/dlmm/DLMMLimitOrders.sol";
 import {DAMMPool} from "../src/damm/DAMMPool.sol";
 import {DAMMFactory} from "../src/damm/DAMMFactory.sol";
-import {AethraLaunchpad} from "../src/launchpad/AethraLaunchpad.sol";
-import {LaunchToken} from "../src/launchpad/LaunchToken.sol";
-import {AethraToken} from "../src/token/AethraToken.sol";
-import {AethraBuyback} from "../src/buyback/AethraBuyback.sol";
 
 /// @notice Deploys the Aethra Fi protocol (proxies + implementations) and writes addresses to the SDK.
 /// @dev Usage (see scripts/local-deploy.sh and docs/BLOCKERS.md):
@@ -49,9 +44,6 @@ contract Deploy is Script {
         address dlmmLimitOrders;
         address dammBeacon;
         address dammFactory;
-        address launchpad;
-        address aeth;
-        address buyback;
     }
 
     string internal network;
@@ -68,7 +60,7 @@ contract Deploy is Script {
 
         vm.startBroadcast();
         c = _deployCore(weth);
-        m = _deployModules(c, weth);
+        m = _deployModules(c);
         vm.stopBroadcast();
 
         _log(c, m);
@@ -98,10 +90,12 @@ contract Deploy is Script {
 
         AethraHub hub = AethraHub(c.hub);
         hub.setRegistrar(c.hook, true);
-        hub.setFeeConfig(address(0), DEPLOYER, 2000); // buyback wired once deployed
+        // No buyback yet and no protocol fee: DLMM and the hook only sweep fees to a buyback contract, so a share would sit
+        // in the pools. script/deferred/DeployLaunchpadBuyback.s.sol sets buyback and the 20% share together.
+        hub.setFeeConfig(address(0), DEPLOYER, 0);
     }
 
-    function _deployModules(Core memory c, address weth) internal returns (Modules memory m) {
+    function _deployModules(Core memory c) internal returns (Modules memory m) {
         AethraHub hub = AethraHub(c.hub);
         IAethraHub ihub = IAethraHub(c.hub);
 
@@ -118,27 +112,8 @@ contract Deploy is Script {
             new ERC1967Proxy(address(new DAMMFactory()), abi.encodeCall(DAMMFactory.initialize, (DEPLOYER, ihub, m.dammBeacon)))
         );
 
-        m.launchpad = address(
-            new ERC1967Proxy(
-                address(new AethraLaunchpad()),
-                abi.encodeCall(
-                    AethraLaunchpad.initialize, (DEPLOYER, ihub, weth, address(new LaunchToken()), POOL_MANAGER, c.positions, c.hook)
-                )
-            )
-        );
-
-        m.aeth = address(new AethraToken(DEPLOYER));
-        m.buyback = address(
-            new ERC1967Proxy(
-                address(new AethraBuyback()),
-                abi.encodeCall(AethraBuyback.initialize, (DEPLOYER, ihub, IAethraRouter(c.router), m.aeth))
-            )
-        );
-
         hub.setRegistrar(m.dlmmFactory, true);
         hub.setRegistrar(m.dammFactory, true);
-        hub.setRegistrar(m.launchpad, true);
-        hub.setFeeConfig(m.buyback, DEPLOYER, 2000); // 20% of LP fees to the protocol; treasury = deployer
     }
 
     /// @dev Find a CREATE2 salt so the hook proxy's address encodes exactly HOOK_FLAGS in its low 14 bits.
@@ -165,9 +140,6 @@ contract Deploy is Script {
         _put(".dlmmFactory", m.dlmmFactory);
         _put(".dlmmLimitOrders", m.dlmmLimitOrders);
         _put(".dammFactory", m.dammFactory);
-        _put(".launchpad", m.launchpad);
-        _put(".aeth", m.aeth);
-        _put(".buyback", m.buyback);
         // startBlock is set from the broadcast receipts by scripts/set-start-block.mjs (L1 vs L2 block numbers)
     }
 
@@ -183,8 +155,5 @@ contract Deploy is Script {
         console2.log("dlmmFactory", m.dlmmFactory);
         console2.log("dlmmOrders ", m.dlmmLimitOrders);
         console2.log("dammFactory", m.dammFactory);
-        console2.log("launchpad  ", m.launchpad);
-        console2.log("aeth       ", m.aeth);
-        console2.log("buyback    ", m.buyback);
     }
 }

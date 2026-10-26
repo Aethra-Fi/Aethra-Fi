@@ -10,6 +10,7 @@ import { usePositionsApi } from "@/hooks/use-api";
 import { useTx } from "@/hooks/use-tx";
 import type { ApiDammPosition, ApiDlmmPosition, ApiV4Position } from "@/lib/api";
 import { ABIS, addressOf } from "@/lib/contracts";
+import { FEATURES } from "@/lib/features";
 import { formatDateTime, formatTokenAmount } from "@/lib/format";
 import { CHAIN_ID } from "@/lib/network";
 import { fullRangeTicks } from "@/lib/v4math";
@@ -39,7 +40,7 @@ function V4Card({ p, owner }: { p: ApiV4Position; owner: Address }) {
       title={`#${p.token_id}`}
       aside={
         <span className="flex gap-1">
-          {p.pledged && <Badge variant="accent">Pledged</Badge>}
+          {FEATURES.credit && p.pledged && <Badge variant="accent">Pledged</Badge>}
           {lockLabel(p)}
         </span>
       }
@@ -56,7 +57,7 @@ function V4Card({ p, owner }: { p: ApiV4Position; owner: Address }) {
           )}
           <KV label="Withdrawable" value={p.liquidity === "0" ? "0%" : `${Number((free * 10_000n) / (BigInt(p.liquidity) || 1n)) / 100}%`} />
         </div>
-        {p.pledged ? (
+        {FEATURES.credit && p.pledged ? (
           <Button asChild variant="secondary" className="w-full">
             <Link href="/credit">Manage loan</Link>
           </Button>
@@ -156,8 +157,8 @@ export function PositionsView() {
     <>
       <PageHeader
         eyebrow="Positions"
-        title="Your liquidity"
-        description="v4 position NFTs with locks and vesting, DLMM bin shares and DAMM range shares, in one place."
+        title="Your positions"
+        description="Manage v4 position NFTs (with locks and vesting), DLMM bin shares and DAMM range shares across every venue."
         actions={
           <Button asChild variant="secondary">
             <Link href="/pools">Find a pool</Link>
@@ -173,7 +174,7 @@ export function PositionsView() {
           <QueryState
             query={q}
             isEmpty={(d) => !d.v4.length && !d.dlmm.length && !d.damm.length}
-            empty={<EmptyState title="No positions yet" action={<Button asChild><Link href="/pools">Add liquidity</Link></Button>}>Deposit into any pool and it shows up here.</EmptyState>}
+            empty={<EmptyState title="No positions yet" action={<Button asChild><Link href="/pools">Add liquidity</Link></Button>}>Provide liquidity to any pool and your position appears here.</EmptyState>}
           >
             {(d) => (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
