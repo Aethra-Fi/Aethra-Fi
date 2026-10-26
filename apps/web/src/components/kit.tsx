@@ -249,16 +249,52 @@ export function PairLabel({ pool }: { pool: Pick<ApiPool, "token0" | "token1"> }
   );
 }
 
-export function Sparkline({ values, className }: { values: number[]; className?: string }) {
+/**
+ * 24h price line with an area fill, hourly volume bars and an end marker. The line is scaled to its own
+ * range so small moves still read; a series that never moves draws a steady dashed line at mid height.
+ */
+export function Sparkline({ values, volume, className }: { values: number[]; volume?: number[]; className?: string }) {
+  const id = React.useId();
   if (values.length < 2) return <span className="text-muted">—</span>;
+  const W = 100;
+  const H = 32;
+  const padY = 4;
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const span = max - min || 1;
-  const pts = values.map((v, i) => `${(i / (values.length - 1)) * 100},${30 - ((v - min) / span) * 28 - 1}`).join(" ");
+  const mid = (min + max) / 2 || 1;
+  const flat = (max - min) / Math.abs(mid) < 1e-6;
+  const x = (i: number) => (i / (values.length - 1)) * W;
+  const y = (v: number) => (flat ? H / 2 : H - padY - ((v - min) / (max - min)) * (H - padY * 2));
   const up = values[values.length - 1]! >= values[0]!;
+  const line = values.map((v, i) => `${x(i).toFixed(2)},${y(v).toFixed(2)}`);
+  const area = `M0,${H} L${line.join(" L")} L${W},${H} Z`;
+  const vmax = volume?.length ? Math.max(...volume) : 0;
+  const bars = volume && vmax > 0 ? volume.slice(-values.length) : [];
+  const lastY = y(values[values.length - 1]!);
   return (
-    <svg viewBox="0 0 100 30" preserveAspectRatio="none" className={cn("h-8 w-24", className)} aria-hidden>
-      <polyline points={pts} fill="none" strokeWidth="1.5" vectorEffect="non-scaling-stroke" className={up ? "stroke-primary" : "stroke-danger"} />
+    <svg viewBox={`0 0 ${W + 4} ${H}`} preserveAspectRatio="none" className={cn("h-8 w-24 overflow-visible", up ? "text-primary" : "text-danger", className)} aria-hidden>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {bars.map((v, i) => {
+        const h = (v / vmax) * (H * 0.4);
+        return h > 0.4 ? <rect key={i} x={x(i) - 0.8} y={H - h} width="1.6" height={h} fill="currentColor" opacity="0.35" /> : null;
+      })}
+      {!flat && <path d={area} fill={`url(#${id})`} />}
+      <polyline
+        points={line.join(" ")}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeDasharray={flat ? "3 3" : undefined}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+      />
+      <circle cx={W} cy={lastY} r="1.6" fill="currentColor" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }

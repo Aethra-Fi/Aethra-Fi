@@ -21,7 +21,7 @@ export function PoolTable({ pools }: { pools: ApiPool[] }) {
             <TableHead className="text-right">24h volume</TableHead>
             <TableHead className="text-right">24h trades</TableHead>
             <TableHead className="text-right">24h</TableHead>
-            <TableHead className="hidden text-right md:table-cell">7d</TableHead>
+            <TableHead className="hidden text-right md:table-cell">Last 24h</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -49,7 +49,7 @@ export function PoolTable({ pools }: { pools: ApiPool[] }) {
               </TableCell>
               <TableCell className="hidden md:table-cell">
                 <span className="flex justify-end">
-                  <Sparkline values={p.sparkline} />
+                  <Sparkline values={p.sparkline} volume={p.volume_sparkline} />
                 </span>
               </TableCell>
             </TableRow>
