@@ -13,7 +13,6 @@ import { formatNumber, formatUsd } from "@/lib/format";
 import { CHAIN, CHAIN_ID } from "@/lib/network";
 import { cn } from "@/lib/utils";
 import type { RibbonFrame } from "./glyph-ribbon";
-import { ScrambleText } from "./scramble-text";
 import { BinsSchematic, BurnSchematic, CodeSchematic, CurveSchematic, FeeSchematic, HealthSchematic, RouterSchematic } from "./schematics";
 
 const GlyphRibbon = dynamic(() => import("./glyph-ribbon").then((m) => m.GlyphRibbon), { ssr: false });
@@ -243,6 +242,29 @@ function useInView<T extends Element>(threshold = 0.3) {
   return [ref, inView] as const;
 }
 
+/**
+ * Soft entrance: rises, fades and sharpens in, staggered by `delay`. Leaving is quick and undelayed so the
+ * next section never waits on the old one. Reduced motion shows everything at once.
+ */
+function Reveal({ active, delay = 0, blur = false, className, children }: { active: boolean; delay?: number; blur?: boolean; className?: string; children: React.ReactNode }) {
+  return (
+    <div
+      className={cn(
+        "transition-[opacity,transform,filter] motion-reduce:!transform-none motion-reduce:!opacity-100 motion-reduce:!blur-0 motion-reduce:transition-none",
+        active ? "translate-y-0 opacity-100 blur-0" : cn("translate-y-8 opacity-0", blur && "blur-[10px]"),
+        className,
+      )}
+      style={{
+        transitionDuration: active ? "1300ms" : "300ms",
+        transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
+        transitionDelay: active ? `${delay}ms` : "0ms",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function Panel({ s, i }: { s: Section; i: number }) {
   const Heading = i === 0 ? "h1" : "h2";
   // reveal as the section scrolls into view, so neighbours are never blank mid-scroll
@@ -256,57 +278,70 @@ function Panel({ s, i }: { s: Section; i: number }) {
       className={cn("relative flex min-h-[calc(100dvh-var(--header-h))] scroll-mt-[var(--header-h)] items-center overflow-x-hidden lg:h-[calc(100dvh-var(--header-h))]", !active && "[&_*]:![animation-play-state:paused]")}
     >
       <div className="container grid h-full items-center gap-8 pb-20 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:pb-16 lg:pt-10">
-        <div className={cn("relative z-10 max-w-2xl space-y-6 transition-[opacity,transform] duration-700 ease-out", active ? "opacity-100" : "opacity-0 lg:translate-y-3")}>
-          <p className="eyebrow flex items-center gap-3">
-            <span className="text-primary-text">{pad(i)}</span>
-            <span className="h-px w-8 bg-border-strong" />
-            {s.label}
-          </p>
+        <div className="relative z-10 max-w-2xl space-y-6">
+          <Reveal active={active}>
+            <p className="eyebrow flex items-center gap-3">
+              <span className="text-primary-text">{pad(i)}</span>
+              <span className="h-px w-8 bg-border-strong" />
+              {s.label}
+            </p>
+          </Reveal>
           <Heading className="text-[clamp(2.9rem,6.6vw,5.75rem)] font-semibold leading-[0.98] tracking-[-0.04em]">
             {s.title.split("\n").map((line, n) => (
-              <ScrambleText
-                key={n}
-                text={line}
-                active={active}
-                className={cn(
-                  "block",
-                  n > 0 && "w-fit bg-gradient-to-r from-primary-text via-primary-text to-accent-text bg-clip-text pb-[0.08em] text-transparent dark:drop-shadow-[0_0_32px_rgb(var(--primary)/0.35)]",
-                )}
-              />
+              <Reveal key={n} active={active} delay={90 + n * 110} blur>
+                <span
+                  className={cn(
+                    "block",
+                    n > 0 && "w-fit bg-gradient-to-r from-primary-text via-primary-text to-accent-text bg-clip-text pb-[0.08em] text-transparent dark:drop-shadow-[0_0_32px_rgb(var(--primary)/0.35)]",
+                  )}
+                >
+                  {line}
+                </span>
+              </Reveal>
             ))}
           </Heading>
-          <p className="max-w-lg text-base text-fg-2 md:text-lg">{s.body}</p>
+          <Reveal active={active} delay={330}>
+            <p className="max-w-lg text-base text-fg-2 md:text-lg">{s.body}</p>
+          </Reveal>
 
           {i === 0 ? (
             <>
-              <div className="flex flex-wrap gap-3">
-                <Button asChild size="lg">
-                  <Link href="/swap">
-                    Launch app <ArrowRight />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="secondary">
-                  <Link href="/pools">Explore pools</Link>
-                </Button>
-              </div>
-              <LiveStats />
+              <Reveal active={active} delay={430}>
+                <div className="flex flex-wrap gap-3">
+                  <Button asChild size="lg">
+                    <Link href="/swap">
+                      Launch app <ArrowRight />
+                    </Link>
+                  </Button>
+                  <Button asChild size="lg" variant="secondary">
+                    <Link href="/pools">Explore pools</Link>
+                  </Button>
+                </div>
+              </Reveal>
+              <Reveal active={active} delay={530}>
+                <LiveStats />
+              </Reveal>
             </>
           ) : (
             <>
-              <dl className="grid max-w-lg grid-cols-2 border-l border-t">
-                {s.specs.map(([k, v]) => (
-                  <div key={k} className="border-b border-r bg-bg/75 px-3 py-2">
-                    <dt className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">{k}</dt>
-                    <dd className="num mt-0.5 text-sm">{v}</dd>
-                  </div>
-                ))}
-              </dl>
+              <Reveal active={active} delay={430}>
+                <dl className="grid max-w-lg grid-cols-2 border-l border-t">
+                  {s.specs.map(([k, v]) => (
+                    <div key={k} className="border-b border-r bg-bg/75 px-3 py-2">
+                      <dt className="font-mono text-[10px] uppercase tracking-eyebrow text-muted">{k}</dt>
+                      <dd className="num mt-0.5 text-sm">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Reveal>
               {s.cta && (
-                <Button asChild variant="secondary">
-                  <Link href={s.cta.href}>
-                    {s.cta.label} <ArrowRight />
-                  </Link>
-                </Button>
+                <Reveal active={active} delay={530}>
+                  <Button asChild variant="secondary">
+                    <Link href={s.cta.href}>
+                      {s.cta.label} <ArrowRight />
+                    </Link>
+                  </Button>
+                </Reveal>
               )}
             </>
           )}
