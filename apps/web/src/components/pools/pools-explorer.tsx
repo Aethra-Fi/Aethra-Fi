@@ -19,15 +19,13 @@ const FILTERS = [
   { key: "highest_volume", label: "Highest volume" },
   { key: "fresh", label: "Fresh" },
   { key: "stock", label: "Stocks" },
-  { key: "launch", label: "Launch" },
 ] as const;
 type FilterKey = (typeof FILTERS)[number]["key"];
 
-const VENUES = ["ALL", "V4", "DLMM", "DAMM", "LAUNCH"] as const;
+const VENUES = ["ALL", "V4", "DLMM", "DAMM"] as const;
 
 function select(d: ApiDashboard, f: FilterKey): ApiPool[] {
   if (f === "stock") return d.all.filter((p) => p.token0.kind === "stock" || p.token1.kind === "stock");
-  if (f === "launch") return d.launch;
   return d[f];
 }
 
@@ -53,7 +51,7 @@ export function PoolsExplorer() {
       <PageHeader
         eyebrow="Pools"
         title="Pool discovery"
-        description="Every Aethra venue in one list: v4 hook pools, DLMM bins, DAMM ranges and live launch curves."
+        description="Every Aethra venue in one list: v4 hook pools, DLMM bins and DAMM ranges."
         actions={
           <Button asChild>
             <Link href="/pools/create">

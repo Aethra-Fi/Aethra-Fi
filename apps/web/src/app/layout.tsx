@@ -10,7 +10,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 export const metadata: Metadata = {
   title: { default: "Aethra Fi: liquidity layer on Robinhood Chain", template: "%s · Aethra Fi" },
   description:
-    "Swap, provide liquidity, launch tokens and borrow against LP positions on Robinhood Chain. Dynamic-fee and oracle-guarded pools across v4, DLMM and DAMM venues.",
+    "Swap and provide liquidity on Robinhood Chain. Dynamic-fee and oracle-guarded pools across v4, DLMM and DAMM venues.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://aethra-fi-testnet.vercel.app"),
 };
 

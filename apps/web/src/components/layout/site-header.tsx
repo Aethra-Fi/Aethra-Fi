@@ -39,8 +39,8 @@ function WalletButton() {
   return (
     <ConnectButton.Custom>
       {({ account, chain, mounted, openAccountModal, openChainModal, openConnectModal }) => {
-        if (!mounted) return <Button size="sm" className="invisible" aria-hidden>Connect</Button>;
-        if (!account || !chain) return <Button size="sm" onClick={openConnectModal}>Connect</Button>;
+        if (!mounted) return <Button size="sm" className="invisible" aria-hidden>Connect wallet</Button>;
+        if (!account || !chain) return <Button size="sm" onClick={openConnectModal}>Connect wallet</Button>;
         if (chain.unsupported) return <Button size="sm" variant="destructive" onClick={openChainModal}>Wrong network</Button>;
         return (
           <Button size="sm" variant="secondary" onClick={openAccountModal} className="normal-case tracking-normal">

@@ -8,6 +8,7 @@ import { useBlockNumber } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { StatusDot } from "@/components/kit";
 import { useDashboard } from "@/hooks/use-api";
+import { FEATURES } from "@/lib/features";
 import { formatNumber, formatUsd } from "@/lib/format";
 import { CHAIN, CHAIN_ID } from "@/lib/network";
 import { cn } from "@/lib/utils";
@@ -28,14 +29,18 @@ interface Section {
   cta?: { href: string; label: string };
   schematic?: React.ReactNode;
   form: string;
+  /** ribbon shape index this section morphs into (see ribbon-shaders) */
+  shape: number;
+  /** section is dropped while this feature is hidden */
+  feature?: keyof typeof FEATURES;
 }
 
-const SECTIONS: Section[] = [
+const ALL_SECTIONS: Section[] = [
   {
     key: "hero",
     label: "Liquidity layer",
     title: "Every venue.\nOne route.",
-    body: "Aethra routes each trade across hook pools, bins, ranges and launch curves on Robinhood Chain, with fees that follow volatility and stock pools that follow their oracle.",
+    body: "Aethra routes each trade across hook pools, bins and ranges on Robinhood Chain, with fees that follow volatility and stock pools that follow their oracle.",
     specs: [],
     tags: [
       ["MÖBIUS · 1 SURFACE", 24, 18],
@@ -43,14 +48,15 @@ const SECTIONS: Section[] = [
       ["5,280 GLYPHS", 12, 78],
     ],
     form: "Möbius loop",
+    shape: 0,
   },
   {
     key: "router",
     label: "Smart router",
-    title: "Four venues.\nOne quote.",
-    body: "The router quotes v4 hook pools, DLMM bins, DAMM ranges and launch curves over eth_call, compares direct and two-hop paths, and settles the winner in a single transaction.",
+    title: "Three venues.\nOne quote.",
+    body: "The router quotes v4 hook pools, DLMM bins and DAMM ranges over eth_call, compares direct and two-hop paths, and settles the winner in a single transaction.",
     specs: [
-      ["Venues", "4"],
+      ["Venues", "3"],
       ["Max hops", "3"],
       ["Quote", "eth_call"],
       ["ETH in/out", "auto wrap"],
@@ -63,6 +69,7 @@ const SECTIONS: Section[] = [
     cta: { href: "/swap", label: "Open swap" },
     schematic: <RouterSchematic />,
     form: "Figure-eight route",
+    shape: 1,
   },
   {
     key: "fees",
@@ -83,6 +90,7 @@ const SECTIONS: Section[] = [
     cta: { href: "/pools?filter=stock", label: "Stock pools" },
     schematic: <FeeSchematic />,
     form: "Volatility wave",
+    shape: 2,
   },
   {
     key: "bins",
@@ -103,6 +111,7 @@ const SECTIONS: Section[] = [
     cta: { href: "/orders", label: "Place an order" },
     schematic: <BinsSchematic />,
     form: "Bin histogram",
+    shape: 3,
   },
   {
     key: "launch",
@@ -123,6 +132,8 @@ const SECTIONS: Section[] = [
     cta: { href: "/launch", label: "Launch a token" },
     schematic: <CurveSchematic />,
     form: "Bonding spiral",
+    shape: 4,
+    feature: "launchpad",
   },
   {
     key: "credit",
@@ -143,6 +154,8 @@ const SECTIONS: Section[] = [
     cta: { href: "/credit", label: "Open credit" },
     schematic: <HealthSchematic />,
     form: "Double helix",
+    shape: 5,
+    feature: "credit",
   },
   {
     key: "burn",
@@ -163,6 +176,8 @@ const SECTIONS: Section[] = [
     cta: { href: "/buyback", label: "See burns" },
     schematic: <BurnSchematic />,
     form: "Burn vortex",
+    shape: 6,
+    feature: "buyback",
   },
   {
     key: "build",
@@ -183,8 +198,12 @@ const SECTIONS: Section[] = [
     cta: { href: "/developers", label: "Developer docs" },
     schematic: <CodeSchematic />,
     form: "Torus knot",
+    shape: 7,
   },
 ];
+
+const SECTIONS = ALL_SECTIONS.filter((s) => !s.feature || FEATURES[s.feature]);
+const SHAPES = SECTIONS.map((s) => s.shape);
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -542,7 +561,7 @@ export function LandingSections() {
     <div ref={rootRef} className="relative [--header-h:57px]" aria-label="Aethra Fi overview">
       {/* fixed backdrop: blueprint grid + ribbon, below the sticky header */}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)] bg-[linear-gradient(rgb(var(--border)/0.35)_1px,transparent_1px),linear-gradient(90deg,rgb(var(--border)/0.35)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_70%_50%,black,transparent_75%)]" />
-      <GlyphRibbon sectionRef={sectionRef} onFrame={onFrame} className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)]" />
+      <GlyphRibbon sectionRef={sectionRef} shapes={SHAPES} onFrame={onFrame} className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)]" />
 
       {/* sections */}
       <div className="relative z-10">

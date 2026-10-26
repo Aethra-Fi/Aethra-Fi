@@ -112,3 +112,15 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 4. Vercel / Supabase hosted setup (after B1).
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
+
+## 2026-10-26 · Bugfix batch 2
+
+- Header: connect button label is "Connect wallet".
+- Pools: `pool_overview.sparkline` now returns 24 hourly points with the last close carried forward, plus `volume_sparkline` (migration `20261026000001_pool_sparkline.sql`). The sparkline draws an area fill, volume bars and an end marker; a series that never moves draws a dashed mid line. Pool detail chart pads its y range so small moves show. Testnet pools have no trades yet, so their price is genuinely constant until swaps happen.
+- Docs: `/docs` page, linked from a new "Resources" footer column.
+- Hidden for a later release: launchpad, credit, buyback & burn.
+  - Web: `NEXT_PUBLIC_FEATURES=launchpad,credit,buyback` turns them back on (`apps/web/src/lib/features.ts`). Routes return 404, nav, landing sections, filters, event types and contracts page entries are dropped.
+  - API: function secret `FEATURES` does the same; launch pools, launch/loan/buyback events and the `launches`, `loans`, `buybacks` endpoints are off by default.
+  - Contracts: sources and tests stay. `Deploy.s.sol` no longer deploys launchpad, AETH or buyback and sets the hub protocol fee share to 0 (buyback unset). `DeployCredit` moved to `script/deferred/`, with a new `DeployLaunchpadBuyback` there (see its README). `scripts/testnet-deploy.sh` is now 3 steps.
+  - SDK addresses: the five hidden addresses moved from the top level of `local.json` and `testnet.json` to a `hidden` object, so every consumer sees `null`.
+  - Mainnet dry run: cost estimate drops because three modules are no longer deployed (re-run to get the new number).

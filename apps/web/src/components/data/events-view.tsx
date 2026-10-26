@@ -11,10 +11,7 @@ const TYPES: { k: EventType | ""; l: string }[] = [
   { k: "", l: "All" },
   { k: "swap", l: "Swaps" },
   { k: "liquidity", l: "Liquidity" },
-  { k: "launch", l: "Launches" },
   { k: "order", l: "Orders" },
-  { k: "loan", l: "Loans" },
-  { k: "buyback", l: "Buybacks" },
 ];
 
 export function EventsView() {
@@ -26,7 +23,7 @@ export function EventsView() {
       <PageHeader
         eyebrow="Event feed"
         title="On-chain activity"
-        description="Every swap, deposit, launch, order, loan and burn across Aethra, newest first."
+        description="Every swap, deposit and order across Aethra, newest first."
         actions={
           <button onClick={() => setLive((v) => !v)} className="flex items-center gap-2 border px-3 py-2 font-mono text-[12px] uppercase tracking-button">
             <StatusDot state={live ? "live" : "idle"} />

@@ -183,7 +183,7 @@ export function SwapCard() {
         </div>
       </Panel>
       <p className="text-center font-mono text-[11px] uppercase tracking-eyebrow text-muted">
-        WETH {DEPLOYMENT.weth.slice(0, 6)}… · routes across v4 · DLMM · DAMM · launch
+        WETH {DEPLOYMENT.weth.slice(0, 6)}… · routes across v4 · DLMM · DAMM
       </p>
     </div>
   );

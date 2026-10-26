@@ -82,3 +82,18 @@ Project Vercel `aethra-fi` sudah dibuat (root `apps/web`, build via turbo, env v
 Buka https://github.com/apps/vercel/installations/new → pilih organisasi **Aethra-Fi** → akses ke repo **Aethra-Fi** (atau All repositories) → Install/Save.
 Setelah itu bilang "B7 selesai": saya hubungkan Git, set production branch `mainnet`, dan pasang alias `aethra-fi-testnet.vercel.app` ke branch `testnet`.
 
+
+## B8 · Matikan sisa wiring fitur tersembunyi di testnet — `WAITING`
+
+Kontrak testnet lama (launchpad, credit, buyback) masih ada di chain, dan hub testnet masih menunjuk ke buyback lama dengan protocol fee 20%. Fee protokol DLMM dan hook terus menumpuk ke sana. Untuk memutus: jalankan di terminal sendiri (minta password keystore).
+
+```bash
+# Jalankan di: ROOT/packages/contracts
+HUB=0x71Bb058106b1a226a6f66e2152719a6B827c783a
+LAUNCHPAD=0x498249bC18986216FEC0BECd2f6130D162C970eD
+RPC=https://rpc.testnet.chain.robinhood.com
+cast send $HUB "setFeeConfig(address,address,uint16)" 0x0000000000000000000000000000000000000000 0xd09D9c87ECfe008B4D6D3cEbeAd25103c16d9a7C 0 --account deployer --rpc-url $RPC
+cast send $HUB "setRegistrar(address,bool)" $LAUNCHPAD false --account deployer --rpc-url $RPC
+```
+
+Selain itu, terapkan ke Supabase testnet saat promosi ke branch `testnet`: migrasi `20261026000001_pool_sparkline.sql`, deploy Edge Function `api`, lalu `node supabase/scripts/sync-deployments.mjs testnet` (indexer berhenti membaca kontrak tersembunyi).

@@ -4,10 +4,10 @@ pragma solidity 0.8.26;
 import {Script, console2} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IAethraHub} from "../src/interfaces/IAethraHub.sol";
-import {ILendingVault, IAethraPositions, IAethraRouter} from "../src/interfaces/IAethraPeriphery.sol";
-import {LendingVault} from "../src/credit/LendingVault.sol";
-import {CreditManager} from "../src/credit/CreditManager.sol";
+import {IAethraHub} from "../../src/interfaces/IAethraHub.sol";
+import {ILendingVault, IAethraPositions, IAethraRouter} from "../../src/interfaces/IAethraPeriphery.sol";
+import {LendingVault} from "../../src/credit/LendingVault.sol";
+import {CreditManager} from "../../src/credit/CreditManager.sol";
 
 /// @notice Deploys the lending vault and credit manager on top of a deployed core (run after Deploy and,
 ///         on local/testnet, after SetupMarkets so the default aUSD vault asset exists).

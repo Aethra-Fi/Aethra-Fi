@@ -11,11 +11,11 @@
   "dlmmFactory": "0xD9b05cF9Ff8cEd4cdD5507A8ef38BA8823A479E8",
   "dlmmLimitOrders": "0xB1C5263f988EAab65713505Fb9a472CD839DcC95",
   "dammFactory": "0x8e50170A9F7747291BD06EF166B31303D26fc01f",
-  "launchpad": "0xa4A236b7f5e0f3BfBcB4A93ec61f94d3dd48A521",
-  "lendingVault": "0x743565d5b4834ca65A64352d03B7CA4f44610Ad1",
-  "creditManager": "0x01Cb6D5f0640eB4632dF62bEf81D724d23Db57Ad",
-  "buyback": "0xAdafa4E630c117EF03E2B457B9c68138caEB509f",
-  "aeth": "0x2BcAa6f690c7022Df3b26Fe6FCa5E19ec08a4969",
+  "launchpad": null,
+  "lendingVault": null,
+  "creditManager": null,
+  "buyback": null,
+  "aeth": null,
   "tokens": {
     "AMD": {
       "address": "0x71178BAc73cBeb415514eB542a8995b82669778d",
@@ -100,5 +100,12 @@
     "aTSLA": "0x816fbB8157013b3a176C7C8b9b6dF1a4a2317D3A",
     "aUSD": "0x6ad9C854394872c17823ca4EC62FABeFb2447518"
   },
-  "startBlock": 140826327
+  "startBlock": 140826327,
+  "hidden": {
+    "launchpad": "0xa4A236b7f5e0f3BfBcB4A93ec61f94d3dd48A521",
+    "lendingVault": "0x743565d5b4834ca65A64352d03B7CA4f44610Ad1",
+    "creditManager": "0x01Cb6D5f0640eB4632dF62bEf81D724d23Db57Ad",
+    "buyback": "0xAdafa4E630c117EF03E2B457B9c68138caEB509f",
+    "aeth": "0x2BcAa6f690c7022Df3b26Fe6FCa5E19ec08a4969"
+  }
 }

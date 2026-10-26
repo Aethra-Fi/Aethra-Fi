@@ -68,22 +68,31 @@ function buildAtlas(weight = 500): THREE.CanvasTexture {
  */
 export function GlyphRibbon({
   sectionRef,
+  shapes,
   onFrame,
   className,
 }: {
   sectionRef: React.RefObject<number>;
+  /** ribbon shape per landing section; defaults to one shape per section in order */
+  shapes?: number[];
   onFrame?: (f: RibbonFrame) => void;
   className?: string;
 }) {
   const hostRef = React.useRef<HTMLDivElement>(null);
   const materialRef = React.useRef<THREE.ShaderMaterial | null>(null);
   const onFrameRef = React.useRef(onFrame);
+  const shapesKey = (shapes ?? []).join(",");
+  const shapesRef = React.useRef<number[]>(shapes ?? []);
   const { resolvedTheme } = useTheme();
   const atlasWeightRef = React.useRef(500);
 
   React.useEffect(() => {
     onFrameRef.current = onFrame;
   }, [onFrame]);
+
+  React.useEffect(() => {
+    shapesRef.current = shapesKey ? shapesKey.split(",").map(Number) : [];
+  }, [shapesKey]);
 
   // scene setup, once
   React.useEffect(() => {
@@ -237,11 +246,15 @@ export function GlyphRibbon({
       if (!reduce) u.uIntro!.value = Math.min(1, t / 2.2);
 
       // follow the scroll position with a little lag so fast swipes still read as a morph
-      const target = Math.max(0, Math.min(RIBBON_SHAPES - 1, sectionRef.current ?? 0));
+      const map = shapesRef.current;
+      const lastSection = (map.length || RIBBON_SHAPES) - 1;
+      const target = Math.max(0, Math.min(lastSection, sectionRef.current ?? 0));
       section += (target - section) * (reduce ? 1 : ease(5, dt));
-      const a = Math.floor(section);
-      const b = Math.min(RIBBON_SHAPES - 1, a + 1);
-      const k = section - a;
+      const sa = Math.min(lastSection, Math.floor(section));
+      const sb = Math.min(lastSection, sa + 1);
+      const k = section - sa;
+      const a = map[sa] ?? sa;
+      const b = map[sb] ?? sb;
       u.uShapeA!.value = a;
       u.uShapeB!.value = b;
       u.uMix!.value = k;

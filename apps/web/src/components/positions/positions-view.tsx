@@ -10,6 +10,7 @@ import { usePositionsApi } from "@/hooks/use-api";
 import { useTx } from "@/hooks/use-tx";
 import type { ApiDammPosition, ApiDlmmPosition, ApiV4Position } from "@/lib/api";
 import { ABIS, addressOf } from "@/lib/contracts";
+import { FEATURES } from "@/lib/features";
 import { formatDateTime, formatTokenAmount } from "@/lib/format";
 import { CHAIN_ID } from "@/lib/network";
 import { fullRangeTicks } from "@/lib/v4math";
@@ -39,7 +40,7 @@ function V4Card({ p, owner }: { p: ApiV4Position; owner: Address }) {
       title={`#${p.token_id}`}
       aside={
         <span className="flex gap-1">
-          {p.pledged && <Badge variant="accent">Pledged</Badge>}
+          {FEATURES.credit && p.pledged && <Badge variant="accent">Pledged</Badge>}
           {lockLabel(p)}
         </span>
       }
@@ -56,7 +57,7 @@ function V4Card({ p, owner }: { p: ApiV4Position; owner: Address }) {
           )}
           <KV label="Withdrawable" value={p.liquidity === "0" ? "0%" : `${Number((free * 10_000n) / (BigInt(p.liquidity) || 1n)) / 100}%`} />
         </div>
-        {p.pledged ? (
+        {FEATURES.credit && p.pledged ? (
           <Button asChild variant="secondary" className="w-full">
             <Link href="/credit">Manage loan</Link>
           </Button>
