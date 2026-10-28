@@ -100,7 +100,7 @@ Selain itu, terapkan ke Supabase testnet saat promosi ke branch `testnet`: migra
 
 Selesai 2026-10-26: `buyback()` = 0x0, `protocolFeeShareBps()` = 0, treasury = deployer, launchpad lama bukan registrar lagi (DLMM factory tetap registrar). Migrasi sparkline, Edge Function `api`, dan sync deployments sudah diterapkan ke Supabase testnet.
 
-## B9 · DNS `aethra.finance` di Hostinger — `OPEN`
+## B9 · DNS `aethra.finance` di Hostinger — `DONE`
 
 Domain sudah ditambahkan ke project Vercel `aethra-fi` (2026-10-28), tapi DNS masih menunjuk ke parking Hostinger. Ubah di hPanel → Domains → aethra.finance → DNS / Nameservers → DNS records:
 
@@ -111,3 +111,5 @@ Domain sudah ditambahkan ke project Vercel `aethra-fi` (2026-10-28), tapi DNS ma
 | CNAME | `testnet` | `21ffe789fcdae145.vercel-dns-017.com.` | baru |
 
 Hapus record AAAA parking untuk `@` dan `www` jika ada. Setelah itu bilang "B9 selesai": saya cek `vercel api /v6/domains/<host>/config` dan sertifikat SSL.
+
+Selesai 2026-10-28: DNS benar, `testnet.aethra.finance` dan `aethra.finance` HTTPS 200, `www` redirect 308. Sertifikat apex perlu `vercel certs issue aethra.finance` manual.
