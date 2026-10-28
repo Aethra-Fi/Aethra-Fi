@@ -83,7 +83,7 @@ Buka https://github.com/apps/vercel/installations/new → pilih organisasi **Aet
 Setelah itu bilang "B7 selesai": saya hubungkan Git, set production branch `mainnet`, dan pasang alias `aethra-fi-testnet.vercel.app` ke branch `testnet`.
 
 
-## B8 · Matikan sisa wiring fitur tersembunyi di testnet — `WAITING`
+## B8 · Matikan sisa wiring fitur tersembunyi di testnet — `DONE`
 
 Kontrak testnet lama (launchpad, credit, buyback) masih ada di chain, dan hub testnet masih menunjuk ke buyback lama dengan protocol fee 20%. Fee protokol DLMM dan hook terus menumpuk ke sana. Untuk memutus: jalankan di terminal sendiri (minta password keystore).
 
@@ -97,3 +97,17 @@ cast send $HUB "setRegistrar(address,bool)" $LAUNCHPAD false --account deployer 
 ```
 
 Selain itu, terapkan ke Supabase testnet saat promosi ke branch `testnet`: migrasi `20261026000001_pool_sparkline.sql`, deploy Edge Function `api`, lalu `node supabase/scripts/sync-deployments.mjs testnet` (indexer berhenti membaca kontrak tersembunyi).
+
+Selesai 2026-10-26: `buyback()` = 0x0, `protocolFeeShareBps()` = 0, treasury = deployer, launchpad lama bukan registrar lagi (DLMM factory tetap registrar). Migrasi sparkline, Edge Function `api`, dan sync deployments sudah diterapkan ke Supabase testnet.
+
+## B9 · DNS `aethra.finance` di Hostinger — `OPEN`
+
+Domain sudah ditambahkan ke project Vercel `aethra-fi` (2026-10-28), tapi DNS masih menunjuk ke parking Hostinger. Ubah di hPanel → Domains → aethra.finance → DNS / Nameservers → DNS records:
+
+| Type | Name | Value | Aksi |
+|---|---|---|---|
+| A | `@` | `216.198.79.1` | ganti A lama `2.57.91.91` |
+| CNAME | `www` | `21ffe789fcdae145.vercel-dns-017.com.` | ganti CNAME lama ke `aethra.finance` |
+| CNAME | `testnet` | `21ffe789fcdae145.vercel-dns-017.com.` | baru |
+
+Hapus record AAAA parking untuk `@` dan `www` jika ada. Setelah itu bilang "B9 selesai": saya cek `vercel api /v6/domains/<host>/config` dan sertifikat SSL.

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: { default: "Aethra Fi | Unified liquidity layer on Robinhood Chain", template: "%s · Aethra Fi" },
   description:
     "Aethra Fi is the unified liquidity layer on Robinhood Chain: smart-routed swaps, volatility-adaptive fees, DLMM limit orders and oracle-guarded stock pools.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://aethra-fi-testnet.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://testnet.aethra.finance"),
 };
 
 export const viewport: Viewport = {

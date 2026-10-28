@@ -43,7 +43,8 @@ API base URLs:
 | Root directory | `apps/web` |
 | Build | `cd ../.. && pnpm turbo run build --filter=@aethra/web` (builds `@aethra/sdk` first) |
 | Production branch | `mainnet` (prepared, not used yet) |
-| Testnet | branch `testnet` → preview, alias `aethra-fi-testnet.vercel.app` |
+| Testnet | branch `testnet` → preview, alias `aethra-fi-testnet.vercel.app`, custom domain `testnet.aethra.finance` |
+| Mainnet | production branch `mainnet` → `aethra.finance` (`www.aethra.finance` redirects 308 to apex) |
 | Git | `Aethra-Fi/Aethra-Fi`, connected 2026-10-22 |
 | Deployment protection | off (`ssoProtection: null`) so the testnet site is public; env vars are all public `NEXT_PUBLIC_*` values |
 
@@ -53,7 +54,17 @@ Environment variables:
 |---|---|---|
 | `NEXT_PUBLIC_NETWORK` | `mainnet` | `testnet` |
 | `NEXT_PUBLIC_API_URL` | mainnet API URL | testnet API URL |
-| `NEXT_PUBLIC_SITE_URL` | `https://aethra-fi.vercel.app` | `https://aethra-fi-testnet.vercel.app` |
+| `NEXT_PUBLIC_SITE_URL` | `https://aethra.finance` | `https://testnet.aethra.finance` |
+
+## Domain
+
+`aethra.finance` is registered at Hostinger; DNS stays at Hostinger (nameservers `nebula.dns-parking.com`, `aurora.dns-parking.com`). Vercel domains added 2026-10-28 via API.
+
+| Host | DNS record at Hostinger | Vercel target |
+|---|---|---|
+| `aethra.finance` | `A` `216.198.79.1` (replace parking A `2.57.91.91`) | production (`mainnet`) |
+| `www.aethra.finance` | `CNAME` `21ffe789fcdae145.vercel-dns-017.com.` (replace existing CNAME to apex) | 308 redirect to apex |
+| `testnet.aethra.finance` | `CNAME` `21ffe789fcdae145.vercel-dns-017.com.` | branch `testnet` |
 
 ## Local development
 

@@ -18,7 +18,7 @@ export const HAS_WALLETCONNECT = WALLETCONNECT_PROJECT_ID.trim().length > 0;
 const APP = {
   appName: "Aethra Fi",
   appDescription: "Liquidity layer on Robinhood Chain",
-  appUrl: "https://aethra-fi-testnet.vercel.app",
+  appUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://testnet.aethra.finance",
 };
 
 /** MetaMask via the MetaMask SDK connector, so it works without a WalletConnect project id. */
