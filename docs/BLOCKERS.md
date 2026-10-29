@@ -113,3 +113,26 @@ Domain sudah ditambahkan ke project Vercel `aethra-fi` (2026-10-28), tapi DNS ma
 Hapus record AAAA parking untuk `@` dan `www` jika ada. Setelah itu bilang "B9 selesai": saya cek `vercel api /v6/domains/<host>/config` dan sertifikat SSL.
 
 Selesai 2026-10-28: DNS benar, `testnet.aethra.finance` dan `aethra.finance` HTTPS 200, `www` redirect 308. Sertifikat apex perlu `vercel certs issue aethra.finance` manual.
+
+## B10 · Upgrade kontrak testnet dengan fix keamanan — `DONE` 2026-10-30
+
+Selesai: 6 transaksi sukses (3 deploy implementasi + 3 `upgradeToAndCall`), 8,35M gas. Alamat implementasi ada di `docs/infrastructure.md`. Teks di bawah adalah catatan asli.
+
+Kontrak testnet masih implementasi lama tanpa fix keamanan 2026-10-30 (router R-1..R-3, hook H-1, hub H-2). Upgrade mengganti hub, hook, dan router lewat proxy yang sama. Alamat tidak berubah.
+
+Sudah diverifikasi tanpa broadcast:
+- Referensi (`packages/contracts/upgrades/v0-testnet`) dibangun dari commit `3be51c6` dan cocok byte-per-byte dengan kode on-chain (hub, hook, router, positions, factory, limit orders).
+- Validasi OpenZeppelin (layout storage dan keamanan upgrade) lolos untuk ketiganya. Uji negatif: field yang disisipkan di storage hub ditolak.
+- Simulasi di testnet live: 3 deploy implementasi + 3 upgrade, ≈ 0,00022 ETH. Saldo deployer 0,0045 ETH.
+- Tes fork (`FORK_TESTNET=1 forge test --match-path test/fork/TestnetUpgrade.t.sol`): quote semua pool sama sebelum dan sesudah upgrade, swap WETH nyata lolos, state hub utuh.
+
+Jalankan di terminal kamu sendiri (minta password keystore dua kali: verifikasi alamat, lalu broadcast):
+
+```bash
+# Jalankan di: ROOT
+bash scripts/testnet-upgrade.sh --broadcast
+```
+
+Script berhenti tanpa mengirim apa pun bila keystore `deployer` bukan `0xd09D…9a7C`. Setelah selesai cukup bilang "B10 selesai": aku baca `packages/contracts/broadcast/Upgrade.s.sol/46630/`, cek `implementation()` tiga proxy, jalankan ulang tes fork terhadap state baru, dan perbarui `docs/infrastructure.md`.
+
+Catatan: jangan jalankan script ini dengan commit yang berbeda dari yang diuji. Fix keamanan belum di-commit saat B10 ditulis. Commit dulu, lalu jalankan.
