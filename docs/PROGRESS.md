@@ -6,9 +6,9 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 
 | # | Phase | Status | Notes |
 |---|---|---|---|
-| 1 | Setup (tools, logins, repo, hooks) | 🔄 | Supabase login, keystore and faucet are ⏳ B1–B3 |
+| 1 | Setup (tools, logins, repo, hooks) | ✅ | B1–B3 done |
 | 2 | REA research | ✅ | `docs/research/notes.md` |
-| 3 | Monorepo foundation & environments | 🔄 | |
+| 3 | Monorepo foundation & environments | ✅ | local, testnet live; mainnet prepared |
 | 4 | Landing + wallet + swap | ✅ | Smart-route swap via router.quote |
 | 5 | Core contracts (hub, hook, router, positions) | ✅ | 181 forge tests green (all modules) |
 | 6 | Indexer & data pages | ✅ | `indexer` + `api` Edge Functions verified on testnet and on a local fork with real activity |
@@ -112,6 +112,22 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 4. Vercel / Supabase hosted setup (after B1).
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
+
+## 2026-10-30 · Router + hook security review
+
+- Baseline re-verified: 181 forge tests, 9 SDK and 26 web vitest tests pass.
+- Findings were proven first with PoC tests, then fixed. Regression tests: `packages/contracts/test/security/RouterHookAudit.t.sol`. 190 forge tests pass.
+- Router R-1 (High) fixed: non-v4 hops must name the contract the hub registered for that id and venue; `quote` checks the same.
+- Router R-2 (Medium) fixed by R-1 (no fake `RouteExecuted`).
+- Router R-3 (Low) fixed: allowance reset to 0 after each hop.
+- Hook H-1 (Medium) fixed: `ORACLE` pools revert at initialize if the oracle is not fresh or the opening price is outside `maxDeviationBps`. STOCK assets that are not enabled cannot be pooled (`AssetNotEnabled`).
+- Hub H-2 (Low) fixed: `setAsset` reverts `InvalidStaleness` when an oracle is set with `maxStaleness == 0`. `SetupMarkets` mock feeds now use 365 days.
+- SDK ABIs regenerated (hub, hook). The testnet contracts were upgraded to the fixed implementations (see below).
+- Mainnet dry run 2026-10-30 (VPN on): core + DLMM + DAMM = 26.23M gas, 0.000545 ETH, about $1.27 at 0.02076 gwei and $2,337.31/ETH. L1 component 0. Not broadcast.
+- Release model: deploy everything, gate hidden modules on-chain, reveal in order. See `docs/RELEASE_PLAN.md`.
+- Upgrade tooling added: `bash scripts/snapshot-build.sh <git-ref> <name>` saves the build of the deployed code, `bash scripts/upgrade.sh <network> <contract(s)> <name> [--broadcast]` validates storage layout and upgrade safety, deploys the new implementation, and upgrades (testnet, deployer owns the proxy) or prints Safe calldata (mainnet). Validated and simulated against live testnet state for all 13 targets. A field inserted into the hub storage struct is rejected.
+- Testnet upgrade rehearsal (opt-in fork test `FORK_TESTNET=1 forge test --match-path test/fork/TestnetUpgrade.t.sol`): quotes of all registered pools are identical before and after, a real WETH swap works, hub state survives. Estimated cost 0.00022 ETH. Executed 2026-10-30 (B10 done): 6 transactions succeeded, 8.35M gas, implementation slots of hub, hook and router read back as the new addresses.
+- Web: Testnet / Mainnet toggle in the header (saved in the browser, switches the wallet chain too). The mainnet button is disabled until `addresses/mainnet.json` has a hub; a banner warns when the active network has no deployment. API and RPC per network, overridable with `NEXT_PUBLIC_API_URL_{TESTNET,MAINNET}` and `NEXT_PUBLIC_RPC_URL_{TESTNET,MAINNET}`. 32 web unit tests and 2 e2e tests for the toggle.
 
 ## 2026-10-26 · Bugfix batch 2
 

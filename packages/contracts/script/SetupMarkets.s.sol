@@ -61,8 +61,9 @@ contract SetupMarkets is Script {
         ausd = new FaucetToken("Aethra Test USD", "aUSD", 6, 10_000e6, DEPLOYER);
         MockPriceFeed ethFeed = new MockPriceFeed(DEPLOYER, 8, "ETH / USD (mock)", 2400e8);
         MockPriceFeed usdFeed = new MockPriceFeed(DEPLOYER, 8, "aUSD / USD (mock)", 1e8);
-        hub.setAsset(weth, AssetClass.CANONICAL, true, address(ethFeed), 0);
-        hub.setAsset(address(ausd), AssetClass.CANONICAL, true, address(usdFeed), 0);
+        // mock feeds are only updated by hand, so give them a long (but finite) staleness window
+        hub.setAsset(weth, AssetClass.CANONICAL, true, address(ethFeed), 365 days);
+        hub.setAsset(address(ausd), AssetClass.CANONICAL, true, address(usdFeed), 365 days);
         _token("aUSD", address(ausd), "Aethra Test USD", 6, "test");
         _token("WETH", weth, "Wrapped Ether", 18, "canonical");
         _oracle("WETH", address(ethFeed));

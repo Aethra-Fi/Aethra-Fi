@@ -1,10 +1,11 @@
 import type { ApiDashboard, ApiHealth, ApiPool, ApiSwapEvent, ApiToken } from "@aethra/sdk";
-import { CHAIN_ID } from "./network";
+import { API_URL, CHAIN_ID } from "./network";
+
+export { API_URL };
 
 export type { ApiDashboard, ApiHealth, ApiPool, ApiSwapEvent, ApiToken };
 
-/** Indexer REST API base URL (Supabase Edge Function `api`). */
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:54321/functions/v1/api").replace(/\/$/, "");
+// API_URL (re-exported above) follows the active network; see lib/network.ts.
 
 // ---------------------------------------------------------------------------
 // Response types not (yet) in @aethra/sdk. The lead may move these into packages/sdk/src/types.ts.

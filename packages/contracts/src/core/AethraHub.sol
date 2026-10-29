@@ -55,6 +55,7 @@ contract AethraHub is IAethraHub, UUPSUpgradeable, Ownable2StepUpgradeable {
         external
         onlyOperator
     {
+        if (oracle != address(0) && maxStaleness == 0) revert InvalidStaleness();
         HubStorage storage $ = _s();
         if ($.assets[token].class == AssetClass.NONE) $.assetList.push(token);
         $.assets[token] = Asset(class, enabled, oracle, maxStaleness);

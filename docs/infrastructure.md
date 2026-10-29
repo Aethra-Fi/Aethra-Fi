@@ -48,12 +48,14 @@ API base URLs:
 | Git | `Aethra-Fi/Aethra-Fi`, connected 2026-10-22 |
 | Deployment protection | off (`ssoProtection: null`) so the testnet site is public; env vars are all public `NEXT_PUBLIC_*` values |
 
+Network toggle: both builds ship the Testnet / Mainnet toggle in the header. The choice is saved in the browser (`aethra-network`). The API of each network is built in (`NEXT_PUBLIC_API_URL_TESTNET`, `NEXT_PUBLIC_API_URL_MAINNET` override it; RPC overrides are `NEXT_PUBLIC_RPC_URL_TESTNET` and `NEXT_PUBLIC_RPC_URL_MAINNET`). A network becomes selectable when `hub` is set in `packages/sdk/src/addresses/<network>.json`, so the mainnet button unlocks by itself when the mainnet addresses are published.
+
 Environment variables:
 
 | Key | Production (mainnet) | Preview (testnet) |
 |---|---|---|
-| `NEXT_PUBLIC_NETWORK` | `mainnet` | `testnet` |
-| `NEXT_PUBLIC_API_URL` | mainnet API URL | testnet API URL |
+| `NEXT_PUBLIC_NETWORK` (network a new visitor sees first) | `mainnet` | `testnet` |
+| `NEXT_PUBLIC_API_URL` (optional, overrides the API of that default network only) | mainnet API URL | testnet API URL |
 | `NEXT_PUBLIC_SITE_URL` | `https://aethra.finance` | `https://testnet.aethra.finance` |
 
 ## Domain
@@ -79,3 +81,20 @@ pnpm dev                             # web app
 
 The Docker edge runtime cannot reach Anvil on 127.0.0.1, so to index the local chain run the indexer on the host:
 `cd supabase/functions && SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… RPC_URL_31337=http://127.0.0.1:8545 deno run --config deno.json -A indexer/index.ts`.
+
+## Testnet implementation upgrade (2026-10-30)
+
+Proxy addresses did not change. The ERC-1967 implementation slot of each proxy was read back after the upgrade.
+
+| Contract | Proxy | New implementation |
+| --- | --- | --- |
+| AethraHub | `0x71Bb058106b1a226a6f66e2152719a6B827c783a` | `0x992B967149da444dA1bFE041006e01Fb17533579` |
+| AethraHook | `0xE1eD1ECC79dc893A3A0D8ac9EF90f00819587ACC` | `0x1b9ca349484B920F456498d460EA016448350eE3` |
+| AethraRouter | `0xEE8AE4155C653B664727CA5EF0757914aA4769CE` | `0x3470eF43FF1945F213A285E78695902D999A0236` |
+
+Includes the router (R-1 to R-3), hook (H-1) and hub (H-2) fixes. Rollout: `bash scripts/testnet-upgrade.sh --broadcast`, built from the working tree on top of `3be51c6` (the fixes were not committed at that point; commit them so the deployed code is traceable). Broadcast record: `packages/contracts/broadcast/Upgrade.s.sol/46630/run-latest.json`.
+
+Upgrade runbook for any later change:
+1. `bash scripts/snapshot-build.sh <git-ref-of-deployed-code> <name>` (once per deployed version).
+2. `bash scripts/upgrade.sh <network> <contract(s)> <name>` simulates and validates; add `--broadcast` to send.
+3. Mainnet: the script deploys the implementation only; the Safe sends the printed `upgradeToAndCall` calldata.
