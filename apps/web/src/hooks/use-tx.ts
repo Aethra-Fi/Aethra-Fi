@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { BaseError, type Abi, type Address, type ContractFunctionArgs, type ContractFunctionName, type Hash } from "viem";
-import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 import { CHAIN_ID } from "@/lib/network";
 
 export type TxStatus = "idle" | "wallet" | "pending" | "success" | "error";
@@ -35,7 +35,8 @@ export function useTx() {
   const [state, setState] = useState<TxState>({ status: "idle", hash: null, error: null });
   const { writeContractAsync } = useWriteContract();
   const client = usePublicClient({ chainId: CHAIN_ID });
-  const { address: account } = useAccount();
+  const { address: account, chainId: walletChainId } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
   const qc = useQueryClient();
 
   const send = useCallback(
@@ -52,6 +53,8 @@ export function useTx() {
       }
       try {
         setState({ status: "wallet", hash: null, error: null });
+        // the wallet may still be on the other network after the toggle
+        if (walletChainId !== CHAIN_ID) await switchChainAsync({ chainId: CHAIN_ID });
         // simulate first for a readable revert reason
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { request } = await client.simulateContract({ ...(req as any), account });
@@ -68,7 +71,7 @@ export function useTx() {
         return null;
       }
     },
-    [client, account, writeContractAsync, qc],
+    [client, account, walletChainId, switchChainAsync, writeContractAsync, qc],
   );
 
   const reset = useCallback(() => setState({ status: "idle", hash: null, error: null }), []);

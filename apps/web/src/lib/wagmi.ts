@@ -10,7 +10,8 @@ import {
 import type { Chain } from "viem";
 import { createConfig, createConnector, http } from "wagmi";
 import { metaMask } from "wagmi/connectors";
-import { CHAIN, RPC_URL } from "./network";
+import { chainsByNetwork } from "@aethra/sdk";
+import { SELECTABLE_NETWORKS, rpcUrlFor } from "./network";
 
 export const WALLETCONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "";
 export const HAS_WALLETCONNECT = WALLETCONNECT_PROJECT_ID.trim().length > 0;
@@ -59,12 +60,15 @@ function makeConfig() {
     // only read by WalletConnect-based wallets, which are excluded when no id is configured
     projectId: HAS_WALLETCONNECT ? WALLETCONNECT_PROJECT_ID : "unused",
   });
-  // widen the network-specific chain literal so the transports map type-checks for any build network
-  const chain: Chain = CHAIN;
+  // every network the toggle can reach is configured, so the wallet can move between them
+  const chains = SELECTABLE_NETWORKS.map((n): Chain => chainsByNetwork[n]);
+  const transports = Object.fromEntries(
+    SELECTABLE_NETWORKS.map((n) => [chainsByNetwork[n].id, http(rpcUrlFor(n), { batch: true })]),
+  );
   return createConfig({
-    chains: [chain],
+    chains: chains as [Chain, ...Chain[]],
     connectors,
-    transports: { [chain.id]: http(RPC_URL, { batch: true }) },
+    transports,
     ssr: true,
   });
 }

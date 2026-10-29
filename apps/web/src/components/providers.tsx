@@ -7,7 +7,7 @@ import { ThemeProvider, useTheme } from "next-themes";
 import { WagmiProvider } from "wagmi";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ApiError } from "@/lib/api";
-import { CHAIN } from "@/lib/network";
+import { CHAIN, restoreNetwork, useNetwork } from "@/lib/network";
 import { rainbowTheme } from "@/lib/rainbow-theme";
 import { getWagmiConfig } from "@/lib/wagmi";
 
@@ -19,6 +19,16 @@ function RainbowThemed({ children }: { children: React.ReactNode }) {
       {children}
     </RainbowKitProvider>
   );
+}
+
+/**
+ * Re-mounts the app when the network changes, so every component re-reads the active chain, deployment and API.
+ * The saved choice is applied after hydration (the server and the first render always use the default network).
+ */
+function NetworkScope({ children }: { children: React.ReactNode }) {
+  const network = useNetwork();
+  React.useEffect(() => restoreNetwork(), []);
+  return <React.Fragment key={network}>{children}</React.Fragment>;
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -40,7 +50,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <WagmiProvider config={getWagmiConfig()}>
         <QueryClientProvider client={queryClient}>
           <RainbowThemed>
-            <TooltipProvider delayDuration={150}>{children}</TooltipProvider>
+            <TooltipProvider delayDuration={150}>
+              <NetworkScope>{children}</NetworkScope>
+            </TooltipProvider>
           </RainbowThemed>
         </QueryClientProvider>
       </WagmiProvider>

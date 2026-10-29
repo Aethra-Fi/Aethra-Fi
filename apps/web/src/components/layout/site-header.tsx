@@ -14,9 +14,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { IndexerStatus } from "@/components/kit";
-import { NETWORK, NETWORK_LABEL } from "@/lib/network";
 import { cn } from "@/lib/utils";
 import { MORE_NAV, PRIMARY_NAV } from "./nav";
+import { NetworkNotice } from "./network-notice";
+import { NetworkToggle } from "./network-toggle";
 import { ThemeToggle } from "./theme-toggle";
 
 export function Logo({ className }: { className?: string }) {
@@ -56,6 +57,7 @@ function WalletButton() {
 export function SiteHeader() {
   const pathname = usePathname();
   return (
+    <>
     <header className="sticky top-0 z-40 border-b bg-bg/85 backdrop-blur supports-[backdrop-filter]:bg-bg/70">
       <div className="container flex h-14 items-center gap-6">
         <Logo />
@@ -90,9 +92,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="hidden items-center gap-2 border px-2 py-1 font-mono text-[11px] uppercase tracking-eyebrow text-muted xl:flex">
-            {NETWORK_LABEL[NETWORK]}
-          </span>
+          <NetworkToggle className="hidden sm:flex" />
           <IndexerStatus className="hidden md:flex" />
           <ThemeToggle />
           <WalletButton />
@@ -104,7 +104,8 @@ export function SiteHeader() {
             </SheetTrigger>
             <SheetContent side="right" className="w-72">
               <SheetTitle className="sr-only">Menu</SheetTitle>
-              <nav className="mt-8 flex flex-col" aria-label="Mobile">
+              <NetworkToggle className="mt-8 flex w-fit sm:hidden" />
+              <nav className="mt-6 flex flex-col" aria-label="Mobile">
                 {[...PRIMARY_NAV, ...MORE_NAV].map((item) => (
                   <Link
                     key={item.href}
@@ -123,5 +124,7 @@ export function SiteHeader() {
         </div>
       </div>
     </header>
+    <NetworkNotice />
+    </>
   );
 }

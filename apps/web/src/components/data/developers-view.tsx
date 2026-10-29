@@ -1,3 +1,5 @@
+"use client";
+
 import { PageHeader, Panel } from "@/components/kit";
 import { API_URL } from "@/lib/api";
 import { CHAIN_ID } from "@/lib/network";
