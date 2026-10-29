@@ -14,6 +14,8 @@ coverage/
 # foundry
 packages/contracts/out/
 packages/contracts/cache/
+packages/contracts/out-upgrade/
+packages/contracts/cache-upgrade/
 packages/contracts/broadcast/*/31337/
 packages/contracts/broadcast/**/dry-run/
 # supabase
@@ -28,3 +30,4 @@ apps/web/playwright-report/
 packages/contracts/foundry-pp/
 *.tsbuildinfo
 supabase/functions/node_modules/
+packages/contracts/upgrades/

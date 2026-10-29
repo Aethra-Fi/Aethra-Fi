@@ -21,6 +21,16 @@ gas_reports = ["*"]
 additional_compiler_profiles = [{ name = "v4core", via_ir = true, optimizer_runs = 44444444 }]
 compilation_restrictions = [{ paths = "lib/v4-core/src/PoolManager.sol", optimizer_runs = 44444444 }]
 
+# Used by script/upgrade/Upgrade.s.sol. The OpenZeppelin validator reads every file in the build-info directory and rejects
+# the duplicate contracts that the PoolManager profile above produces, so this profile builds the protocol alone
+# (same compiler settings, no tests, no PoolManager profile) into its own output directory.
+[profile.upgrade]
+out = "out-upgrade"
+cache_path = "cache-upgrade"
+skip = ["*/test/**"]
+additional_compiler_profiles = []
+compilation_restrictions = []
+
 [profile.default.fuzz]
 runs = 256
 
