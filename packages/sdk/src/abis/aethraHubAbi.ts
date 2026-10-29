@@ -867,6 +867,11 @@ export const aethraHubAbi = [
   },
   {
     "type": "error",
+    "name": "InvalidStaleness",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NoOracle",
     "inputs": []
   },

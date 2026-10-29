@@ -250,7 +250,7 @@ export const aethraHookAbi = [
         ]
       },
       {
-        "name": "",
+        "name": "sqrtPriceX96",
         "type": "uint160",
         "internalType": "uint160"
       },
@@ -1732,6 +1732,17 @@ export const aethraHookAbi = [
     "inputs": [
       {
         "name": "target",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "AssetNotEnabled",
+    "inputs": [
+      {
+        "name": "token",
         "type": "address",
         "internalType": "address"
       }

@@ -113,17 +113,28 @@ contract AethraRouter is IAethraRouter, IUnlockCallback, UUPSUpgradeable, Ownabl
             return abi.decode(r, (uint256));
         }
         if (h.venue == Venue.DLMM || h.venue == Venue.DAMM) {
-            if (!_s().hub.isPoolEnabled(bytes32(uint256(uint160(h.pool))))) revert PoolNotEnabled();
+            _requireRegistered(bytes32(uint256(uint160(h.pool))), h.venue, h.pool);
             IERC20(h.tokenIn).forceApprove(h.pool, amountIn);
-            return IAethraPool(h.pool).swapExactInput(h.tokenIn, amountIn, 0, to, deadline);
+            out = IAethraPool(h.pool).swapExactInput(h.tokenIn, amountIn, 0, to, deadline);
+            IERC20(h.tokenIn).forceApprove(h.pool, 0);
+            return out;
         }
         if (h.venue == Venue.LAUNCH) {
             address token = abi.decode(h.data, (address));
-            if (!_s().hub.isPoolEnabled(bytes32(uint256(uint160(token))))) revert PoolNotEnabled();
+            _requireRegistered(bytes32(uint256(uint160(token))), Venue.LAUNCH, h.pool);
             IERC20(h.tokenIn).forceApprove(h.pool, amountIn);
-            return IAethraLaunchpad(h.pool).swapExactInput(token, h.tokenIn, amountIn, 0, to, deadline);
+            out = IAethraLaunchpad(h.pool).swapExactInput(token, h.tokenIn, amountIn, 0, to, deadline);
+            IERC20(h.tokenIn).forceApprove(h.pool, 0);
+            return out;
         }
         revert BadVenue();
+    }
+
+    /// @dev A non-v4 hop calls `h.pool` and trusts its return value as the next hop's input, so the hop must name the
+    ///      exact contract the hub registered for this id under this venue (a registrar vouched for it), and it must be enabled.
+    function _requireRegistered(bytes32 id, Venue venue, address pool_) internal view {
+        IAethraHub.PoolInfo memory info = _s().hub.pool(id);
+        if (!info.enabled || info.venue != venue || info.pool != pool_) revert PoolNotEnabled();
     }
 
     // ------------------------------------------------------------------ quote
@@ -141,9 +152,12 @@ contract AethraRouter is IAethraRouter, IUnlockCallback, UUPSUpgradeable, Ownabl
                 PoolKey memory key = abi.decode(h.data, (PoolKey));
                 amountOut = _quoteV4(key, _direction(key, h.tokenIn, h.tokenOut), amountOut);
             } else if (h.venue == Venue.DLMM || h.venue == Venue.DAMM) {
+                _requireRegistered(bytes32(uint256(uint160(h.pool))), h.venue, h.pool);
                 (amountOut,) = IAethraPool(h.pool).quoteExactInput(h.tokenIn, amountOut);
             } else if (h.venue == Venue.LAUNCH) {
-                amountOut = IAethraLaunchpad(h.pool).quoteExactInput(abi.decode(h.data, (address)), h.tokenIn, amountOut);
+                address token = abi.decode(h.data, (address));
+                _requireRegistered(bytes32(uint256(uint160(token))), Venue.LAUNCH, h.pool);
+                amountOut = IAethraLaunchpad(h.pool).quoteExactInput(token, h.tokenIn, amountOut);
             } else {
                 revert BadVenue();
             }

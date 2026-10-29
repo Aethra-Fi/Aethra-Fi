@@ -106,6 +106,7 @@ contract AethraHook is IHooks, IUnlockCallback, UUPSUpgradeable, Ownable2StepUpg
     error OracleUnavailable();
     error HookNotImplemented();
     error LaunchpadOnly();
+    error AssetNotEnabled(address token);
 
     constructor(IPoolManager poolManager_) {
         poolManager = poolManager_;
@@ -242,7 +243,7 @@ contract AethraHook is IHooks, IUnlockCallback, UUPSUpgradeable, Ownable2StepUpg
         if (info.venue == Venue.LAUNCH && info.pool != address(0) && info.pool != sender) revert LaunchpadOnly();
     }
 
-    function afterInitialize(address sender, PoolKey calldata key, uint160, int24 tick)
+    function afterInitialize(address sender, PoolKey calldata key, uint160 sqrtPriceX96, int24 tick)
         external
         onlyPoolManager
         returns (bytes4)
@@ -261,6 +262,16 @@ contract AethraHook is IHooks, IUnlockCallback, UUPSUpgradeable, Ownable2StepUpg
         c.oracle = $.defaultOracleParams;
         c.vol.indexRef = _index(tick, key.tickSpacing);
         c.vol.lastUpdate = uint40(block.timestamp);
+
+        if (isStock) {
+            // The mode is fixed at initialization, so a stock pool may only start once its assets are live and the
+            // opening price is inside the oracle band. Otherwise anyone could open (or front-run) a pool at a skewed price.
+            _requireAssetEnabled($.hub, t0);
+            _requireAssetEnabled($.hub, t1);
+            Guard memory g = _guard(key, c, sqrtPriceX96);
+            if (!g.fresh) revert OracleUnavailable();
+            if (g.deviationBps > c.oracle.maxDeviationBps) revert CircuitBreaker(g.deviationBps);
+        }
 
         $.hub.registerPool(PoolId.unwrap(id), Venue.V4, address(this), t0, t1, sender);
         emit PoolConfigured(id, c.mode, c.fee, c.oracle);
@@ -430,6 +441,11 @@ contract AethraHook is IHooks, IUnlockCallback, UUPSUpgradeable, Ownable2StepUpg
         bool poolAbove; // pool price above oracle price
         bool fresh;
         bool marketOpen;
+    }
+
+    function _requireAssetEnabled(IAethraHub h, address token) internal view {
+        IAethraHub.Asset memory a = h.asset(token);
+        if (a.class == AssetClass.STOCK && !a.enabled) revert AssetNotEnabled(token);
     }
 
     function _guard(PoolKey calldata key, PoolConfig memory c, uint160 sqrtP) internal view returns (Guard memory g) {
