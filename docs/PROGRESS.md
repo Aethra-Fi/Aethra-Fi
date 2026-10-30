@@ -146,7 +146,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 
 ## 2026-10-31 · Handoff after v1.0
 
-- v1.0 is done (tag `v1.0.0`). The landing refresh and the hidden CA block reached production through PR #26 (session aethra-15, with the user's approval). Open items: B21 (AETH CA in the hero, waits for the user's token launch) and B19 (seed, deferred until funds).
+- v1.0 is done (tag `v1.0.0`). The landing refresh and the hidden CA block reached production through PR #26 (session aethra-15, with the user's approval). Open items: B23 (AETH CA in the hero, waits for the user's token launch) and B19 (seed, deferred until funds).
 - Hero CA block: `apps/web/src/lib/token.ts` (`AETH_TOKEN.address`, null = hidden), `TokenCA` in `components/landing/landing-sections.tsx`. Previewed in both themes.
 - Production checks: read `aethra.finance` directly. Vercel does not report GitHub commit statuses, so do not wait on them.
 - `docs/verification/mainnet.md` (written by the verify script) is left untracked at the user's request.
