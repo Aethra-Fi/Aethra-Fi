@@ -1,11 +1,11 @@
-# @aethra/sdk
+# @aethrafi/sdk
 
 TypeScript SDK for [Aethra Fi](https://aethra.finance), the liquidity layer on Robinhood Chain. It ships the deployed contract addresses, contract ABIs, chain definitions for [viem](https://viem.sh), route quoting through the Aethra router, and price math for v4 ticks and DLMM bins.
 
 ## Install
 
 ```bash
-npm install @aethra/sdk viem
+npm install @aethrafi/sdk viem
 ```
 
 `viem` is a peer dependency (v2).
@@ -21,7 +21,7 @@ npm install @aethra/sdk viem
 
 ```ts
 import { createPublicClient, http } from "viem";
-import { chainsByNetwork, getDeployment, aethraHubAbi } from "@aethra/sdk";
+import { chainsByNetwork, getDeployment, aethraHubAbi } from "@aethrafi/sdk";
 
 const chain = chainsByNetwork.mainnet;
 const d = getDeployment("mainnet"); // proxy addresses: hub, hook, router, positions, ...
@@ -37,7 +37,7 @@ Addresses are the proxy addresses; they stay the same across upgrades. A field i
 The router quotes any route of up to a few hops with `quote` over `eth_call`. Each hop names a venue (1 v4, 2 DLMM, 3 DAMM), the pool and venue data.
 
 ```ts
-import { aethraRouterAbi, encodePoolKey, sortTokens } from "@aethra/sdk";
+import { aethraRouterAbi, encodePoolKey, sortTokens } from "@aethrafi/sdk";
 
 const [token0, token1] = sortTokens(d.weth, d.tokens.USDG.address);
 const key = { currency0: token0, currency1: token1, fee: 0x800000, tickSpacing: 10, hooks: d.hook! };

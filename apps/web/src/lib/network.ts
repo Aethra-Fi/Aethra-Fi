@@ -1,4 +1,4 @@
-import { chainsByNetwork, getDeployment, type NetworkName } from "@aethra/sdk";
+import { chainsByNetwork, getDeployment, type NetworkName } from "@aethrafi/sdk";
 import { useSyncExternalStore } from "react";
 
 function parseNetwork(v: string | undefined): NetworkName {

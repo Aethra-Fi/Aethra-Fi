@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Address } from "viem";
 import { encodeAbiParameters } from "viem";
 import { useAccount, useReadContract } from "wagmi";
-import { Venue } from "@aethra/sdk";
+import { Venue } from "@aethrafi/sdk";
 import { ThemedAreaChart } from "@/components/charts/area-chart";
 import { EventTable } from "@/components/events/event-table";
 import { AddressLink, AmountField, ApproveGate, ConnectGate, EmptyState, KV, NotDeployed, Panel, QueryState, TokenIcon, TxNotice } from "@/components/kit";

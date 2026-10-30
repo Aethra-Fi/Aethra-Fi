@@ -75,7 +75,7 @@ Total muat di $7–8 sampai harga gas naik sekitar 2×. Karena Batch A dibayar d
 10. Safe multisig di Robinhood Chain. Singleton dan factory kanonik punya kode di mainnet (dicek 2026-10-30: `0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67`, `0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2`). Verifikasi alamat di explorer. Dukungan UI Safe untuk chain ini belum dicek; kalau belum ada, kirim transaksi lewat `safe-cli` atau skrip.
 11. Supabase mainnet: Vault secrets (`project_url`, `indexer_token`), function secret `INDEXER_TOKEN`, cron, `sync-deployments.mjs mainnet`, `startBlock` dari receipt L2 (`set-start-block.mjs`).
 12. ✅ Sertifikat apex `aethra.finance`: Let's Encrypt, berlaku sampai 2027-01-26 (dicek 2026-10-30). DNS di Hostinger sudah menunjuk ke Vercel (B9).
-13. SDK `@aethra/sdk`: klaim scope npm, hapus `private: true`, terbitkan v0.1.0 (halaman `/developers` merujuk SDK).
+13. SDK `@aethrafi/sdk`: klaim scope npm, hapus `private: true`, terbitkan v0.1.0 (halaman `/developers` merujuk SDK).
 14. Flag UI dan API per modul (`dlmm`, `damm`, `orders`, `stock`, `launchpad`, `credit`, `buyback`). Verifikasi dulu apakah alamat `hidden` sudah menyembunyikan fitur otomatis.
 15. Verifikasi Blockscout ditunda untuk modul tersembunyi sampai dibuka (opsional, mengurangi kebocoran peta jalan).
 

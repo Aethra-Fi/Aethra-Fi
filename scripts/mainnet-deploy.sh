@@ -51,6 +51,6 @@ forge script "${ARGS[@]}" --account deployer --broadcast --slow
 cd "$ROOT" && node scripts/set-start-block.mjs mainnet
 # prove the explorer source packages now, while the build that produced the deployed bytecode is still in out/
 cd "$ROOT" && node scripts/verify-prepare.mjs mainnet --quiet || echo "WARNING: verification packages not ready, see scripts/verify-prepare.mjs"
-cd "$ROOT" && pnpm --filter @aethra/sdk build >/dev/null
+cd "$ROOT" && pnpm --filter @aethrafi/sdk build >/dev/null
 echo "Done. Addresses written to packages/sdk/src/addresses/mainnet.json"
 echo "Remaining balance: $(cast balance "$DEPLOYER_ADDRESS" --rpc-url "$RPC" -e) ETH"

@@ -10,7 +10,7 @@ import {
 import type { Chain } from "viem";
 import { createConfig, createConnector, http } from "wagmi";
 import { metaMask } from "wagmi/connectors";
-import { chainsByNetwork } from "@aethra/sdk";
+import { chainsByNetwork } from "@aethrafi/sdk";
 import { SELECTABLE_NETWORKS, rpcUrlFor } from "./network";
 
 export const WALLETCONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "";

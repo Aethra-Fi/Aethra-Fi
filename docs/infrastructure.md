@@ -41,7 +41,7 @@ API base URLs:
 |---|---|
 | Project | `aethra-fi` (`prj_SLsSI8RlphxR7igGUT6AeytaH8KV`) |
 | Root directory | `apps/web` |
-| Build | `cd ../.. && pnpm turbo run build --filter=@aethra/web` (builds `@aethra/sdk` first) |
+| Build | `cd ../.. && pnpm turbo run build --filter=@aethra/web` (builds `@aethrafi/sdk` first) |
 | Production branch | `mainnet` (prepared, not used yet) |
 | Testnet | branch `testnet` → preview, alias `aethra-fi-testnet.vercel.app`, custom domain `testnet.aethra.finance` |
 | Mainnet | production branch `mainnet` → `aethra.finance` (`www.aethra.finance` redirects 308 to apex) |

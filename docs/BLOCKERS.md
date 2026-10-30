@@ -260,7 +260,7 @@ Script mengambil harga ETH dari CoinGecko, menampilkan jumlah seed, dan menunggu
 
 Tombol darurat bila perlu: `bash scripts/mainnet-pool-switch.sh off` (swap ditolak, likuiditas tetap bisa ditarik), `... on` untuk menyalakan lagi.
 
-## B20 · Terbitkan SDK ke npm · `OPEN` (organisasi npm `aethra` sudah dibuat 2026-10-31; tinggal login + publish)
+## B20 · Terbitkan SDK ke npm · `OPEN` (organisasi npm `aethrafi` sudah dibuat 2026-10-31, paket berganti nama menjadi `@aethrafi/sdk`; tinggal login + publish)
 
 Paket sudah siap (`packages/sdk`: README, metadata, `viem` sebagai peer, `npm pack` 47,6 kB, 9 test).
 
