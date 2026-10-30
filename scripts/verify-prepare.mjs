@@ -39,6 +39,7 @@ const rows = JSON.parse(execFileSync("node", ["scripts/verify-list.mjs", network
 
 // creation code actually broadcast for each address
 const deployed = new Map();
+const txHashes = new Map(); // creation transaction per address (Sourcify uses it to find the creation code)
 for (const dir of readdirSync(join(CONTRACTS, "broadcast"))) {
   const chainDir = join(CONTRACTS, "broadcast", dir, String(CHAIN));
   if (!existsSync(chainDir)) continue;
@@ -54,6 +55,7 @@ for (const dir of readdirSync(join(CONTRACTS, "broadcast"))) {
       let input = tx.transaction.input.replace(/^0x/, "");
       if (tx.transactionType === "CREATE2") input = input.slice(64);
       deployed.set(tx.contractAddress.toLowerCase(), input);
+      if (tx.hash) txHashes.set(tx.contractAddress.toLowerCase(), tx.hash);
     }
   }
 }
@@ -125,7 +127,7 @@ for (const [i, row] of rows.entries()) {
   }
   const file = `${String(i + 1).padStart(2, "0")}-${row.address}.json`;
   writeFileSync(join(OUT, file), JSON.stringify(hit.input));
-  manifest.push({ label: row.label, address: row.address, contractName: row.source, args, compiler: COMPILER, file });
+  manifest.push({ label: row.label, address: row.address, contractName: row.source, args, compiler: COMPILER, file, txHash: txHashes.get(row.address) ?? null });
   log(`✓ ${row.label.padEnd(36)} ${row.address}  (${hit.tag})`);
 }
 

@@ -8,6 +8,11 @@
 # After submitting, the script reads every contract back from the explorer API as proof, saves the links to
 # docs/verification/<network>.md and lets you open any contract on the explorer.
 # Safe to re-run: verified contracts show as already verified.
+#
+# Verifier: testnet submits to the Blockscout API directly. The mainnet Blockscout API sits behind a Cloudflare
+# browser challenge that no command-line client passes (VPN included), so mainnet goes through Sourcify, which
+# verifies the same package and forwards it to the explorer from its own servers. VERIFIER=blockscout|sourcify
+# overrides the choice.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 NETWORK="${1:-}"
@@ -17,6 +22,9 @@ case "$NETWORK" in
   mainnet) CHAIN=4663; NAME="Robinhood Chain"; EXPLORER="https://robinhoodchain.blockscout.com"; RPC="https://rpc.mainnet.chain.robinhood.com" ;;
   *) echo "usage: bash scripts/verify-contracts.sh <testnet|mainnet>"; exit 1 ;;
 esac
+DEFAULT_VERIFIER=blockscout; [ "$NETWORK" = mainnet ] && DEFAULT_VERIFIER=sourcify
+VERIFIER="${VERIFIER:-$DEFAULT_VERIFIER}"
+SOURCIFY="https://sourcify.dev/server"
 
 PKG="$ROOT/packages/contracts/verification/$NETWORK"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"; printf "\e[?25h"' EXIT
@@ -53,6 +61,10 @@ spin() {
 api() { curl -s --max-time 60 "$@"; }
 json() { node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);console.log(eval(process.argv[1])??"")}catch{console.log("")}})' "$1"; }
 
+sourcify_online() {
+  api "${SOURCIFY}/chains" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(JSON.parse(d).some(c=>c.chainId===+process.argv[1]&&c.supported)?"ok":"no")}catch{console.log("down")}})' "$CHAIN"
+}
+
 # ------------------------------------------------------------------ intro
 
 clear 2>/dev/null || true
@@ -61,8 +73,13 @@ echo "  ${L}${B}◆ AETHRA FI${N}  ${B}Smart contract verification${N}"
 echo "  ${DIM}────────────────────────────────────────────────────────────${N}"
 echo "  Network    ${B}${NAME}${N} ${DIM}· chain ${CHAIN}${N}"
 echo "  Explorer   ${EXPLORER}"
-echo "  Method     source code compiled by the explorer and matched"
-echo "             against the bytecode deployed on-chain"
+if [ "$VERIFIER" = sourcify ]; then
+  echo "  Method     source code verified by Sourcify against the bytecode"
+  echo "             deployed on-chain, then published to the explorer"
+else
+  echo "  Method     source code compiled by the explorer and matched"
+  echo "             against the bytecode deployed on-chain"
+fi
 echo
 
 # ------------------------------------------------------------------ checks
@@ -71,13 +88,22 @@ echo "  ${B}Checks${N}"
 spin "Connecting to ${NAME}" cast chain-id --rpc-url "$RPC"
 if [ "$(tr -d '[:space:]' <"$TMP/out")" = "$CHAIN" ]; then echo "  ${OK} Chain online (${CHAIN})"; else echo "  ${BAD} Chain did not answer"; exit 1; fi
 
-spin "Connecting to the explorer" curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${EXPLORER}/api?module=block&action=eth_block_number"
-if [ "$(cat "$TMP/out")" = "200" ]; then
-  echo "  ${OK} Explorer API online"
+if [ "$VERIFIER" = sourcify ]; then
+  spin "Connecting to Sourcify" sourcify_online
+  if [ "$(cat "$TMP/out")" = ok ]; then
+    echo "  ${OK} Sourcify online, chain ${CHAIN} supported"
+  else
+    echo "  ${BAD} Sourcify is not reachable or does not support chain ${CHAIN}"; exit 1
+  fi
 else
-  echo "  ${BAD} Explorer API refused the connection (HTTP $(cat "$TMP/out"))"
-  [ "$NETWORK" = mainnet ] && echo "    ${DIM}The mainnet explorer is behind Cloudflare: turn on a VPN and run again.${N}"
-  exit 1
+  spin "Connecting to the explorer" curl -s -o /dev/null -w '%{http_code}' --max-time 30 "${EXPLORER}/api?module=block&action=eth_block_number"
+  if [ "$(cat "$TMP/out")" = "200" ]; then
+    echo "  ${OK} Explorer API online"
+  else
+    echo "  ${BAD} Explorer API refused the connection (HTTP $(cat "$TMP/out"))"
+    echo "    ${DIM}Run with VERIFIER=sourcify to verify through Sourcify instead.${N}"
+    exit 1
+  fi
 fi
 
 if [ ! -f "$PKG/manifest.json" ]; then
@@ -93,7 +119,39 @@ echo
 
 # ------------------------------------------------------------------ submit
 
+# Sourcify match for an address: exact_match | match | none
+sourcify_match() {
+  api "${SOURCIFY}/v2/contract/${CHAIN}/$1" | json 'j.match || "none"'
+}
+
+submit_sourcify() { # $1 manifest index
+  local i="$1" address id res done_ tries
+  address="$(node -e "console.log(require('$PKG/manifest.json')[$i].address)")"
+  case "$(sourcify_match "$address")" in exact_match|match) echo already; return ;; esac
+  node -e '
+    const fs = require("fs");
+    const [pkg, i, out] = process.argv.slice(1);
+    const m = require(pkg + "/manifest.json")[+i];
+    const body = { stdJsonInput: JSON.parse(fs.readFileSync(pkg + "/" + m.file, "utf8")), compilerVersion: m.compiler.replace(/^v/, ""), contractIdentifier: m.contractName };
+    if (m.txHash) body.creationTransactionHash = m.txHash;
+    fs.writeFileSync(out, JSON.stringify(body));' "$PKG" "$i" "$TMP/body.json"
+  res="$(api -X POST "${SOURCIFY}/v2/verify/${CHAIN}/${address}" -H 'content-type: application/json' --data "@$TMP/body.json")"
+  id="$(json 'j.verificationId' <<<"$res")"
+  [ -n "$id" ] || { echo "failed:$(json 'j.message || j.customCode' <<<"$res" | cut -c1-80)"; return; }
+  for tries in $(seq 1 60); do
+    sleep 3
+    res="$(api "${SOURCIFY}/v2/verify/${id}")"
+    [ "$(json 'j.isJobCompleted' <<<"$res")" = true ] || continue
+    case "$(json 'j.contract && j.contract.match' <<<"$res")" in
+      exact_match|match) echo verified; return ;;
+    esac
+    echo "failed:$(json '(j.error && (j.error.message || j.error.customCode)) || "not verified"' <<<"$res" | cut -c1-80)"; return
+  done
+  echo "failed:timed out waiting for Sourcify"
+}
+
 submit() { # $1 manifest index -> prints: verified | already | failed:<reason>
+  [ "$VERIFIER" = sourcify ] && { submit_sourcify "$1"; return; }
   local i="$1" address name args file guid res status tries
   read -r address name args file < <(node -e "const m=require('$PKG/manifest.json')[$i];console.log(m.address,m.contractName,m.args||'-',m.file)")
   [ "$args" = "-" ] && args=""
@@ -148,12 +206,20 @@ echo
 
 # ------------------------------------------------------------------ proof
 
-echo "  ${B}Proof from the explorer${N} ${DIM}(read back from ${EXPLORER#https://})${N}"
+if [ "$VERIFIER" = sourcify ]; then
+  echo "  ${B}Proof from Sourcify${N} ${DIM}(read back from sourcify.dev; the links open the explorer)${N}"
+else
+  echo "  ${B}Proof from the explorer${N} ${DIM}(read back from ${EXPLORER#https://})${N}"
+fi
 proven=0
 for idx in "${!ADDRS[@]}"; do
   a="${ADDRS[$idx]}"; v=""
   for t in 1 2 3 4 5; do
-    v="$(api "${EXPLORER}/api/v2/smart-contracts/${a}" | json 'j.is_fully_verified ? "full" : j.is_partially_verified ? "partial" : j.is_verified ? "verified" : "no"')"
+    if [ "$VERIFIER" = sourcify ]; then
+      case "$(sourcify_match "$a")" in exact_match) v=full ;; match) v=partial ;; *) v=no ;; esac
+    else
+      v="$(api "${EXPLORER}/api/v2/smart-contracts/${a}" | json 'j.is_fully_verified ? "full" : j.is_partially_verified ? "partial" : j.is_verified ? "verified" : "no"')"
+    fi
     [ "$v" = full ] && break; sleep 2
   done
   case "$v" in

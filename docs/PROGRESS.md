@@ -122,6 +122,24 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · Mainnet readiness: verification path, rehearsal, indexer
+
+- The mainnet Blockscout API refuses every command-line client: HTTP 403 Cloudflare browser challenge, also with the user's VPN (Cloudflare WARP IP). The web pages load and the testnet explorer is open. Neither forge nor curl can verify there.
+- Sourcify (chain 4663 supported) verifies the same package and forwards it to the explorer from its own servers. Proven on testnet:
+  - three mock feeds verified through Sourcify only (`exact_match`) appear on the testnet Blockscout as verified (exact match);
+  - the license shows as none on this path.
+- `verify-contracts.sh` gained `VERIFIER=sourcify` (Sourcify v2 API: submit, poll, read back) and uses it by default on mainnet. The manifest now carries the creation transaction hash. End-to-end run on testnet: 2 new contracts verified, 1 already verified, all exact match.
+- The forwarding to the **mainnet** explorer can only be shown on mainnet: `scripts/mainnet-verify-probe.sh` deploys a 377-byte `VerificationProbe` from its explorer package bytecode (rehearsed on a fork, 126k gas), verifies it through Sourcify and prints the explorer link (B17).
+- Mainnet release rehearsed on a fork with chain id 4663: `deployAll` broadcast, `set-start-block`, SDK build, `verify-prepare mainnet` gives 28/28 small packages. Web unit tests and a production (mainnet) build pass with the addresses filled in.
+  - Fixed an e2e test that assumed testnet as the default network.
+  - All fork traces were removed and `mainnet.json` restored.
+- Supabase mainnet brought up to date:
+  - migration `20261026000001_pool_sparkline` applied;
+  - `api` and `indexer` functions redeployed from the current code;
+  - `INDEXER_TOKEN` function secret and Vault secrets `project_url` / `indexer_token` set; cron active.
+  - Cron to indexer returns HTTP 200 `skipped: no deployment`. After B13 only `sync-deployments.mjs mainnet` is left.
+- Vercel production env checked: `NEXT_PUBLIC_NETWORK`, `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SITE_URL` are set. The `mainnet` branch is promoted after B13.
+
 ## 2026-10-30 · DLMM/DAMM invariants and mainnet verification proof
 
 - `test/damm/DAMM.invariant.t.sol` covers a concentrated-range pool with a launch fee and a 20% protocol share, through random add, remove, swap, fee claim, protocol fee collection and time steps. Invariants:
