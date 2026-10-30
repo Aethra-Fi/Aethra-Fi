@@ -308,7 +308,9 @@ gh pr merge <nomor-PR> --merge
 
 Atau izinkan saya menjalankannya. Setelah merge, saya cek status Vercel dan `aethra.finance`.
 
-## B23 · CA token AETH untuk hero landing · `OPEN` (dulu ditulis B21; nomor itu sudah dipakai promosi landing)
+## B23 · CA token AETH untuk hero landing · `DONE` 2026-10-31 (dulu ditulis B21; nomor itu sudah dipakai promosi landing)
+
+Selesai: token yang kamu luncurkan `0xE56B23204a66b43b8D788c6CD19749e5D5752C64` ("AETHRA FI", simbol `AETHRA`, 18 desimal, supply 1 miliar). Di chain: ada `burn()` dan `burnFrom()`, tanpa `mint()`, tanpa `owner()`. Hero menampilkan `$AETHRA` (sama dengan simbol on-chain). Dipromosikan ke `mainnet` (PR #33) atas izin tetap kamu, `testnet` disamakan (PR #34). Untuk v1.4: buyback mainnet masih terikat ke AETH lama `0xd373…7409`, jadi perlu upgrade sebelum dibuka. Teks di bawah adalah catatan asli.
 
 Kamu meluncurkan token AETH sendiri. Setelah itu, kirim CA-nya. Blok `$AETH  CA  0x…` (salin + link explorer) di hero landing sudah siap dan tersembunyi selama `AETH_TOKEN.address` di `apps/web/src/lib/token.ts` masih `null`.
 
