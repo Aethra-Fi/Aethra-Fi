@@ -231,7 +231,18 @@ Setelah itu bilang "B13 selesai". Lalu aku:
 - promosikan `main` ke `mainnet` (Vercel production `aethra.finance`),
 - smoke test.
 
-## B14 · Rekam layar verifikasi mainnet · `OPEN` (siap direkam)
+## B18 · Kunci v1.1 di mainnet (butuh password keystore) · `OPEN`
+
+DLMM, DAMM, dan limit orders ikut terbuka saat deploy, padahal rencananya rilis v1.1. Script ini mencabut status registrar kedua factory: 2 transaksi, ±79k gas, ±$0,004, password diminta sekali. Sudah disimulasikan di mainnet. Web otomatis menyembunyikan DLMM/DAMM/limit orders setelahnya.
+
+```bash
+# Jalankan di: ROOT
+bash scripts/mainnet-v11.sh lock
+```
+
+Saat v1.1 rilis: `bash scripts/mainnet-v11.sh open`.
+
+## B14 · Rekam layar verifikasi mainnet · `OPEN` (siap direkam, boleh sebelum atau sesudah B18)
 
 VPN tidak diperlukan: untuk mainnet script otomatis memakai Sourcify. Paket verifikasi disiapkan otomatis oleh `mainnet-deploy.sh --broadcast`. Kabari aku dulu setelah B13 supaya aku cek paketnya.
 

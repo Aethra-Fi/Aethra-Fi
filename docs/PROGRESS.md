@@ -123,6 +123,15 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · Release check against the plan
+
+- v1.1 (DLMM, DAMM, limit orders) was open on mainnet right after deploy: `Deploy.s.sol` registers both factories. By the user's choice it is locked again until v1.1:
+  - `scripts/mainnet-v11.sh lock|open` (B18);
+  - `useOpenVenues` in the web app reads `hub.isRegistrar(factory)` and hides the DLMM/DAMM venues in create pool, the limit orders nav entry and page while closed. Testnet stays open (e2e `venues.spec.ts`).
+- Still open for v1.0: seed liquidity (waits for a top-up) and publishing `@aethra/sdk` to npm.
+- v1.3 note: DLMM and the v4 hook only sweep protocol fees to a buyback. Treasury-first fees need an upgrade (see RELEASE_PLAN status).
+- B14 verifies all 28 contracts (user's choice).
+
 ## 2026-10-31 · Mainnet deployed (B13)
 
 - 38 transactions, all succeeded. 43,242,802 gas, 0.000869563 ETH (≈ $1.92 at ≈ $2,210/ETH), within the $6–7 budget. Remaining deployer balance 0.0020918 ETH. Start block 101899930.

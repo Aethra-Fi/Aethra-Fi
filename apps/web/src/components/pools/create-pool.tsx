@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTokenList, type TokenOption } from "@/hooks/use-token";
 import { useTx } from "@/hooks/use-tx";
+import { useOpenVenues } from "@/hooks/use-venues";
 import { ABIS, addressOf } from "@/lib/contracts";
 import { binFromPrice, priceFromBin } from "@/lib/dlmm";
 import { formatNumber } from "@/lib/format";
@@ -29,6 +30,9 @@ export function CreatePool() {
   const { tokens } = useTokenList();
   const erc20s = tokens.filter((t) => !t.native);
   const [venue, setVenue] = React.useState<Venue>("V4");
+  const open = useOpenVenues();
+  // DLMM and DAMM appear once the hub lets their factories register pools
+  const venues = VENUES.filter((v) => v.v === "V4" || (v.v === "DLMM" ? open.dlmm : open.damm));
   const [a, setA] = React.useState<TokenOption>();
   const [b, setB] = React.useState<TokenOption>();
   const [price, setPrice] = React.useState("");
@@ -101,7 +105,7 @@ export function CreatePool() {
       <PageHeader eyebrow="Pools / Create" title="Create a pool" description="Choose a venue, a token pair and an initial price. Once the pool is live, seed it with liquidity from its pool page." />
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]">
         <div className="hairline-grid grid border">
-          {VENUES.map((v) => (
+          {venues.map((v) => (
             <button
               key={v.v}
               onClick={() => setVenue(v.v)}

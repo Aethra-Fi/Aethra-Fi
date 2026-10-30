@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useOpenVenues } from "@/hooks/use-venues";
 import { useNetwork } from "@/lib/network";
 import { MORE_NAV as ALL_MORE_NAV, PRIMARY_NAV, RESOURCE_NAV, navFor } from "./nav";
 import { Logo } from "./site-header";
 
 export function SiteFooter() {
-  const MORE_NAV = navFor(ALL_MORE_NAV, useNetwork());
+  const venues = useOpenVenues();
+  const MORE_NAV = navFor(ALL_MORE_NAV, useNetwork(), venues);
   // the landing is a full-height horizontal page with its own bottom bar
   if (usePathname() === "/") return null;
   return (
