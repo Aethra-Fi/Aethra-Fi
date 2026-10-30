@@ -15,7 +15,6 @@ import { formatNumber, formatUsd } from "@/lib/format";
 import { CHAIN, CHAIN_ID } from "@/lib/network";
 import { cn } from "@/lib/utils";
 import type { RibbonFrame } from "./glyph-ribbon";
-import { HeroRing } from "./hero-ring";
 import { BinsSchematic, BurnSchematic, CodeSchematic, CurveSchematic, FeeSchematic, HealthSchematic, RouterSchematic } from "./schematics";
 
 const GlyphRibbon = dynamic(() => import("./glyph-ribbon").then((m) => m.GlyphRibbon), { ssr: false });
@@ -463,7 +462,6 @@ export function LandingSections() {
   const morphRef = React.useRef<HTMLSpanElement>(null);
   const crossRef = React.useRef<HTMLDivElement>(null);
   const progressRef = React.useRef<HTMLDivElement>(null);
-  const heroRef = React.useRef<HTMLDivElement>(null);
   const n = SECTIONS.length;
 
   // One gesture, one section. On desktop a wheel flick, a key press or a nav click flies to the neighbouring
@@ -631,13 +629,6 @@ export function LandingSections() {
       sectionRef.current = pos;
       setActive((a) => (Math.round(pos) === a ? a : Math.round(pos)));
       if (progressRef.current) progressRef.current.style.transform = `scaleY(${pos / (n - 1)})`;
-      // the hero ring hands over to the glyph ribbon as the page leaves the first section
-      const hero = heroRef.current;
-      if (hero) {
-        const leave = Math.min(1, pos / 0.75);
-        hero.style.setProperty("--leave", leave.toFixed(3));
-        hero.toggleAttribute("data-off", leave >= 1);
-      }
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(measure);
@@ -681,14 +672,7 @@ export function LandingSections() {
     <div ref={rootRef} className="relative [--header-h:57px]" aria-label="Aethra Fi overview">
       {/* fixed backdrop: blueprint grid + ribbon, below the sticky header */}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)] bg-[linear-gradient(rgb(var(--border)/0.35)_1px,transparent_1px),linear-gradient(90deg,rgb(var(--border)/0.35)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_70%_50%,black,transparent_75%)]" />
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)] overflow-hidden">
-        <div className="container relative h-full">
-          <div className="absolute left-1/2 top-[7%] w-[170vw] -translate-x-[40%] opacity-50 sm:w-[120vw] lg:left-[37%] lg:top-1/2 lg:w-[70%] lg:translate-x-0 lg:-translate-y-[54%] lg:opacity-100">
-            <HeroRing ref={heroRef} />
-          </div>
-        </div>
-      </div>
-      <GlyphRibbon sectionRef={sectionRef} shapes={SHAPES} onFrame={onFrame} hideFirst className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)]" />
+      <GlyphRibbon sectionRef={sectionRef} shapes={SHAPES} onFrame={onFrame} className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)]" />
 
       {/* sections */}
       <div className="relative z-10">

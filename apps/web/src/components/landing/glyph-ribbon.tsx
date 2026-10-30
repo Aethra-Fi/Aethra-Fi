@@ -11,16 +11,19 @@ export const GLYPH_COUNT = ALONG * ACROSS;
 const ATLAS_COLS = 16;
 const CELL = 64;
 
-/** Per-section camera framing: [yaw, pitch, scale] so every shape reads well. */
-const FRAMING: [number, number, number][] = [
-  [0.2, 0.55, 1.0], // möbius
-  [0.15, 0.35, 1.0], // router
-  [0.25, 0.3, 0.95], // wave
-  [-0.35, 0.18, 0.95], // bins
-  [0.3, 0.25, 1.0], // spiral
-  [0.35, 0.2, 0.95], // helix
-  [0.1, 0.75, 1.0], // vortex
-  [0.25, 0.45, 0.95], // knot
+/**
+ * Per-section camera framing: [yaw, pitch, scale, sway] so every shape reads well. Sway scales the idle and pointer
+ * yaw: a tilted ring turns into a steep diagonal under the full swing, so it gets less.
+ */
+const FRAMING: [number, number, number, number][] = [
+  [0, 0.7, 0.92, 0.3], // liquidity ring
+  [0.15, 0.35, 1.0, 1], // router
+  [0.25, 0.3, 0.95, 1], // wave
+  [-0.35, 0.18, 0.95, 1], // bins
+  [0.3, 0.25, 1.0, 1], // spiral
+  [0.35, 0.2, 0.95, 1], // helix
+  [0.1, 0.75, 1.0, 1], // vortex
+  [0.25, 0.45, 0.95, 1], // knot
 ];
 
 export interface RibbonFrame {
@@ -62,11 +65,6 @@ function buildAtlas(weight = 500): THREE.CanvasTexture {
   return tex;
 }
 
-const smoothstep = (a: number, b: number, x: number) => {
-  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
-
 /**
  * The landing's 3D glyph ribbon. Reads the horizontal scroll position from `sectionRef` every frame and
  * morphs between the section shapes; reports the cursor and morph state through `onFrame` for the HUD.
@@ -75,15 +73,12 @@ export function GlyphRibbon({
   sectionRef,
   shapes,
   onFrame,
-  hideFirst = false,
   className,
 }: {
   sectionRef: React.RefObject<number>;
   /** ribbon shape per landing section; defaults to one shape per section in order */
   shapes?: number[];
   onFrame?: (f: RibbonFrame) => void;
-  /** the first section shows its own visual: the ribbon stays hidden there and assembles as the page leaves it */
-  hideFirst?: boolean;
   className?: string;
 }) {
   const hostRef = React.useRef<HTMLDivElement>(null);
@@ -93,15 +88,10 @@ export function GlyphRibbon({
   const shapesRef = React.useRef<number[]>(shapes ?? []);
   const { resolvedTheme } = useTheme();
   const atlasWeightRef = React.useRef(500);
-  const hideFirstRef = React.useRef(hideFirst);
 
   React.useEffect(() => {
     onFrameRef.current = onFrame;
   }, [onFrame]);
-
-  React.useEffect(() => {
-    hideFirstRef.current = hideFirst;
-  }, [hideFirst]);
 
   React.useEffect(() => {
     shapesRef.current = shapesKey ? shapesKey.split(",").map(Number) : [];
@@ -198,7 +188,6 @@ export function GlyphRibbon({
     let width = 1;
     let height = 1;
     let wide = true;
-    let baseAlpha = 1;
     const resize = () => {
       const r = host.getBoundingClientRect();
       width = Math.max(1, r.width);
@@ -209,7 +198,7 @@ export function GlyphRibbon({
       camera.updateProjectionMatrix();
       material.uniforms.uAspect!.value = camera.aspect;
       material.uniforms.uGlyphSize!.value = wide ? 0.085 : 0.07;
-      baseAlpha = wide ? 1 : 0.55;
+      material.uniforms.uGlobalAlpha!.value = wide ? 1 : 0.55;
     };
     const ro = new ResizeObserver(resize);
     ro.observe(host);
@@ -245,9 +234,6 @@ export function GlyphRibbon({
     let offX = 0;
     let raf = 0;
     let last = 0;
-    // with hideFirst, the glyphs assemble (uIntro) when the ribbon first shows, not at page load
-    let introStart = hideFirstRef.current ? -1 : 0;
-    let blank = false;
     const timeScale = reduce ? 0.12 : 1;
     // frame-rate independent easing: same feel at 30 fps and 144 fps
     const ease = (rate: number, dt: number) => 1 - Math.exp(-rate * dt);
@@ -260,6 +246,7 @@ export function GlyphRibbon({
       last = t;
       const u = material.uniforms;
       u.uTime!.value = t * timeScale;
+      if (!reduce) u.uIntro!.value = Math.min(1, t / 2.2);
 
       // follow the scroll position with a little lag so fast swipes still read as a morph
       const map = shapesRef.current;
@@ -275,11 +262,6 @@ export function GlyphRibbon({
       u.uShapeB!.value = b;
       u.uMix!.value = k;
 
-      const visible = hideFirstRef.current ? smoothstep(0.15, 0.85, section) : 1;
-      u.uGlobalAlpha!.value = baseAlpha * visible;
-      if (visible > 0 && introStart < 0) introStart = t;
-      if (!reduce && introStart >= 0) u.uIntro!.value = Math.min(1, (t - introStart) / 2.2);
-
       mouse.x += (mouse.tx - mouse.x) * ease(8, dt);
       mouse.y += (mouse.ty - mouse.y) * ease(8, dt);
       mouse.active += (mouse.tactive - mouse.active) * ease(5, dt);
@@ -288,8 +270,9 @@ export function GlyphRibbon({
 
       const fa = FRAMING[a]!;
       const fb = FRAMING[b]!;
+      const swing = fa[3] + (fb[3] - fa[3]) * k;
       const sway = reduce ? 0 : Math.sin(t * 0.17) * 0.45;
-      const tYaw = fa[0] + (fb[0] - fa[0]) * k + sway + mouse.x * mouse.active * 0.55;
+      const tYaw = fa[0] + (fb[0] - fa[0]) * k + (sway + mouse.x * mouse.active * 0.55) * swing;
       const tPitch = fa[1] + (fb[1] - fa[1]) * k - mouse.y * mouse.active * 0.3;
       yaw += (tYaw - yaw) * ease(3, dt);
       pitch += (tPitch - pitch) * ease(3, dt);
@@ -302,14 +285,7 @@ export function GlyphRibbon({
       u.uPulseAge!.value = pulseStart < 0 ? -1 : t - pulseStart;
       if (pulseStart >= 0 && t - pulseStart > 1.6) pulseStart = -1;
 
-      // nothing to draw while hidden: clear once, then skip the GPU work
-      if (visible === 0) {
-        if (!blank) renderer.clear();
-        blank = true;
-      } else {
-        renderer.render(scene, camera);
-        blank = false;
-      }
+      renderer.render(scene, camera);
       onFrameRef.current?.({ x: mouse.x * 3.2, y: mouse.y * 1.8, section, active: mouse.tactive === 1 });
     };
     frame();
