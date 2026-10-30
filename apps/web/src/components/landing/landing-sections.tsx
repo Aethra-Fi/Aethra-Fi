@@ -3,13 +3,14 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, Check, Copy } from "lucide-react";
 import { useBlockNumber } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { StatusDot } from "@/components/kit";
 import { useDashboard } from "@/hooks/use-api";
 import { FEATURES } from "@/lib/features";
 import { useOpenVenues } from "@/hooks/use-venues";
+import { AETH_TOKEN } from "@/lib/token";
 import { formatNumber, formatUsd } from "@/lib/format";
 import { CHAIN, CHAIN_ID } from "@/lib/network";
 import { cn } from "@/lib/utils";
@@ -225,6 +226,38 @@ function ChainBadge() {
   );
 }
 
+/** Hero block for the launched AETH token: contract address with copy and an explorer link. Hidden until set. */
+function TokenCA() {
+  const [copied, setCopied] = React.useState(false);
+  const ca = AETH_TOKEN.address;
+  if (!ca) return null;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(ca);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* clipboard blocked: the address is still selectable */
+    }
+  };
+  const icon = "inline-flex size-7 shrink-0 items-center justify-center border text-fg-2 transition-ui hover:border-primary/60 hover:text-primary-text";
+  return (
+    <div className="flex max-w-xl items-center gap-3 border bg-bg/80 py-1.5 pl-3 pr-1.5">
+      <span className="shrink-0 font-mono text-[11px] uppercase tracking-eyebrow text-primary-text">${AETH_TOKEN.symbol}</span>
+      <span className="shrink-0 font-mono text-[10px] uppercase tracking-eyebrow text-muted">CA</span>
+      <code className="min-w-0 flex-1 select-all truncate font-mono text-[12px] text-fg" title={ca}>
+        {ca}
+      </code>
+      <button type="button" onClick={copy} aria-label={copied ? "Copied" : `Copy the ${AETH_TOKEN.symbol} contract address`} title={copied ? "Copied" : "Copy"} className={icon}>
+        {copied ? <Check className="size-3.5 text-primary-text" /> : <Copy className="size-3.5" />}
+      </button>
+      <a href={`${AETH_TOKEN.explorer}/token/${ca}`} target="_blank" rel="noreferrer" aria-label={`${AETH_TOKEN.symbol} on the explorer`} title="Explorer" className={icon}>
+        <ArrowUpRight className="size-3.5" />
+      </a>
+    </div>
+  );
+}
+
 function LiveStats() {
   const d = useDashboard();
   const block = useBlockNumber({ chainId: CHAIN_ID, watch: true });
@@ -343,6 +376,11 @@ function Panel({ s, i }: { s: Section; i: number }) {
                   </Button>
                 </div>
               </Reveal>
+              {AETH_TOKEN.address && (
+                <Reveal active={active} delay={480}>
+                  <TokenCA />
+                </Reveal>
+              )}
               <Reveal active={active} delay={530}>
                 <LiveStats />
               </Reveal>
