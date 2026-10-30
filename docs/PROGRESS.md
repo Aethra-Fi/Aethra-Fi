@@ -156,6 +156,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
   - `scripts/testnet-redeploy.sh` does a fresh testnet with one password prompt: Deploy, SetupMarkets, DeployGated (testnet now has the same gated modules as mainnet), DeepenLiquidity, start block, SDK build, verification packages.
   - Rehearsed on a fork (chain id 31337): 58.9M gas. All 32 verification packages reproduce the deployed bytes including the metadata hash.
   - The verify script now reads the match type back from the explorer ("exact match" / "partial match") and sends the MIT license.
+  - Testnet redeployed by the user (B15): 117 transactions, all succeeded. Addresses equal the fork rehearsal. Indexer rows of the old deployment deleted, new deployment synced: 7 pools, TVL ≈ $828k. Exact match proven on the new aUSD mock feed `0x631b…a4c2` (not in the recording list). 32 verification packages ready.
   - Mainnet dry run with metadata: 55.05M gas limit = 0.0011210 ETH = $2.48 at 0.020364 gwei and $2,212.93 (upper bound). Within budget.
 
 ## 2026-10-30 · Router + hook security review

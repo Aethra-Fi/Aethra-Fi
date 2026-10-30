@@ -151,7 +151,9 @@ bash scripts/testnet-liquidity.sh --broadcast # 2x prompt password
 
 Setelah itu bilang "B11 selesai". Aku cek indexer, quote di semua venue, dan halaman faucet.
 
-## B15 · Redeploy testnet dengan metadata hash (butuh password keystore) · `OPEN` — kerjakan sebelum B12
+## B15 · Redeploy testnet dengan metadata hash (butuh password keystore) · `DONE` 2026-10-30
+
+Selesai: 117 transaksi sukses, indexer membaca 7 pool baru (TVL ±$828k), uji exact match pada mock feed aUSD baru `0x631b…a4c2` lolos ("Contract source code verified (exact match)", lisensi MIT). Teks di bawah adalah catatan asli.
 
 Supaya explorer menampilkan "Contract source code verified (exact match)", bukan "partial match". Semua alamat testnet berubah. Web, SDK, dan indexer aku perbarui setelahnya.
 
@@ -165,7 +167,7 @@ bash scripts/testnet-redeploy.sh --broadcast
 
 Setelah itu bilang "B15 selesai". Aku membersihkan data indexer lama, sync alamat baru ke Supabase, promosikan web ke `testnet`, lalu membuktikan exact match dengan memverifikasi satu mock feed (bukan bagian dari rekaman).
 
-## B12 · Rekam layar verifikasi testnet · `OPEN` (setelah B15)
+## B12 · Rekam layar verifikasi testnet · `OPEN` (siap direkam)
 
 Tidak butuh keystore. 32 kontrak, semua tampil fresh di rekaman.
 
