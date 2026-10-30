@@ -14,10 +14,9 @@ const CONTRACTS = "packages/contracts";
 // Broadcast runs per network, in deployment order. `skip` drops implementations that a later upgrade replaced.
 const RUNS = {
   testnet: [
-    { file: "Deploy.s.sol/46630/run-latest.json", skip: ["AethraHub", "AethraHook", "AethraRouter"] },
-    { file: "Upgrade.s.sol/46630/run-latest.json" },
+    { file: "Deploy.s.sol/46630/run-latest.json" },
     { file: "SetupMarkets.s.sol/46630/run-latest.json", only: ["FaucetToken"] },
-    { file: "DeployCredit.s.sol/46630/run-latest.json" },
+    { file: "DeployGated.s.sol/46630/run-latest.json" },
   ],
   mainnet: [{ file: "DeployMainnet.s.sol/4663/deployAll-latest.json" }],
 };
@@ -145,8 +144,7 @@ for (const r of rows) {
 for (const r of rows) {
   if (r.label) continue;
   const base = LABEL[r.name] ?? r.name;
-  const upgraded = ["AethraHub", "AethraHook", "AethraRouter"].includes(r.name) && network === "testnet";
-  r.label = proxied.has(r.address) || upgraded || /Pool$|Factory|Orders|Positions|Launchpad|Buyback|Vault|Manager/.test(r.name) ? `${base} (implementation)` : base;
+  r.label = proxied.has(r.address) || /Pool$|Factory|Orders|Positions|Launchpad|Buyback|Vault|Manager/.test(r.name) ? `${base} (implementation)` : base;
 }
 // test tokens are named by their symbol
 for (const [sym, t] of Object.entries(deployment.tokens ?? {})) {

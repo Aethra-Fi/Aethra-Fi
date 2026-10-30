@@ -82,7 +82,23 @@ pnpm dev                             # web app
 The Docker edge runtime cannot reach Anvil on 127.0.0.1, so to index the local chain run the indexer on the host:
 `cd supabase/functions && SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… RPC_URL_31337=http://127.0.0.1:8545 deno run --config deno.json -A indexer/index.ts`.
 
-## Testnet implementation upgrade (2026-10-30)
+## Testnet redeploy (2026-10-30, B15)
+
+Fresh testnet compiled with the CBOR metadata hash, so the explorer gives exact verification matches. It has the same shape as the mainnet release: core, DLMM and DAMM live; launchpad, AETH, buyback and credit deployed but locked (`hidden` in the address file). Script: `bash scripts/testnet-redeploy.sh --broadcast` (117 transactions, start block 145409915). The indexer rows of the old deployment were deleted and the new addresses synced.
+
+| Contract | Proxy |
+| --- | --- |
+| AethraHub | `0xdAa6BeF5EE73f2A92e93D113AEd1E49d0E138e4A` |
+| AethraHook | `0xf33177ae76c8784F967EdBDB8d6354485c4cfAcc` |
+| AethraRouter | `0x7Be615487D5781b58ED308770D63dDa3716aA6c1` |
+| AethraPositions | `0xB570dBe256B2c20A7740134F04a584f659D3dEA0` |
+| DLMM factory | `0xb642fc4e3508eA0EA48CFA04f70D204b468c20d4` |
+| DLMM limit orders | `0x303A763AFbDa9A8bd1a6b9a8E445a7Ba0244D566` |
+| DAMM factory | `0x8f0C7E971b7C76F1836c1fC9b7C9E3690Cb0b090` |
+
+Full list with explorer links: `docs/verification/testnet.md` (written by `scripts/verify-contracts.sh testnet`). The upgrade reference `upgrades/v0-testnet` describes the old deployment; snapshot the current commit before the next testnet upgrade.
+
+## Testnet implementation upgrade (2026-10-30, old deployment, superseded)
 
 Proxy addresses did not change. The ERC-1967 implementation slot of each proxy was read back after the upgrade.
 

@@ -137,7 +137,9 @@ Script berhenti tanpa mengirim apa pun bila keystore `deployer` bukan `0xd09D…
 
 Catatan: jangan jalankan script ini dengan commit yang berbeda dari yang diuji. Fix keamanan belum di-commit saat B10 ditulis. Commit dulu, lalu jalankan.
 
-## B11 · Likuiditas testnet + perbaikan pool saham (butuh password keystore) · `OPEN`
+## B11 · Likuiditas testnet + perbaikan pool saham (butuh password keystore) · `DONE` 2026-10-30
+
+Selesai: feed segar, quote hidup di semua venue (1.000 aUSD → 3,95 aTSLA di v4, 3,98 di DLMM), indexer membaca 7 pool dengan TVL ±$828k. Teks di bawah adalah catatan asli.
 
 Saat ini semua pool saham di testnet berhenti karena mock price feed-nya basi. Batch ini menyegarkan feed, memperdalam pool, dan membuka pool DLMM dan DAMM pertama. Biaya ±0,00012 ETH gas plus 0,003 ETH yang di-wrap jadi likuiditas. Saldo testnet 0,0044 ETH. Untuk WETH/aUSD yang lebih dalam, isi dulu dari faucet lalu set `SEED_WETH` (wei).
 
@@ -149,9 +151,25 @@ bash scripts/testnet-liquidity.sh --broadcast # 2x prompt password
 
 Setelah itu bilang "B11 selesai". Aku cek indexer, quote di semua venue, dan halaman faucet.
 
-## B12 · Rekam layar verifikasi testnet · `OPEN`
+## B15 · Redeploy testnet dengan metadata hash (butuh password keystore) · `DONE` 2026-10-30
 
-Tidak butuh keystore. Script memverifikasi 32 kontrak di explorer testnet dan mencetak link explorer tiap kontrak. Supaya path direktori tidak terlihat di rekaman:
+Selesai: 117 transaksi sukses, indexer membaca 7 pool baru (TVL ±$828k), uji exact match pada mock feed aUSD baru `0x631b…a4c2` lolos ("Contract source code verified (exact match)", lisensi MIT). Teks di bawah adalah catatan asli.
+
+Supaya explorer menampilkan "Contract source code verified (exact match)", bukan "partial match". Semua alamat testnet berubah. Web, SDK, dan indexer aku perbarui setelahnya.
+
+1. Isi saldo testnet dari https://faucet.testnet.chain.robinhood.com. Sisa saldo 0,0013 ETH; script butuh minimal 0,003 ETH (gas ±0,0006 ETH + seed WETH 0,001 ETH).
+2. Jalankan (password diminta sekali):
+
+```bash
+# Jalankan di: ROOT
+bash scripts/testnet-redeploy.sh --broadcast
+```
+
+Setelah itu bilang "B15 selesai". Aku membersihkan data indexer lama, sync alamat baru ke Supabase, promosikan web ke `testnet`, lalu membuktikan exact match dengan memverifikasi satu mock feed (bukan bagian dari rekaman).
+
+## B12 · Rekam layar verifikasi testnet · `OPEN` (siap direkam)
+
+Tidak butuh keystore. 32 kontrak, semua tampil fresh di rekaman.
 
 ```bash
 # Jalankan di: ROOT
@@ -161,7 +179,7 @@ clear
 bash scripts/verify-contracts.sh testnet
 ```
 
-Link juga disimpan di `docs/verification/testnet.md`. Kalau dijalankan dua kali, hasilnya "already verified".
+Di layar: cek koneksi, tekan Enter, 32 kontrak diverifikasi satu per satu (spinner lalu ✓), bukti dari explorer dengan label "exact match" dan link yang bisa diklik, lalu prompt untuk membuka kontrak di browser (ketik nomor, `q` selesai). Halaman explorer menampilkan "Contract source code verified (exact match)". Link juga disimpan di `docs/verification/testnet.md`.
 
 ## B13 · Deploy mainnet (butuh password keystore) · `OPEN`
 
@@ -181,7 +199,7 @@ Setelah itu bilang "B13 selesai". Lalu aku:
 
 ## B14 · Rekam layar verifikasi mainnet · `OPEN` (setelah B13)
 
-API explorer mainnet menolak koneksi dari sini (Cloudflare, HTTP 403). **Nyalakan VPN dulu.** Tanpa VPN, pakai `VERIFIER=sourcify`.
+API explorer mainnet menolak koneksi dari sini (Cloudflare, HTTP 403). **Nyalakan VPN dulu.** `mainnet-deploy.sh --broadcast` sudah menyiapkan paket verifikasi otomatis. Sebelum merekam, bilang ke aku dulu supaya aku cek paketnya.
 
 ```bash
 # Jalankan di: ROOT

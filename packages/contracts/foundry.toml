@@ -9,8 +9,12 @@ evm_version = "cancun"
 optimizer = true
 optimizer_runs = 800
 via_ir = true
-bytecode_hash = "none"
-cbor_metadata = false
+# Keep the CBOR metadata hash: the explorer needs it for a full (not partial) verification match.
+bytecode_hash = "ipfs"
+cbor_metadata = true
+# Only remappings.txt: auto-detected remappings of nested libraries carry absolute local paths, and the metadata
+# (published with the verified source) would include them.
+auto_detect_remappings = false
 ffi = true
 ast = true
 build_info = true

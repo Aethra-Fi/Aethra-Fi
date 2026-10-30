@@ -4,13 +4,13 @@
   "weth": "0x33e4191705c386532ba27cBF171Db86919200B94",
   "multicall3": "0xcA11bde05977b3631167028862bE2a173976CA11",
   "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
-  "hub": "0x71Bb058106b1a226a6f66e2152719a6B827c783a",
-  "hook": "0xE1eD1ECC79dc893A3A0D8ac9EF90f00819587ACC",
-  "router": "0xEE8AE4155C653B664727CA5EF0757914aA4769CE",
-  "positions": "0x9aC6782D82D980f2623bBE78C8882832baC94903",
-  "dlmmFactory": "0x170ed757E332547d27b7ca0644Fee22259A25279",
-  "dlmmLimitOrders": "0xf7Ce817965156A308b0Cdf1FED554e35055f3190",
-  "dammFactory": "0x7bd8f7D7E615A692821d6A31275dB38BC6836980",
+  "hub": "0xdAa6BeF5EE73f2A92e93D113AEd1E49d0E138e4A",
+  "hook": "0xf33177ae76c8784F967EdBDB8d6354485c4cfAcc",
+  "router": "0x7Be615487D5781b58ED308770D63dDa3716aA6c1",
+  "positions": "0xB570dBe256B2c20A7740134F04a584f659D3dEA0",
+  "dlmmFactory": "0xb642fc4e3508eA0EA48CFA04f70D204b468c20d4",
+  "dlmmLimitOrders": "0x303A763AFbDa9A8bd1a6b9a8E445a7Ba0244D566",
+  "dammFactory": "0x8f0C7E971b7C76F1836c1fC9b7C9E3690Cb0b090",
   "launchpad": null,
   "lendingVault": null,
   "creditManager": null,
@@ -60,28 +60,28 @@
       "symbol": "WETH"
     },
     "aAAPL": {
-      "address": "0x7ACFE2CD7724b9Cb9Ef7005a183F12E6Df690dA0",
+      "address": "0xe311C64cCaD41853A7ea2D857757d8A39eE03e76",
       "decimals": 18,
       "kind": "stock",
       "name": "Aethra Test Apple",
       "symbol": "aAAPL"
     },
     "aNVDA": {
-      "address": "0x1f9903f49b80E58fDcc7bFC90f8a9c1373C5eaD2",
+      "address": "0xf1AB307A6a04E36bF9851bDBFc1A595534d8da4c",
       "decimals": 18,
       "kind": "stock",
       "name": "Aethra Test NVIDIA",
       "symbol": "aNVDA"
     },
     "aTSLA": {
-      "address": "0xBA5256Ca177a797600BAe6Fe666b2171c6C776e4",
+      "address": "0xC1984A0717F4154b05d463246e83e2857a7625aB",
       "decimals": 18,
       "kind": "stock",
       "name": "Aethra Test Tesla",
       "symbol": "aTSLA"
     },
     "aUSD": {
-      "address": "0x73261B27AFca7110cB3b591Ca3B3376223678425",
+      "address": "0xF43687EAF650315624d63e33964ebE9FbAe4d1c5",
       "decimals": 6,
       "kind": "test",
       "name": "Aethra Test USD",
@@ -89,23 +89,23 @@
     }
   },
   "oracles": {
-    "AMD": "0xE1417498254F8A57398402ACD0BfA19dA1f1Ba79",
-    "AMZN": "0x13b0F467c6314615f3ae49dBeBfD44c4627A4c82",
-    "NFLX": "0x367Ed874c573C788461F2Abc8158c716485545ea",
-    "PLTR": "0x1C05BeF9561045A8F3ec00e54219806d13AD9f18",
-    "TSLA": "0x518fB77828e48476ad9E11A6b5CeF45d2f27d53A",
-    "WETH": "0x3e46dBCa6916B13512b705Eb58FFf2994b4a3857",
-    "aAAPL": "0xF46c15ef18b152D4af5658A1D8ba2ebA617515Da",
-    "aNVDA": "0x44D68f1eD1Bb5a352062f451Cf6689fE6BcC9587",
-    "aTSLA": "0x113b7E4E7B70797f25B8A95627c0a3439089E565",
-    "aUSD": "0xCD077cb2CAD5f4c7B9b06FB9958dB36535A0aEd2"
+    "AMD": "0x7789C1AEcbBE4a3703B64170Aba41E96FD2E9611",
+    "AMZN": "0xb6B0eF54735dA7f434440A7AAaE46655261CDC97",
+    "NFLX": "0x7d426af562D8934769312297bb2edeC8f3147b0d",
+    "PLTR": "0xC509E6b77f1164de3b96DD87609B77492F0B716C",
+    "TSLA": "0xEe8e6B309A608bc56ECE4c9112d17117B86a0417",
+    "WETH": "0x01Cb6D5f0640eB4632dF62bEf81D724d23Db57Ad",
+    "aAAPL": "0x949FeBb826EE175E4cf050d451494BFde6781383",
+    "aNVDA": "0x6A7E5BfA47dB0C22A7C0Acd8010006B430d8E01e",
+    "aTSLA": "0xC204Aa5533c704cD6AE6Cd69d9f287977e9C8F4d",
+    "aUSD": "0x631b11d0c0494dAE03e11d284311dD3B3f73A4C2"
   },
-  "startBlock": 140811858,
+  "startBlock": 145409915,
   "hidden": {
-    "launchpad": "0x498249bC18986216FEC0BECd2f6130D162C970eD",
-    "lendingVault": "0x9a9DB6f013E2D5478F9C1BEA9948431A1c6C5bAD",
-    "creditManager": "0x467c64AbA2e336542B9F9AaC75d91FD024F6c374",
-    "buyback": "0x9f6207312aA6D431f51235DfFF3884EAaa14218D",
-    "aeth": "0xfe97357eBa1dED613A3E7A560c35cF2DB360e939"
+    "launchpad": "0x44c5b27CeFC2eee9a06497561C13402038A95BD0",
+    "lendingVault": "0x1666DEbBc6C90f25652eA3Ec9e964E74AB9E6f23",
+    "creditManager": "0xEA4E16B7D5ba3f2813C4a6B2EFea5541FD56932d",
+    "buyback": "0x1B688DB7202eA4349a85C532dcF0f2502F9137b9",
+    "aeth": "0xA992C8a6FF44E325755EBfA2F62C6dD03Ee18470"
   }
 }
