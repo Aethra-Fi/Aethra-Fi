@@ -325,7 +325,9 @@ Selesai: sesi aethra-15 mempromosikan `main` ke `mainnet` (PR #26) dan `testnet`
 
 `main` berisi landing baru dari sesi aethra-15 (sudah di testnet, PR #25) dan blok CA di atas. Promosi berikutnya ke production membawa keduanya. Cek dulu https://testnet.aethra.finance, lalu beri izin.
 
-## B24 · Promosikan hero ring 3D ke mainnet · `OPEN`
+## B24 · Promosikan hero ring 3D ke mainnet · `DONE` 2026-10-31
+
+Selesai atas izin kamu: PR #31 di-merge ke `mainnet` dan PR #32 menyamakan `testnet`. Kedua deploy Vercel sukses, dan `aethra.finance` sudah diperiksa di browser (dark dan light). Teks di bawah adalah catatan asli.
 
 Ring hero yang dibangun ulang (torus 3D miring dengan orbit, `f31f2b8`) sudah di `main` dan live di testnet (PR #30, `aethra-fi-testnet.vercel.app`). Produksi `aethra.finance` masih memakai ring lama. Cek tampilannya di testnet dulu. Kalau sudah sesuai, beri izin dan saya yang menjalankan promosinya, atau jalankan sendiri:
 
