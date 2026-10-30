@@ -198,7 +198,9 @@ bash scripts/verify-contracts.sh testnet
 
 Di layar: cek koneksi, tekan Enter, 32 kontrak diverifikasi satu per satu (spinner lalu ✓), bukti dari explorer dengan label "exact match" dan link yang bisa diklik, lalu prompt untuk membuka kontrak di browser (ketik nomor, `q` selesai). Halaman explorer menampilkan "Contract source code verified (exact match)". Link juga disimpan di `docs/verification/testnet.md`.
 
-## B13 · Deploy mainnet (butuh password keystore) · `OPEN`
+## B13 · Deploy mainnet (butuh password keystore) · `OPEN` (siap)
+
+Status 2026-10-30: invariant test DLMM dan DAMM lolos. 28 paket verifikasi mainnet sudah dibuktikan terhadap dry run, termasuk metadata hash (exact match). Dry run terakhir $2,49.
 
 Satu script untuk seluruh rilis: core, DLMM, DAMM hidup, sedangkan launchpad, AETH, buyback, dan kredit terkunci on-chain. Owner = deployer. Dry run 2026-10-30: ±$1,89 (batas atas $2,44). Forge butuh ±0,00218 ETH di muka, saldo 0,00297 ETH. Kalau harga gas di atas ±0,05 gwei, tunggu turun.
 

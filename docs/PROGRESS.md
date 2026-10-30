@@ -122,6 +122,24 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-30 · DLMM/DAMM invariants and mainnet verification proof
+
+- `test/damm/DAMM.invariant.t.sol` covers a concentrated-range pool with a launch fee and a 20% protocol share, through random add, remove, swap, fee claim, protocol fee collection and time steps. Invariants:
+  - token balances ≥ reserves + fees owed to LPs + protocol fees;
+  - shares + MIN_LIQUIDITY = liquidity;
+  - price stays inside the range;
+  - reserves can pay out the curve to either edge.
+  Result: 256 runs × 500 calls, all pass. `afterInvariant` checks that swaps and removals really happened.
+- `test/dlmm/DLMM.invariant.t.sol` covers random add (shaped bins), remove, share transfer, swap, limit order place, claim and cancel, protocol fee collection and time steps. Invariants:
+  - token balances ≥ bin reserves + protocol fees;
+  - bins below the active bin hold no token0 and bins above hold no token1;
+  - bin shares add up (at most MIN_SHARES unowned);
+  - the limit order contract owns exactly the shares of its open orders.
+  Result: 128 runs × 200 calls, all pass, on the forge build and on `verifiable/DLMMPool.bin` (`DLMM_VERIFIABLE=1`), the bytecode that testnet and mainnet deploy. Default config is 64 × 100 to keep pre-push fast.
+- Release plan gate 6 (DLMM/DAMM invariants) is done.
+- Mainnet verification proven before broadcast: `VERIFY_DRY_RUN=1 node scripts/verify-prepare.mjs mainnet` gives 28/28 contracts with small source packages that reproduce the dry-run bytecode including the metadata hash, with no local paths. `mainnet-deploy.sh --broadcast` prepares the real packages right after the broadcast.
+- Mainnet dry run 2026-10-30: 55.06M gas limit = 0.0011190 ETH = $2.49 (0.020324 gwei). Deployer balance 0.002964 ETH.
+
 ## 2026-10-30 · Faucet, testnet liquidity, mainnet release scripts and final dry run
 
 - Web: `/faucet` page (testnet and local only; hidden from the nav on mainnet). Claims each Aethra test token once a day (`faucet()`, cooldown shown), wraps and unwraps ETH, links the Robinhood Chain ETH faucet. Dark and light screenshots in `docs/ui-style/screens/faucet-*.png`.

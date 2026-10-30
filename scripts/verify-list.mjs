@@ -18,7 +18,8 @@ const RUNS = {
     { file: "SetupMarkets.s.sol/46630/run-latest.json", only: ["FaucetToken"] },
     { file: "DeployGated.s.sol/46630/run-latest.json" },
   ],
-  mainnet: [{ file: "DeployMainnet.s.sol/4663/deployAll-latest.json" }],
+  // VERIFY_DRY_RUN=1 reads the dry run instead, to prove the packages before the real broadcast
+  mainnet: [{ file: process.env.VERIFY_DRY_RUN ? "DeployMainnet.s.sol/4663/dry-run/deployAll-latest.json" : "DeployMainnet.s.sol/4663/deployAll-latest.json" }],
 };
 
 const LABEL = {
