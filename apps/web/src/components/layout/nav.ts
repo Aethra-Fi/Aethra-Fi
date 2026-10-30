@@ -31,9 +31,9 @@ const visible = (items: (NavItem & { hidden?: boolean })[]): NavItem[] => items.
 export const PRIMARY_NAV = visible(ALL_PRIMARY);
 export const MORE_NAV = visible(ALL_MORE);
 
-/** The faucet only exists where test tokens are deployed. */
-export const navFor = (items: NavItem[], network: NetworkName): NavItem[] =>
-  network === "mainnet" ? items.filter((i) => i.href !== "/faucet") : items;
+/** The faucet only exists where test tokens are deployed; limit orders need open DLMM pools. */
+export const navFor = (items: NavItem[], network: NetworkName, venues: { dlmm: boolean }): NavItem[] =>
+  items.filter((i) => !(i.href === "/faucet" && network === "mainnet") && !(i.href === "/orders" && !venues.dlmm));
 
 export const RESOURCE_NAV: NavItem[] = [
   { href: "/docs", label: "Docs", description: "How Aethra works" },

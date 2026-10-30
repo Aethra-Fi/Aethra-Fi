@@ -15,6 +15,7 @@ import {
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { IndexerStatus } from "@/components/kit";
 import { cn } from "@/lib/utils";
+import { useOpenVenues } from "@/hooks/use-venues";
 import { useNetwork } from "@/lib/network";
 import { MORE_NAV as ALL_MORE_NAV, PRIMARY_NAV, navFor } from "./nav";
 import { NetworkNotice } from "./network-notice";
@@ -57,7 +58,8 @@ function WalletButton() {
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const MORE_NAV = navFor(ALL_MORE_NAV, useNetwork());
+  const venues = useOpenVenues();
+  const MORE_NAV = navFor(ALL_MORE_NAV, useNetwork(), venues);
   return (
     <>
     <header className="sticky top-0 z-40 border-b bg-bg/85 backdrop-blur supports-[backdrop-filter]:bg-bg/70">
