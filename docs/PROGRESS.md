@@ -123,6 +123,15 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · ERR_CONNECTION_REFUSED report from a visitor
+
+- One visitor saw "Web page not available … http://aethra.finance/ … net::ERR_CONNECTION_REFUSED" (Android in-app browser).
+- Not reproducible. 47 of 48 check-host.net nodes passed, Jakarta included: http 308, https 200, port 80 open. The one failure was a Swiss node with broken DNS.
+- Every public resolver returns `216.198.79.1`. Komdigi TrustPositif says "Tidak Ada". Safe Browsing does not flag the domain.
+- Likely cause on the visitor's side: the domain was registered 2026-10-27. DNS filters that block newly registered domains (Private DNS, antivirus, VPN) answer `0.0.0.0`, which gives exactly this error. It clears once the domain is about 30 days old.
+- Fallback URL: `https://aethra-fi.vercel.app` serves the same production deployment (same ETag).
+- HSTS `includeSubDomains` + preload was offered and declined by the user. Share links as `https://aethra.finance`.
+
 ## 2026-10-31 · Security headers
 
 - External check of `aethra.finance`:
