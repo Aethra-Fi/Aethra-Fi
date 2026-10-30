@@ -211,7 +211,9 @@ bash scripts/mainnet-verify-probe.sh   # password diminta sekali
 
 Buka link yang dicetak di browser. Halamannya harus menampilkan "Contract source code verified (exact match)". Bilang "B17 selesai" beserta apa yang terlihat di halaman itu.
 
-## B13 · Deploy mainnet (butuh password keystore) · `OPEN` (siap, dry run ulang 2026-10-31: $2,48, 28/28 paket cocok)
+## B13 · Deploy mainnet (butuh password keystore) · `DONE` 2026-10-31
+
+Selesai: 38 transaksi sukses, gas 43,24 juta, biaya 0,00087 ETH (±$1,92). Semua kunci on-chain sesuai rencana. 28/28 paket verifikasi cocok. Indexer di-sync, web dipromosikan ke `mainnet`. Teks di bawah adalah catatan asli.
 
 Status 2026-10-30: invariant test DLMM dan DAMM lolos. 28 paket verifikasi mainnet sudah dibuktikan terhadap dry run, termasuk metadata hash (exact match). Dry run terakhir $2,49.
 
@@ -229,7 +231,7 @@ Setelah itu bilang "B13 selesai". Lalu aku:
 - promosikan `main` ke `mainnet` (Vercel production `aethra.finance`),
 - smoke test.
 
-## B14 · Rekam layar verifikasi mainnet · `OPEN` (setelah B13)
+## B14 · Rekam layar verifikasi mainnet · `OPEN` (siap direkam)
 
 VPN tidak diperlukan: untuk mainnet script otomatis memakai Sourcify. Paket verifikasi disiapkan otomatis oleh `mainnet-deploy.sh --broadcast`. Kabari aku dulu setelah B13 supaya aku cek paketnya.
 

@@ -16,7 +16,8 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 | 8 | DAMM/DLMM, limit orders, credit, buyback | ✅ | Contracts + UI |
 | 9 | UI modification (style guide → tokens, 2 themes) | ✅ | Tokens + 2 themes; Playwright dark/light screenshots in `docs/ui-style/screens/` |
 | 10 | Testnet deploy | ✅ | https://aethra-fi-testnet.vercel.app live: contracts on 46630, hosted indexer + API, Vercel Git deploys from `testnet` |
-| 11 | Mainnet dry run (no broadcast) | ✅ | 2026-10-30: full release (all modules) 42.1M gas ≈ $1.89, within $7. Broadcast by the user (B13) |
+| 11 | Mainnet dry run + deploy | ✅ | Deployed 2026-10-31 (B13), see below |
+| 11a | (old) Mainnet dry run | ✅ | 2026-10-30: full release (all modules) 42.1M gas ≈ $1.89, within $7. Broadcast by the user (B13) |
 
 ## Setup checklist
 
@@ -121,6 +122,20 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 4. Vercel / Supabase hosted setup (after B1).
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
+
+## 2026-10-31 · Mainnet deployed (B13)
+
+- 38 transactions, all succeeded. 43,242,802 gas, 0.000869563 ETH (≈ $1.92 at ≈ $2,210/ETH), within the $6–7 budget. Remaining deployer balance 0.0020918 ETH. Start block 101899930.
+- Proxies: hub `0x939aCB0cB63B42ef0A77Aa22ea895C56575941F1`, hook `0x4512E102B8b93a236b56e6437B6AD6b9eD963ACC`, router `0xeb836E4ec538E094e06643b135DD9DDA2f01B85F`, positions `0xc85c3Ce038a37ca04e2571a3F4738aDAC5e5E3A5`, DLMM factory `0xc2364a63291672Bce714255ff1e8D4bE3771Bc7b`, DLMM limit orders `0x7Ebc6dFF0d10eE822B55464b1F1e3a318E60f823`, DAMM factory `0x99aC6317725593D0be7462eC88b218Ce758eEDB7`. Gated modules in `hidden`.
+- On-chain checks on mainnet:
+  - all 11 owned contracts are owned by the deployer;
+  - hook, DLMM and DAMM factories are registrars; the launchpad is not;
+  - protocol fee share 0 and no buyback set;
+  - the vault has no credit manager;
+  - TSLA, NVDA and AAPL are STOCK and disabled;
+  - 1B AETH is held by the deployer;
+  - hook address flags `0x3acc`.
+- 28/28 verification packages reproduce the deployed bytecode. Indexer synced (`sync-deployments.mjs mainnet`). Web promoted to the `mainnet` branch (`aethra.finance`).
 
 ## 2026-10-31 · Mainnet readiness: verification path, rehearsal, indexer
 
