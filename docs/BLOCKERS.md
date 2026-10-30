@@ -242,7 +242,9 @@ bash scripts/mainnet-v11.sh lock
 
 Saat v1.1 rilis: `bash scripts/mainnet-v11.sh open`.
 
-## B19 · Launch v1.0: top-up lalu seed WETH/USDG (butuh password keystore) · `OPEN`
+## B19 · Seed WETH/USDG (butuh password keystore) · `DITUNDA` sampai ada dana
+
+Keputusan 2026-10-31: v1.0 diluncurkan tanpa seed. Sisa saldo deployer (±$4,7) disimpan sebagai gas untuk pembukaan v1.1–v2.0 dan cadangan upgrade. Swap di aethra.finance aktif begitu ada LP pertama: siapa pun, atau script di bawah ini saat dana tersedia.
 
 1. Kirim ke deployer `0xd09D9c87ECfe008B4D6D3cEbeAd25103c16d9a7C` di Robinhood Chain: **±0,004 ETH** (saldo sekarang 0,0021 ETH; dibutuhkan 0,005 seed + 0,0001 smoke test + 0,0003 cadangan gas) dan **±11,5 USDG** (`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`; saldo sekarang 0,12).
 2. Jalankan:
