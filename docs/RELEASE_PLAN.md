@@ -2,6 +2,8 @@
 
 Disusun 2026-10-30, direvisi hari yang sama. Cakupan: urutan fitur, syarat teknis, biaya gas, dan langkah operasional. Narasi dan konten X tidak dibahas di sini.
 
+> **Revisi 2026-10-30 (keputusan kamu):** owner mainnet = wallet deployer (tanpa Safe dulu), semua modul di-deploy sekaligus lewat `script/DeployMainnet.s.sol` (`scripts/mainnet-deploy.sh`), tanpa seed likuiditas sampai ada top-up. Stablecoin = USDG `0x5fc5…d168`, token saham terkunci = TSLA, NVDA, AAPL resmi. Pembukaan modul dikirim langsung oleh deployer, bukan Safe. Dry run final: 42,1 juta gas ≈ $1,89 (rincian di `PROGRESS.md`).
+
 ## 1. Model rilis
 
 **Deploy sekali, buka bertahap.** Semua kontrak yang siap di-deploy sekaligus (Batch A, dan Batch B bila syaratnya terpenuhi). Fitur yang belum waktunya dikunci **di on-chain**, bukan hanya disembunyikan di UI, lalu dibuka satu per satu lewat satu batch transaksi Safe ditambah satu flag.

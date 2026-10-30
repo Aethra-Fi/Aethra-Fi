@@ -136,3 +136,58 @@ bash scripts/testnet-upgrade.sh --broadcast
 Script berhenti tanpa mengirim apa pun bila keystore `deployer` bukan `0xd09D…9a7C`. Setelah selesai cukup bilang "B10 selesai": aku baca `packages/contracts/broadcast/Upgrade.s.sol/46630/`, cek `implementation()` tiga proxy, jalankan ulang tes fork terhadap state baru, dan perbarui `docs/infrastructure.md`.
 
 Catatan: jangan jalankan script ini dengan commit yang berbeda dari yang diuji. Fix keamanan belum di-commit saat B10 ditulis. Commit dulu, lalu jalankan.
+
+## B11 · Likuiditas testnet + perbaikan pool saham (butuh password keystore) · `OPEN`
+
+Saat ini semua pool saham di testnet berhenti karena mock price feed-nya basi. Batch ini menyegarkan feed, memperdalam pool, dan membuka pool DLMM dan DAMM pertama. Biaya ±0,00012 ETH gas plus 0,003 ETH yang di-wrap jadi likuiditas. Saldo testnet 0,0044 ETH. Untuk WETH/aUSD yang lebih dalam, isi dulu dari faucet lalu set `SEED_WETH` (wei).
+
+```bash
+# Jalankan di: ROOT
+bash scripts/testnet-liquidity.sh             # simulasi saja
+bash scripts/testnet-liquidity.sh --broadcast # 2x prompt password
+```
+
+Setelah itu bilang "B11 selesai". Aku cek indexer, quote di semua venue, dan halaman faucet.
+
+## B12 · Rekam layar verifikasi testnet · `OPEN`
+
+Tidak butuh keystore. Script memverifikasi 32 kontrak di explorer testnet dan mencetak link explorer tiap kontrak. Supaya path direktori tidak terlihat di rekaman:
+
+```bash
+# Jalankan di: ROOT
+export PS1='$ '
+clear
+# mulai rekam, lalu:
+bash scripts/verify-contracts.sh testnet
+```
+
+Link juga disimpan di `docs/verification/testnet.md`. Kalau dijalankan dua kali, hasilnya "already verified".
+
+## B13 · Deploy mainnet (butuh password keystore) · `OPEN`
+
+Satu script untuk seluruh rilis: core, DLMM, DAMM hidup, sedangkan launchpad, AETH, buyback, dan kredit terkunci on-chain. Owner = deployer. Dry run 2026-10-30: ±$1,89 (batas atas $2,44). Forge butuh ±0,00218 ETH di muka, saldo 0,00297 ETH. Kalau harga gas di atas ±0,05 gwei, tunggu turun.
+
+```bash
+# Jalankan di: ROOT
+bash scripts/mainnet-deploy.sh              # dry run + laporan biaya, tidak mengirim apa pun
+bash scripts/mainnet-deploy.sh --broadcast  # 2x prompt password; menulis packages/sdk/src/addresses/mainnet.json
+```
+
+Setelah itu bilang "B13 selesai". Lalu aku:
+- commit `mainnet.json` (tombol Mainnet di web otomatis aktif),
+- hubungkan indexer Supabase mainnet (sync deployments, Vault secrets, cron),
+- promosikan `main` ke `mainnet` (Vercel production `aethra.finance`),
+- smoke test.
+
+## B14 · Rekam layar verifikasi mainnet · `OPEN` (setelah B13)
+
+API explorer mainnet menolak koneksi dari sini (Cloudflare, HTTP 403). **Nyalakan VPN dulu.** Tanpa VPN, pakai `VERIFIER=sourcify`.
+
+```bash
+# Jalankan di: ROOT
+export PS1='$ '
+clear
+bash scripts/verify-contracts.sh mainnet
+```
+
+Link disimpan di `docs/verification/mainnet.md`.
