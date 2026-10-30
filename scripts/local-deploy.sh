@@ -13,5 +13,5 @@ if [ -f script/SetupMarkets.s.sol ]; then
 fi
 # credit, launchpad and buyback are hidden for now: see packages/contracts/script/deferred/README.md
 cd "$ROOT" && node scripts/set-start-block.mjs local
-cd "$ROOT" && pnpm --filter @aethra/sdk abis >/dev/null 2>&1 || true
+cd "$ROOT" && pnpm --filter @aethrafi/sdk abis >/dev/null 2>&1 || true
 echo "Local deployment written to packages/sdk/src/addresses/local.json"

@@ -192,7 +192,7 @@ const ALL_SECTIONS: Section[] = [
     title: "Typed SDK.\nOpen API.",
     body: "Typed addresses and ABIs for every network, route and price helpers, and a public read-only REST API backed by the Aethra indexer. Everything the app does, you can build on.",
     specs: [
-      ["Package", "@aethra/sdk"],
+      ["Package", "@aethrafi/sdk"],
       ["API", "REST · JSON"],
       ["Indexer", "~1 min sync"],
       ["Contracts", "UUPS upgradeable"],

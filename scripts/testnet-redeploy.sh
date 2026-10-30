@@ -58,7 +58,7 @@ echo "4/4  Deeper liquidity, DLMM and DAMM pools"
 SEED_WETH=0 forge script script/testnet/DeepenLiquidity.s.sol:DeepenLiquidity "${COMMON[@]}"
 
 cd "$ROOT" && node scripts/set-start-block.mjs testnet
-cd "$ROOT" && pnpm --filter @aethra/sdk build >/dev/null
+cd "$ROOT" && pnpm --filter @aethrafi/sdk build >/dev/null
 cd "$ROOT" && node scripts/verify-prepare.mjs testnet --quiet || echo "WARNING: verification packages not ready"
 echo "Done. Addresses written to packages/sdk/src/addresses/testnet.json"
 echo "Remaining balance: $(cast balance "$DEPLOYER_ADDRESS" --rpc-url "$RPC" -e) ETH"

@@ -1,5 +1,5 @@
 import type { Address } from "viem";
-import type { Deployment } from "@aethra/sdk";
+import type { Deployment } from "@aethrafi/sdk";
 import { erc20Abi } from "viem";
 import { FEATURES } from "./features";
 import {
@@ -19,10 +19,10 @@ import {
   launchpadAbi,
   lendingVaultAbi,
   poolManagerAbi,
-} from "@aethra/sdk";
+} from "@aethrafi/sdk";
 import { DEPLOYMENT } from "./network";
 
-/** Full ABIs generated from the Foundry build (`pnpm --filter @aethra/sdk abis`). */
+/** Full ABIs generated from the Foundry build (`pnpm --filter @aethrafi/sdk abis`). */
 export const ABIS = {
   router: aethraRouterAbi,
   positions: aethraPositionsAbi,

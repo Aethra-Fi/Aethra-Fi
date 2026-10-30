@@ -1,5 +1,5 @@
 {
-  "name": "@aethra/sdk",
+  "name": "@aethrafi/sdk",
   "version": "0.1.0",
   "description": "TypeScript SDK for Aethra Fi on Robinhood Chain: deployed addresses, ABIs, chains, route quoting and price math.",
   "license": "MIT",

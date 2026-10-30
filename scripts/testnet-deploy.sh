@@ -29,6 +29,6 @@ NETWORK=testnet SEED_WETH="$SEED_WETH" forge script script/SetupMarkets.s.sol:Se
 
 # credit, launchpad and buyback are hidden for now: see packages/contracts/script/deferred/README.md
 cd "$ROOT" && node scripts/set-start-block.mjs testnet
-cd "$ROOT" && pnpm --filter @aethra/sdk build >/dev/null
+cd "$ROOT" && pnpm --filter @aethrafi/sdk build >/dev/null
 echo "Done. Addresses written to packages/sdk/src/addresses/testnet.json"
 echo "Remaining balance: $(cast balance "$DEPLOYER_ADDRESS" --rpc-url "$RPC" -e) ETH"

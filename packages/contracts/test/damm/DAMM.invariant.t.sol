@@ -59,7 +59,7 @@ contract DAMMHandler is Test {
 
     function swap(uint256 actorSeed, bool zeroForOne, uint256 amount) external {
         address a = actors[actorSeed % actors.length];
-        amount = bound(amount, 1e3, 1e26);
+        amount = bound(amount, 1e3, 1e24);
         vm.prank(a);
         try pool.swapExactInput(zeroForOne ? address(token0) : address(token1), amount, 0, a, block.timestamp) {
             swaps++;

@@ -1,5 +1,5 @@
 import { encodeAbiParameters, type Address, type Hex } from "viem";
-import { Venue } from "@aethra/sdk";
+import { Venue } from "@aethrafi/sdk";
 import type { ApiPool } from "./api";
 import { DYNAMIC_FEE_FLAG } from "./v4math";
 import { poolKeyComponents } from "./abi-shared";
