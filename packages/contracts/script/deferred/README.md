@@ -9,3 +9,5 @@ When they ship, run after `Deploy` (and `SetupMarkets` on local/testnet):
 - `script/deferred/DeployCredit.s.sol` deploys the lending vault and credit manager.
 
 Then set `NEXT_PUBLIC_FEATURES=launchpad,credit,buyback` for the web app and restore the addresses from `hidden` in `packages/sdk/src/addresses/<network>.json`.
+
+Mainnet does not use these scripts: `script/DeployMainnet.s.sol` deploys the same modules locked on-chain (launchpad not a registrar, protocol fee share 0, vault caps 0 and no credit manager). `script/DeployGated.s.sol` does the same on top of an existing core.

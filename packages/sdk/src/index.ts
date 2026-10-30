@@ -39,7 +39,7 @@ export interface Deployment {
   buyback: Address | null;
   aeth: Address | null;
   /** Deployed but switched off (launchpad, credit, buyback). Move back to the fields above to re-enable. */
-  hidden?: Partial<Record<"launchpad" | "lendingVault" | "creditManager" | "buyback" | "aeth", Address>>;
+  hidden?: Partial<Record<"launchpad" | "lendingVault" | "creditManager" | "buyback" | "aeth", Address | null>>;
   tokens: Record<string, TokenInfo>;
   oracles: Record<string, Address>;
   startBlock: number;

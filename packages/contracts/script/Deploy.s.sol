@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {Script, console2} from "forge-std/Script.sol";
+import {VmSafe} from "forge-std/Vm.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
 import {Hooks} from "v4-core/libraries/Hooks.sol";
@@ -20,7 +21,8 @@ import {DAMMFactory} from "../src/damm/DAMMFactory.sol";
 /// @notice Deploys the Aethra Fi protocol (proxies + implementations) and writes addresses to the SDK.
 /// @dev Usage (see scripts/local-deploy.sh and docs/BLOCKERS.md):
 ///      NETWORK=local|testnet|mainnet forge script script/Deploy.s.sol --rpc-url <net> --sender $DEPLOYER_ADDRESS ...
-///      Mainnet is dry-run only (no --broadcast) and never writes addresses.
+///      On mainnet the addresses are written only by a real broadcast (`scripts/mainnet-deploy.sh --broadcast`),
+///      never by a dry run.
 contract Deploy is Script {
     address internal constant DEPLOYER = 0xd09D9c87ECfe008B4D6D3cEbeAd25103c16d9a7C;
     address internal constant POOL_MANAGER = 0x8366a39CC670B4001A1121B8F6A443A643e40951;
@@ -129,7 +131,8 @@ contract Deploy is Script {
     }
 
     function _shouldWrite() internal view returns (bool) {
-        return keccak256(bytes(network)) != keccak256("mainnet") && vm.envOr("WRITE_ADDRESSES", true);
+        if (!vm.envOr("WRITE_ADDRESSES", true)) return false;
+        return keccak256(bytes(network)) != keccak256("mainnet") || vm.isContext(VmSafe.ForgeContext.ScriptBroadcast);
     }
 
     function _write(Core memory c, Modules memory m) internal {

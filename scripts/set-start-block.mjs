@@ -6,7 +6,12 @@ import { readFileSync, writeFileSync } from "node:fs";
 const CHAIN_IDS = { local: 31337, testnet: 46630, mainnet: 4663 };
 const network = process.argv[2];
 if (!(network in CHAIN_IDS)) throw new Error("usage: set-start-block.mjs <local|testnet|mainnet>");
-const run = JSON.parse(readFileSync(`packages/contracts/broadcast/Deploy.s.sol/${CHAIN_IDS[network]}/run-latest.json`, "utf8"));
+// mainnet deploys everything through DeployMainnet.deployAll(); the other networks use Deploy.run()
+const file =
+  network === "mainnet"
+    ? `packages/contracts/broadcast/DeployMainnet.s.sol/${CHAIN_IDS[network]}/deployAll-latest.json`
+    : `packages/contracts/broadcast/Deploy.s.sol/${CHAIN_IDS[network]}/run-latest.json`;
+const run = JSON.parse(readFileSync(file, "utf8"));
 const start = Math.min(...run.receipts.map((r) => Number(BigInt(r.blockNumber))));
 const path = `packages/sdk/src/addresses/${network}.json`;
 const json = JSON.parse(readFileSync(path, "utf8"));
