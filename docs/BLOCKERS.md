@@ -182,7 +182,9 @@ bash scripts/testnet-redeploy.sh --broadcast
 
 Setelah itu bilang "B16 selesai".
 
-## B12 · Rekam layar verifikasi testnet · `OPEN` (siap direkam)
+## B12 · Rekam layar verifikasi testnet · `DONE` 2026-10-30
+
+Selesai: 32/32 kontrak "exact match" dengan lisensi MIT di explorer testnet. Link ada di `docs/verification/testnet.md`. Teks di bawah adalah catatan asli.
 
 Tidak butuh keystore. 32 kontrak, semua tampil fresh di rekaman.
 
