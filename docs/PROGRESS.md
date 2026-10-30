@@ -123,6 +123,21 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · Security headers
+
+- External check of `aethra.finance`:
+  - HTTPS everywhere; HSTS 2 years (Vercel default); Let's Encrypt certificates for apex and `www` until 2027-01-26.
+  - `www` redirects 308 to the apex on purpose.
+  - The live JS bundle has no secrets: only secp256k1 constants and the public Supabase function URLs.
+  - Supabase: the indexer refuses requests without a token (401), the API refuses writes (405), PostgREST without a key gives 401.
+- Gap found: no security headers. A foreign page could frame the site, which made clickjacking possible (proven on production before the fix).
+- `apps/web/next.config.ts` now sends these headers on every route: `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and a `Permissions-Policy` that turns off camera, microphone, geolocation and topics.
+- No full CSP: the wallet connectors load scripts and frames from many origins.
+- Checked on testnet (PR #35) before promoting to mainnet (PR #36, approved by the user):
+  - the wallet modal opens and its MetaMask view works;
+  - no policy violations in the console;
+  - a page on another origin can no longer frame the site.
+
 ## 2026-10-31 · AETHRA contract address in the hero (B23)
 
 - The user launched the token: `0xE56B23204a66b43b8D788c6CD19749e5D5752C64`, name "AETHRA FI", symbol `AETHRA`, 18 decimals, 1B supply. Bytecode has `burn` and `burnFrom`, no `mint`, no `owner`.
