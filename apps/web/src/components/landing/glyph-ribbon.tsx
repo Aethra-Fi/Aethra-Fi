@@ -3,7 +3,8 @@
 import * as React from "react";
 import { useTheme } from "next-themes";
 import * as THREE from "three";
-import { GLYPH_SETS, RIBBON_SHAPES, ribbonFragment, ribbonVertex } from "./ribbon-shaders";
+import { GLYPH_SETS, RIBBON_SHAPES, RING, ribbonFragment, ribbonVertex } from "./ribbon-shaders";
+import { createRingOrbits } from "./ring-orbits";
 
 const ALONG = 240;
 const ACROSS = 22;
@@ -11,19 +12,33 @@ export const GLYPH_COUNT = ALONG * ACROSS;
 const ATLAS_COLS = 16;
 const CELL = 64;
 
-/**
- * Per-section camera framing: [yaw, pitch, scale, sway] so every shape reads well. Sway scales the idle and pointer
- * yaw: a tilted ring turns into a steep diagonal under the full swing, so it gets less.
- */
-const FRAMING: [number, number, number, number][] = [
-  [0, 0.7, 0.92, 0.3], // liquidity ring
-  [0.15, 0.35, 1.0, 1], // router
-  [0.25, 0.3, 0.95, 1], // wave
-  [-0.35, 0.18, 0.95, 1], // bins
-  [0.3, 0.25, 1.0, 1], // spiral
-  [0.35, 0.2, 0.95, 1], // helix
-  [0.1, 0.75, 1.0, 1], // vortex
-  [0.25, 0.45, 0.95, 1], // knot
+interface Framing {
+  yaw: number;
+  pitch: number;
+  /** on-screen tilt */
+  roll: number;
+  scale: number;
+  /** scales the idle and pointer swing: a tilted ring turns into a steep diagonal under the full swing */
+  sway: number;
+  /** horizontal offset on wide screens */
+  x: number;
+  /** depth squeeze (1 = the camera's own perspective) */
+  depth: number;
+}
+
+const framing = (yaw: number, pitch: number, scale: number): Framing => ({ yaw, pitch, scale, roll: 0, sway: 1, x: 2.05, depth: 1 });
+
+/** Per-section camera framing so every shape reads well. */
+const FRAMING: Framing[] = [
+  // liquidity ring: seen from above, tilted, with a long lens so the front wall doesn't balloon
+  { yaw: -0.06, pitch: RING.pitch, roll: RING.roll, scale: 0.94, sway: 0.15, x: 1.85, depth: 0.4 },
+  framing(0.15, 0.35, 1.0), // router
+  framing(0.25, 0.3, 0.95), // wave
+  framing(-0.35, 0.18, 0.95), // bins
+  framing(0.3, 0.25, 1.0), // spiral
+  framing(0.35, 0.2, 0.95), // helix
+  framing(0.1, 0.75, 1.0), // vortex
+  framing(0.25, 0.45, 0.95), // knot
 ];
 
 export interface RibbonFrame {
@@ -42,6 +57,50 @@ function rgbVar(styles: CSSStyleDeclaration, name: string, fallback: [number, nu
   return new THREE.Color(r / 255, g / 255, b / 255);
 }
 
+/**
+ * The ring's glyph set (atlas row 0): chips with a dim fill and a bright outline, like shards of a circuit, plus
+ * squares, brackets, a dot and a ring. Seeded, so the set is the same on every load.
+ */
+function drawRingChips(ctx: CanvasRenderingContext2D, row: number, line: number) {
+  let seed = 46630;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+  const shape = (draw: () => void, fill: number) => {
+    ctx.beginPath();
+    draw();
+    ctx.globalAlpha = fill;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.stroke();
+  };
+  const polyline = (pts: [number, number][]) => () =>
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x * CELL, y * CELL) : ctx.moveTo(x * CELL, y * CELL)));
+  ctx.lineWidth = line;
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#fff";
+  for (let col = 0; col < ATLAS_COLS; col++) {
+    ctx.save();
+    ctx.translate(col * CELL + CELL / 2, row * CELL + CELL / 2);
+    if (col < 10) {
+      const k = 4 + Math.floor(rnd() * 3);
+      const squash = 0.6 + rnd() * 0.5;
+      shape(() => {
+        for (let i = 0; i < k; i++) {
+          const a = ((i + rnd() * 0.6) / k) * Math.PI * 2;
+          const r = CELL * (0.2 + rnd() * 0.17);
+          ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r * squash);
+        }
+        ctx.closePath();
+      }, 0.25);
+    } else if (col === 10) shape(() => ctx.rect(-CELL * 0.2, -CELL * 0.2, CELL * 0.4, CELL * 0.4), 0.3);
+    else if (col === 11) shape(() => ctx.rect(-CELL * 0.17, -CELL * 0.17, CELL * 0.34, CELL * 0.34), 1);
+    else if (col === 12) shape(polyline([[-0.22, -0.25], [-0.22, 0.2], [0.25, 0.2]]), 0);
+    else if (col === 13) shape(polyline([[-0.25, -0.1], [0.15, -0.1], [0.15, 0.22]]), 0);
+    else if (col === 14) shape(() => ctx.arc(0, 0, CELL * 0.12, 0, Math.PI * 2), 1);
+    else shape(() => ctx.arc(0, 0, CELL * 0.24, 0, Math.PI * 2), 0.25);
+    ctx.restore();
+  }
+}
+
 /** Light theme draws dark ink on a pale page, so it needs heavier strokes than additive light on dark. */
 function buildAtlas(weight = 500): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
@@ -54,6 +113,7 @@ function buildAtlas(weight = 500): THREE.CanvasTexture {
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#fff";
   GLYPH_SETS.forEach((set, row) => {
+    if (set === null) return drawRingChips(ctx, row, weight > 600 ? 9 : 7);
     const glyphs = Array.from(set);
     for (let col = 0; col < ATLAS_COLS; col++) {
       ctx.fillText(glyphs[col % glyphs.length]!, col * CELL + CELL / 2, row * CELL + CELL / 2 + 2);
@@ -83,6 +143,7 @@ export function GlyphRibbon({
 }) {
   const hostRef = React.useRef<HTMLDivElement>(null);
   const materialRef = React.useRef<THREE.ShaderMaterial | null>(null);
+  const orbitsRef = React.useRef<ReturnType<typeof createRingOrbits> | null>(null);
   const onFrameRef = React.useRef(onFrame);
   const shapesKey = (shapes ?? []).join(",");
   const shapesRef = React.useRef<number[]>(shapes ?? []);
@@ -155,7 +216,9 @@ export function GlyphRibbon({
         uIntro: { value: reduce ? 1 : 0 },
         uYaw: { value: 0 },
         uPitch: { value: 0.5 },
+        uRoll: { value: 0 },
         uScale: { value: 1 },
+        uDepth: { value: 1 },
         uOffset: { value: new THREE.Vector3() },
         uMouse: { value: new THREE.Vector2(9, 9) },
         uMouseActive: { value: 0 },
@@ -178,6 +241,11 @@ export function GlyphRibbon({
     mesh.frustumCulled = false;
     scene.add(mesh);
 
+    // the hero ring's orbits, nodes, dust and edge glow, moving with the glyphs through the shared uniforms
+    const orbits = createRingOrbits(material.uniforms);
+    orbitsRef.current = orbits;
+    scene.add(...orbits.objects);
+
     // fonts may arrive after first paint: rebuild the atlas once they are ready
     void document.fonts?.ready.then(() => {
       const old = material.uniforms.uAtlas!.value as THREE.Texture;
@@ -199,6 +267,9 @@ export function GlyphRibbon({
       material.uniforms.uAspect!.value = camera.aspect;
       material.uniforms.uGlyphSize!.value = wide ? 0.085 : 0.07;
       material.uniforms.uGlobalAlpha!.value = wide ? 1 : 0.55;
+      const px = renderer.getPixelRatio();
+      orbits.uniforms.uPx.value = px;
+      orbits.uniforms.uHalfRes.value.set((width * px) / 2, (height * px) / 2);
     };
     const ro = new ResizeObserver(resize);
     ro.observe(host);
@@ -228,9 +299,7 @@ export function GlyphRibbon({
     document.addEventListener("pointerleave", onLeave);
 
     let section = sectionRef.current ?? 0;
-    let yaw = FRAMING[0]![0];
-    let pitch = FRAMING[0]![1];
-    let scale = FRAMING[0]![2];
+    let { yaw, pitch, scale, roll, depth } = FRAMING[0]!;
     let offX = 0;
     let raf = 0;
     let last = 0;
@@ -270,18 +339,30 @@ export function GlyphRibbon({
 
       const fa = FRAMING[a]!;
       const fb = FRAMING[b]!;
-      const swing = fa[3] + (fb[3] - fa[3]) * k;
+      const lerp = (key: keyof Framing) => fa[key] + (fb[key] - fa[key]) * k;
+      const swing = lerp("sway");
       const sway = reduce ? 0 : Math.sin(t * 0.17) * 0.45;
-      const tYaw = fa[0] + (fb[0] - fa[0]) * k + (sway + mouse.x * mouse.active * 0.55) * swing;
-      const tPitch = fa[1] + (fb[1] - fa[1]) * k - mouse.y * mouse.active * 0.3;
+      const tYaw = lerp("yaw") + (sway + mouse.x * mouse.active * 0.55) * swing;
+      const tPitch = lerp("pitch") - mouse.y * mouse.active * 0.3 * (0.4 + 0.6 * swing);
       yaw += (tYaw - yaw) * ease(3, dt);
       pitch += (tPitch - pitch) * ease(3, dt);
-      scale += (fa[2] + (fb[2] - fa[2]) * k - scale) * ease(3, dt);
-      offX += ((wide ? 2.05 : 0) - offX) * ease(5, dt);
+      roll += (lerp("roll") - roll) * ease(3, dt);
+      scale += (lerp("scale") - scale) * ease(3, dt);
+      depth += (lerp("depth") - depth) * ease(3, dt);
+      offX += ((wide ? lerp("x") : 0) - offX) * ease(5, dt);
       u.uYaw!.value = yaw;
       u.uPitch!.value = pitch;
+      u.uRoll!.value = roll;
+      u.uDepth!.value = depth;
       u.uScale!.value = scale * (wide ? 1 : 0.8);
-      u.uOffset!.value.set(offX, wide ? 0 : 0.35, 0);
+
+      // the orbit layer belongs to the ring: it leaves early in a morph away from it and returns late. On narrow
+      // screens the ring sits behind the headline instead of the body copy, with its bright edges toned down.
+      const ringWeight = (a === 0 ? 1 - k : 0) + (b === 0 ? k : 0);
+      const hero = Math.max(0, 1 - (1 - ringWeight) * 2.5);
+      orbits.uniforms.uHero.value = hero * hero * (3 - 2 * hero) * (wide ? 1 : 0.7);
+      orbits.setVisible(hero > 0.002);
+      u.uOffset!.value.set(offX, wide ? 0 : 0.35 + 0.5 * ringWeight, 0);
       u.uPulseAge!.value = pulseStart < 0 ? -1 : t - pulseStart;
       if (pulseStart >= 0 && t - pulseStart > 1.6) pulseStart = -1;
 
@@ -300,9 +381,11 @@ export function GlyphRibbon({
       geometry.dispose();
       quad.dispose();
       material.dispose();
+      orbits.dispose();
       renderer.dispose();
       renderer.domElement.remove();
       materialRef.current = null;
+      orbitsRef.current = null;
     };
   }, [sectionRef]);
 
@@ -327,6 +410,7 @@ export function GlyphRibbon({
     }
     m.blending = dark ? THREE.AdditiveBlending : THREE.NormalBlending;
     m.needsUpdate = true;
+    orbitsRef.current?.setTheme(dark);
   }, [resolvedTheme]);
 
   return <div ref={hostRef} className={className} aria-hidden />;
