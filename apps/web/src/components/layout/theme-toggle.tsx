@@ -13,6 +13,7 @@ export function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon-sm"
+      className="fx-cyber"
       aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
       onClick={() => setTheme(dark ? "light" : "dark")}
     >

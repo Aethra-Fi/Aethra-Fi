@@ -56,6 +56,11 @@
   --chart-6: 94 93 89;
   --chart-grid: 218 217 211;
 
+  /* Cyber interactions (globals.css .fx-cyber, .fx-burst): chromatic split pair and burst sparks */
+  --glitch-a: 14 124 107;
+  --glitch-b: 109 79 209;
+  --fx-spark: 58 122 10;
+
   --glow: 0 0 0 1px rgb(58 122 10 / 0.25), 0 8px 24px -8px rgb(58 122 10 / 0.25);
   --shadow-card: 0 1px 0 rgb(18 18 17 / 0.04);
   --field-opacity-min: 0.18;
@@ -105,6 +110,10 @@
   --chart-5: 255 107 94;
   --chart-6: 138 137 133;
   --chart-grid: 42 42 40;
+
+  --glitch-a: 46 211 183;
+  --glitch-b: 167 139 250;
+  --fx-spark: 134 246 31;
 
   --glow: 0 0 0 1px rgb(134 246 31 / 0.25), 0 0 32px -4px rgb(134 246 31 / 0.35);
   --shadow-card: none;

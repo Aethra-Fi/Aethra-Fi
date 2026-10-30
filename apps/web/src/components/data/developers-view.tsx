@@ -39,12 +39,13 @@ export function DevelopersView() {
               <span className="font-mono">@aethrafi/sdk</span> ships chain definitions, proxy addresses per network, full ABIs generated from the contracts, and
               price and route helpers.
             </p>
+            <Code>{`npm install @aethrafi/sdk viem`}</Code>
             <Code>{`
 import { createPublicClient, http } from "viem";
 import { chainsByNetwork, getDeployment, aethraRouterAbi } from "@aethrafi/sdk";
 
-const chain = chainsByNetwork.testnet;
-const d = getDeployment("testnet");
+const chain = chainsByNetwork.mainnet; // or .testnet
+const d = getDeployment("mainnet");
 const client = createPublicClient({ chain, transport: http() });
 `}</Code>
           </div>

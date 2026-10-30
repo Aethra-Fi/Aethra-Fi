@@ -260,7 +260,9 @@ Script mengambil harga ETH dari CoinGecko, menampilkan jumlah seed, dan menunggu
 
 Tombol darurat bila perlu: `bash scripts/mainnet-pool-switch.sh off` (swap ditolak, likuiditas tetap bisa ditarik), `... on` untuk menyalakan lagi.
 
-## B20 · Terbitkan SDK ke npm · `OPEN` (organisasi npm `aethrafi` sudah dibuat 2026-10-31, paket berganti nama menjadi `@aethrafi/sdk`; tinggal login + publish)
+## B20 · Terbitkan SDK ke npm · `DONE` 2026-10-31
+
+Selesai: `@aethrafi/sdk@0.1.0` diterbitkan oleh `benzsdk` ke organisasi `aethrafi` (registry menjawab 202; paket terdaftar di organisasi). Untuk publish berikutnya: 2FA lewat passkey di Chrome; buka link konfirmasi npm di Chrome, bukan Firefox. Teks di bawah adalah catatan asli.
 
 Paket sudah siap (`packages/sdk`: README, metadata, `viem` sebagai peer, `npm pack` 47,6 kB, 9 test).
 

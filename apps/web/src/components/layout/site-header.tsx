@@ -24,7 +24,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/" className={cn("flex items-center gap-2.5", className)} aria-label="Aethra Fi home">
+    <Link href="/" className={cn("fx-cyber flex items-center gap-2.5", className)} aria-label="Aethra Fi home">
       <Image src="/brand/aethra-mark-64.png" alt="" width={24} height={24} priority />
       <span className="font-mono text-[13px] font-medium uppercase tracking-wordmark">Aethra</span>
     </Link>
@@ -43,10 +43,10 @@ function WalletButton() {
     <ConnectButton.Custom>
       {({ account, chain, mounted, openAccountModal, openChainModal, openConnectModal }) => {
         if (!mounted) return <Button size="sm" className="invisible" aria-hidden>Connect wallet</Button>;
-        if (!account || !chain) return <Button size="sm" onClick={openConnectModal}>Connect wallet</Button>;
-        if (chain.unsupported) return <Button size="sm" variant="destructive" onClick={openChainModal}>Wrong network</Button>;
+        if (!account || !chain) return <Button size="sm" className="fx-cyber" onClick={openConnectModal}>Connect wallet</Button>;
+        if (chain.unsupported) return <Button size="sm" variant="destructive" className="fx-cyber" onClick={openChainModal}>Wrong network</Button>;
         return (
-          <Button size="sm" variant="secondary" onClick={openAccountModal} className="normal-case tracking-normal">
+          <Button size="sm" variant="secondary" onClick={openAccountModal} className="fx-cyber normal-case tracking-normal">
             <span className="size-1.5 rounded-full bg-primary" />
             {account.displayName}
           </Button>
@@ -71,7 +71,7 @@ export function SiteHeader() {
               key={item.href}
               href={item.href}
               className={cn(
-                "rounded-sm px-3 py-2 font-mono text-[12px] uppercase tracking-button text-fg-2 transition-ui hover:text-fg",
+                "fx-cyber rounded-sm px-3 py-2 font-mono text-[12px] uppercase tracking-button text-fg-2 transition-ui hover:text-fg",
                 isActive(pathname, item.href) && "text-primary-text",
               )}
             >
@@ -79,7 +79,7 @@ export function SiteHeader() {
             </Link>
           ))}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 rounded-sm px-3 py-2 font-mono text-[12px] uppercase tracking-button text-fg-2 transition-ui hover:text-fg">
+            <DropdownMenuTrigger className="fx-cyber flex items-center gap-1 rounded-sm px-3 py-2 font-mono text-[12px] uppercase tracking-button text-fg-2 transition-ui hover:text-fg">
               More <ChevronDown className="size-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64">
@@ -102,7 +102,7 @@ export function SiteHeader() {
           <WalletButton />
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="lg:hidden" aria-label="Open menu">
+              <Button variant="ghost" size="icon-sm" className="fx-cyber lg:hidden" aria-label="Open menu">
                 <Menu />
               </Button>
             </SheetTrigger>
