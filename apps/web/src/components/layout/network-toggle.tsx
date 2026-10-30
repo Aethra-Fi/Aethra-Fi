@@ -38,7 +38,7 @@ export function NetworkToggle({ className }: { className?: string }) {
             title={available ? undefined : `${NETWORK_LABEL[n]} is not live yet`}
             onClick={() => choose(n)}
             className={cn(
-              "px-2.5 py-1 font-mono text-[11px] uppercase tracking-eyebrow transition-ui",
+              "fx-cyber px-2.5 py-1 font-mono text-[11px] uppercase tracking-eyebrow transition-ui",
               n === active ? "bg-primary-soft text-primary-text" : "text-muted hover:text-fg",
               !available && "cursor-not-allowed opacity-50 hover:text-muted",
             )}

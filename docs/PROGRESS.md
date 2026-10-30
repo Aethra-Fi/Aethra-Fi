@@ -123,6 +123,17 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · v1.0 released
+
+- v1.0 is live on mainnet:
+  - 28 verified contracts;
+  - v1.1–v2.0 locked on-chain;
+  - web on `aethra.finance` with release-aware UI;
+  - indexer and API on Supabase mainnet;
+  - SDK published as `@aethrafi/sdk@0.1.0`, with the install command on the Developers page.
+- Launched without seed liquidity (user's decision). Swaps route as soon as the first LP adds liquidity, or when B19 runs.
+- Git tag `v1.0.0` on the released commit.
+
 ## 2026-10-31 · v1.0 launch preparation
 
 - B14 done: all 28 mainnet contracts verified, exact match through Sourcify.
