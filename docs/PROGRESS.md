@@ -133,6 +133,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
   - `FRAMING` gained a per-shape sway factor (ring 0.3), because the full yaw swing tipped the ring into a steep diagonal.
 - Removed: the image layer (`hero-ring.tsx`, `public/brand/hero-ring-*`, `pnpm brand:hero`), the ribbon `hideFirst` fade, and `cyber-fx.tsx` (glitch, label decode, spark burst) with its tokens `--glitch-a`, `--glitch-b`, `--fx-spark`. The source picture moved to `docs/ui-reference/hero-ring-shape-reference.jpg`.
 - Buttons (`.fx-cyber`, CSS only): brackets open on hover and focus, lock onto the edge on press.
+- Live: testnet (PR #28) and mainnet (PR #29, user approved). Both Vercel deploys succeeded; `aethra.finance` checked in a browser (dark and light, hover and press). The old hero assets now return 404.
 
 ## 2026-10-31 · Landing refresh: hero ring, chain badge, new copy, cyber buttons
 
