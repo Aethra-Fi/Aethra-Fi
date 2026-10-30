@@ -123,6 +123,17 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · Hero back to the glyph ribbon, simpler buttons
+
+- User feedback: the hero picture was a shape reference, not an asset, and the button effects were too much.
+- Hero: ribbon shape 0 (was the Möbius loop) is now the liquidity ring, drawn by the same WebGL glyph ribbon as every section:
+  - a flattened torus of glyphs with a crisp, glowing inner rim;
+  - three outer orbit tracks (one dotted) and one inner track, with two bright `●` nodes per outer track;
+  - it morphs into the router figure-eight on scroll like the rest.
+  - `FRAMING` gained a per-shape sway factor (ring 0.3), because the full yaw swing tipped the ring into a steep diagonal.
+- Removed: the image layer (`hero-ring.tsx`, `public/brand/hero-ring-*`, `pnpm brand:hero`), the ribbon `hideFirst` fade, and `cyber-fx.tsx` (glitch, label decode, spark burst) with its tokens `--glitch-a`, `--glitch-b`, `--fx-spark`. The source picture moved to `docs/ui-reference/hero-ring-shape-reference.jpg`.
+- Buttons (`.fx-cyber`, CSS only): brackets open on hover and focus, lock onto the edge on press.
+
 ## 2026-10-31 · Landing refresh: hero ring, chain badge, new copy, cyber buttons
 
 - Hero: "On Robinhood Chain" badge (live dot) beside the eyebrow. Other places for it are under discussion with the user.
