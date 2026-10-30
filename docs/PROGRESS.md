@@ -135,7 +135,8 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 - Web copy:
   - landing CTAs for limit orders and stock pools switch to "Opening soon on this network" / "Explore pools" while those venues are closed on the active network (`useOpenVenues`; stock opens when the address file lists stock tokens);
   - docs gained an "Availability" row.
-- Waiting for the user: B18 (lock v1.1), B19 (top-up and seed), B20 (npm publish).
+- Waiting for the user: B18 (lock v1.1) and B20 (npm publish).
+- Decision 2026-10-31: v1.0 launches without seed liquidity. The $7 budget covers gas only, and the remaining ≈ $4.7 is kept for the v1.1–v2.0 opening transactions. B19 (seed) is deferred until funds are available; the script is ready and rehearsed.
 
 ## 2026-10-31 · Release check against the plan
 
