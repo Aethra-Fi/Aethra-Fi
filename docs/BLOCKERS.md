@@ -198,7 +198,9 @@ bash scripts/verify-contracts.sh testnet
 
 Di layar: cek koneksi, tekan Enter, 32 kontrak diverifikasi satu per satu (spinner lalu ✓), bukti dari explorer dengan label "exact match" dan link yang bisa diklik, lalu prompt untuk membuka kontrak di browser (ketik nomor, `q` selesai). Halaman explorer menampilkan "Contract source code verified (exact match)". Link juga disimpan di `docs/verification/testnet.md`.
 
-## B17 · Probe verifikasi mainnet (butuh password keystore) · `OPEN` — kerjakan sebelum B13
+## B17 · Probe verifikasi mainnet (butuh password keystore) · `DONE` 2026-10-31
+
+Selesai: `VerificationProbe` `0x549046a186026dd79c5a91cda4844097ba13713a` di mainnet. Sourcify `exact_match`, dan explorer mainnet menampilkan "Contract source code verified (exact match)" (dicek kamu di browser). Teks di bawah adalah catatan asli.
 
 API explorer mainnet menolak semua klien terminal (tantangan browser Cloudflare), VPN pun tetap 403. Jadi verifikasi mainnet lewat Sourcify, yang memverifikasi lalu meneruskan ke explorer dari server mereka. Di testnet jalur ini sudah terbukti: Sourcify `exact_match`, dan explorer menampilkan "verified (exact match)". Satu-satunya yang belum terbukti adalah penerusan ke explorer **mainnet**. Probe ini membuktikannya dengan satu kontrak mini (`VerificationProbe`, ±127k gas, < $0,01).
 
@@ -209,7 +211,7 @@ bash scripts/mainnet-verify-probe.sh   # password diminta sekali
 
 Buka link yang dicetak di browser. Halamannya harus menampilkan "Contract source code verified (exact match)". Bilang "B17 selesai" beserta apa yang terlihat di halaman itu.
 
-## B13 · Deploy mainnet (butuh password keystore) · `OPEN` (setelah B17)
+## B13 · Deploy mainnet (butuh password keystore) · `OPEN` (siap, dry run ulang 2026-10-31: $2,48, 28/28 paket cocok)
 
 Status 2026-10-30: invariant test DLMM dan DAMM lolos. 28 paket verifikasi mainnet sudah dibuktikan terhadap dry run, termasuk metadata hash (exact match). Dry run terakhir $2,49.
 

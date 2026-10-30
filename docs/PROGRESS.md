@@ -138,6 +138,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
   - `api` and `indexer` functions redeployed from the current code;
   - `INDEXER_TOKEN` function secret and Vault secrets `project_url` / `indexer_token` set; cron active.
   - Cron to indexer returns HTTP 200 `skipped: no deployment`. After B13 only `sync-deployments.mjs mainnet` is left.
+- B17 done: `VerificationProbe` `0x5490…713a` on mainnet (tx `0xb8e1…884b`). Sourcify gives `exact_match` and the mainnet explorer shows "Contract source code verified (exact match)" (checked by the user in a browser). The mainnet verification path is proven end to end. Dry run repeated after the probe moved the nonce: $2.48, 28/28 packages match.
 - Vercel production env checked: `NEXT_PUBLIC_NETWORK`, `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SITE_URL` are set. The `mainnet` branch is promoted after B13.
 
 ## 2026-10-30 · DLMM/DAMM invariants and mainnet verification proof
