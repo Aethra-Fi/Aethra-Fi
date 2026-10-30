@@ -69,7 +69,7 @@ contract SetupMarkets is Script {
         _oracle("WETH", address(ethFeed));
         _oracle("aUSD", address(usdFeed));
 
-        // --- faucet test stocks (mock oracle, 1 day staleness so a stale feed halts the pool)
+        // --- faucet test stocks (mock oracle; feeds are only updated by hand, so a short window would halt the pools)
         Stock[3] memory stocks = [
             Stock("aTSLA", "Aethra Test Tesla", 250e8),
             Stock("aNVDA", "Aethra Test NVIDIA", 180e8),
@@ -79,7 +79,7 @@ contract SetupMarkets is Script {
         for (uint256 i; i < stocks.length; i++) {
             st[i] = new FaucetToken(stocks[i].name, stocks[i].symbol, 18, 10e18, DEPLOYER);
             MockPriceFeed f = new MockPriceFeed(DEPLOYER, 8, string.concat(stocks[i].symbol, " / USD (mock)"), stocks[i].price8);
-            hub.setAsset(address(st[i]), AssetClass.STOCK, true, address(f), 1 days);
+            hub.setAsset(address(st[i]), AssetClass.STOCK, true, address(f), 365 days);
             _token(stocks[i].symbol, address(st[i]), stocks[i].name, 18, "stock");
             _oracle(stocks[i].symbol, address(f));
         }
@@ -118,7 +118,7 @@ contract SetupMarkets is Script {
         for (uint256 i; i < 5; i++) {
             if (t[i].code.length == 0) continue;
             MockPriceFeed f = new MockPriceFeed(DEPLOYER, 8, string.concat(sym[i], " / USD (mock)"), px[i]);
-            hub.setAsset(t[i], AssetClass.STOCK, true, address(f), 1 days);
+            hub.setAsset(t[i], AssetClass.STOCK, true, address(f), 365 days);
             _token(sym[i], t[i], sym[i], 18, "stock");
             _oracle(sym[i], address(f));
         }
