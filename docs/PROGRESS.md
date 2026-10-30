@@ -123,6 +123,13 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · AETHRA contract address in the hero (B23)
+
+- The user launched the token: `0xE56B23204a66b43b8D788c6CD19749e5D5752C64`, name "AETHRA FI", symbol `AETHRA`, 18 decimals, 1B supply. Bytecode has `burn` and `burnFrom`, no `mint`, no `owner`.
+- `apps/web/src/lib/token.ts`: address set, symbol changed from `AETH` to `AETHRA` so the hero matches what wallets and the explorer show.
+- Promoted straight to `mainnet` (PR #33, standing user permission for this change), then `testnet` (PR #34).
+- v1.4 note: the mainnet buyback is still bound to the old AETH `0xd373…7409` and has no setter. Opening buyback needs an upgrade that points it at the new token.
+
 ## 2026-10-31 · Hero ring rebuilt as a tilted 3D torus
 
 - User feedback (fourth round): the ring did not look like `docs/ui-reference/hero-ring-shape-reference.jpg`. It should read as a 3D object, slightly tilted, with orbits around it.
