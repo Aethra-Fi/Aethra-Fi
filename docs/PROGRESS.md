@@ -123,6 +123,20 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · v1.0 launch preparation
+
+- B14 done: all 28 mainnet contracts verified, exact match through Sourcify.
+- Seed and smoke test:
+  - `script/mainnet/SeedV1.s.sol` opens WETH/USDG (v4, Aethra hook, dynamic fee, spacing 10) at the market price and mints a full-range position. It refuses a USDG amount more than 5% off the price.
+  - `scripts/mainnet-launch-v1.sh` reads the CoinGecko price, checks balances, asks for confirmation, seeds, and then smoke-tests a 0.0001 ETH swap through the router.
+  - Rehearsed by `test/fork/MainnetLaunch.t.sol` (opt-in `FORK_MAINNET=1`) against the live deployment: pool registered and enabled, ETH → USDG at the quote, USDG → WETH round trip. Pool id `0x6e1de9ed…8f18`.
+- Emergency switch: `scripts/mainnet-pool-switch.sh off|on` (`hub.setPoolEnabled`; the hook reverts `PoolDisabled`).
+- SDK ready for npm: metadata, README, `viem` as peer dependency, `files`, `publishConfig.access=public`, `prepublishOnly` build and test. `npm pack` is 47.6 kB. The built package imports in plain Node with the mainnet addresses.
+- Web copy:
+  - landing CTAs for limit orders and stock pools switch to "Opening soon on this network" / "Explore pools" while those venues are closed on the active network (`useOpenVenues`; stock opens when the address file lists stock tokens);
+  - docs gained an "Availability" row.
+- Waiting for the user: B18 (lock v1.1), B19 (top-up and seed), B20 (npm publish).
+
 ## 2026-10-31 · Release check against the plan
 
 - v1.1 (DLMM, DAMM, limit orders) was open on mainnet right after deploy: `Deploy.s.sol` registers both factories. By the user's choice it is locked again until v1.1:

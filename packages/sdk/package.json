@@ -1,12 +1,39 @@
 {
   "name": "@aethra/sdk",
   "version": "0.1.0",
-  "private": true,
+  "description": "TypeScript SDK for Aethra Fi on Robinhood Chain: deployed addresses, ABIs, chains, route quoting and price math.",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aethra-Fi/Aethra-Fi.git",
+    "directory": "packages/sdk"
+  },
+  "homepage": "https://aethra.finance/developers",
+  "keywords": [
+    "aethra",
+    "robinhood-chain",
+    "defi",
+    "uniswap-v4",
+    "dlmm",
+    "viem",
+    "sdk"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -14,13 +41,15 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "abis": "node scripts/export-abis.mjs"
+    "abis": "node scripts/export-abis.mjs",
+    "prepublishOnly": "pnpm run build && pnpm run test"
   },
-  "dependencies": {
+  "peerDependencies": {
     "viem": "^2.31.0"
   },
   "devDependencies": {
     "typescript": "^5.8.3",
-    "vitest": "^3.2.0"
+    "vitest": "^3.2.0",
+    "viem": "^2.31.0"
   }
 }
