@@ -101,7 +101,7 @@ contract Deploy is Script {
         AethraHub hub = AethraHub(c.hub);
         IAethraHub ihub = IAethraHub(c.hub);
 
-        m.dlmmBeacon = address(new UpgradeableBeacon(address(new DLMMPool()), DEPLOYER));
+        m.dlmmBeacon = address(new UpgradeableBeacon(_verifiable("DLMMPool", type(DLMMPool).creationCode), DEPLOYER));
         m.dlmmFactory = address(
             new ERC1967Proxy(address(new DLMMFactory()), abi.encodeCall(DLMMFactory.initialize, (DEPLOYER, c.hub, m.dlmmBeacon)))
         );
@@ -116,6 +116,21 @@ contract Deploy is Script {
 
         hub.setRegistrar(m.dlmmFactory, true);
         hub.setRegistrar(m.dammFactory, true);
+    }
+
+    /// @dev Deploys verifiable/<name>.bin (written by scripts/build-verifiable.mjs from the explorer's source package) so
+    ///      the deployed bytecode is exactly what the explorer compiles. Local deploys fall back to the forge build.
+    function _verifiable(string memory name, bytes memory fallbackCode) internal returns (address a) {
+        string memory path = string.concat(vm.projectRoot(), "/verifiable/", name, ".bin");
+        bool local = keccak256(bytes(network)) == keccak256("local");
+        bytes memory code;
+        if (vm.exists(path)) code = vm.parseBytes(vm.trim(vm.readFile(path)));
+        else if (local) code = fallbackCode;
+        else revert(string.concat("Deploy: missing verifiable/", name, ".bin, run node scripts/build-verifiable.mjs"));
+        assembly {
+            a := create(0, add(code, 0x20), mload(code))
+        }
+        require(a != address(0), "Deploy: verifiable create failed");
     }
 
     /// @dev Find a CREATE2 salt so the hook proxy's address encodes exactly HOOK_FLAGS in its low 14 bits.

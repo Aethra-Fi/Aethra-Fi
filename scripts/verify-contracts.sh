@@ -109,17 +109,23 @@ submit() { # $1 manifest index -> prints: verified | already | failed:<reason>
   if grep -qi "already verified" <<<"$res"; then echo already; return; fi
   status="$(json 'j.status' <<<"$res")"; guid="$(json 'j.result' <<<"$res")"
   [ "$status" = "1" ] || { echo "failed:$(json 'j.result||j.message' <<<"$res" | cut -c1-80)"; return; }
+  # The status ticket is not reliable (the explorer sometimes forgets it: "Unknown UID"), so the contract page is the
+  # source of truth: it counts as verified as soon as the explorer shows its source code.
+  local last=""
   for tries in $(seq 1 60); do
     sleep 3
     res="$(api "${EXPLORER}/api?module=contract&action=checkverifystatus&guid=${guid}")"
-    case "$(json 'j.result' <<<"$res")" in
+    last="$(json 'j.result' <<<"$res")"
+    case "$last" in
       *"Pass"*|*"pass"*) echo verified; return ;;
       *"lready"*) echo already; return ;;
-      *"Pending"*|*"pending"*|*"queue"*|"") ;;
-      *) echo "failed:$(json 'j.result' <<<"$res" | cut -c1-80)"; return ;;
+    esac
+    if [ "$(api "${EXPLORER}/api/v2/addresses/${address}" | json 'j.is_verified ? "yes" : "no"')" = yes ]; then echo verified; return; fi
+    case "$last" in
+      *"Fail"*|*"fail"*) break ;;
     esac
   done
-  echo "failed:timed out waiting for the explorer"
+  echo "failed:${last:-timed out waiting for the explorer}"
 }
 
 echo "  ${B}Verifying${N}"

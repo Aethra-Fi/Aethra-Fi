@@ -167,7 +167,20 @@ bash scripts/testnet-redeploy.sh --broadcast
 
 Setelah itu bilang "B15 selesai". Aku membersihkan data indexer lama, sync alamat baru ke Supabase, promosikan web ke `testnet`, lalu membuktikan exact match dengan memverifikasi satu mock feed (bukan bagian dari rekaman).
 
-## B12 · Rekam layar verifikasi testnet · `OPEN` (siap direkam)
+## B16 · Redeploy testnet sekali lagi (butuh password keystore) · `OPEN` — kerjakan sebelum B12
+
+Rekaman pertama: 31 dari 32 kontrak sebenarnya exact match ("Unknown UID" hanya tiket status yang hilang di explorer). DLMM pool implementation gagal: bytecode-nya cuma bisa direproduksi dengan paket ±160 file, yang butuh 67 detik untuk dikompilasi, dan explorer menyerah. Sekarang DLMM pool di-deploy dari bytecode paket kecilnya (17 file, 2 detik), jadi yang di-deploy sama dengan yang diverifikasi. Script verifikasi juga tidak lagi menganggap "Unknown UID" sebagai gagal. Sudah dicoba di fork: 32/32 paket cocok.
+
+Supaya rekaman fresh lagi (32/32 "verified"), deploy ulang testnet. Password diminta sekali. Saldo cukup (butuh 0,003 ETH).
+
+```bash
+# Jalankan di: ROOT
+bash scripts/testnet-redeploy.sh --broadcast
+```
+
+Setelah itu bilang "B16 selesai".
+
+## B12 · Rekam layar verifikasi testnet · `OPEN` (setelah B16)
 
 Tidak butuh keystore. 32 kontrak, semua tampil fresh di rekaman.
 

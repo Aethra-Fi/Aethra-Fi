@@ -14,6 +14,8 @@ STOCK_TOKENS="${STOCK_TOKENS:-0x322F0929c4625eD5bAd873c95208D54E1c003b2d,0xd0601
 BUDGET_USD="7"
 
 [ "$(cast chain-id --rpc-url "$RPC")" = "4663" ] || { echo "RPC is not Robinhood Chain mainnet (4663)"; exit 1; }
+# DLMMPool is deployed from the bytecode of its explorer source package (see scripts/build-verifiable.mjs)
+(cd "$ROOT" && node scripts/build-verifiable.mjs >/dev/null)
 cd "$ROOT/packages/contracts"
 
 hub="$(node -e "console.log(require('$ROOT/packages/sdk/src/addresses/mainnet.json').hub ?? '')")"

@@ -17,6 +17,8 @@ MIN_BALANCE="${MIN_BALANCE:-3000000000000000}" # 0.003 ETH: gas for every step p
 [ "$(cast chain-id --rpc-url "$RPC")" = "46630" ] || { echo "RPC is not Robinhood Chain Testnet (46630)"; exit 1; }
 balance="$(cast balance "$DEPLOYER_ADDRESS" --rpc-url "$RPC")"
 echo "deployer balance: $(cast from-wei "$balance") ETH"
+# DLMMPool is deployed from the bytecode of its explorer source package (see scripts/build-verifiable.mjs)
+(cd "$ROOT" && node scripts/build-verifiable.mjs >/dev/null)
 cd "$ROOT/packages/contracts"
 export NETWORK=testnet
 
