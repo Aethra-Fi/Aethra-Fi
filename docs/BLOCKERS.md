@@ -137,7 +137,9 @@ Script berhenti tanpa mengirim apa pun bila keystore `deployer` bukan `0xd09D…
 
 Catatan: jangan jalankan script ini dengan commit yang berbeda dari yang diuji. Fix keamanan belum di-commit saat B10 ditulis. Commit dulu, lalu jalankan.
 
-## B11 · Likuiditas testnet + perbaikan pool saham (butuh password keystore) · `OPEN`
+## B11 · Likuiditas testnet + perbaikan pool saham (butuh password keystore) · `DONE` 2026-10-30
+
+Selesai: feed segar, quote hidup di semua venue (1.000 aUSD → 3,95 aTSLA di v4, 3,98 di DLMM), indexer membaca 7 pool dengan TVL ±$828k. Teks di bawah adalah catatan asli.
 
 Saat ini semua pool saham di testnet berhenti karena mock price feed-nya basi. Batch ini menyegarkan feed, memperdalam pool, dan membuka pool DLMM dan DAMM pertama. Biaya ±0,00012 ETH gas plus 0,003 ETH yang di-wrap jadi likuiditas. Saldo testnet 0,0044 ETH. Untuk WETH/aUSD yang lebih dalam, isi dulu dari faucet lalu set `SEED_WETH` (wei).
 
@@ -151,7 +153,7 @@ Setelah itu bilang "B11 selesai". Aku cek indexer, quote di semua venue, dan hal
 
 ## B12 · Rekam layar verifikasi testnet · `OPEN`
 
-Tidak butuh keystore. Script memverifikasi 32 kontrak di explorer testnet dan mencetak link explorer tiap kontrak. Supaya path direktori tidak terlihat di rekaman:
+Tidak butuh keystore. Semua 32 paket source sudah disiapkan dan terbukti menghasilkan bytecode yang identik dengan di chain. `DLMM pool (implementation)` sudah aku verifikasi duluan sebagai uji nyata paket terbesar, jadi di rekaman ia tampil "already verified". 31 kontrak lain tampil fresh.
 
 ```bash
 # Jalankan di: ROOT
@@ -161,7 +163,7 @@ clear
 bash scripts/verify-contracts.sh testnet
 ```
 
-Link juga disimpan di `docs/verification/testnet.md`. Kalau dijalankan dua kali, hasilnya "already verified".
+Alur di layar: cek koneksi, tekan Enter, 32 kontrak diverifikasi satu per satu (spinner lalu ✓), bukti dibaca balik dari explorer beserta link, lalu prompt untuk membuka kontrak mana pun di browser (ketik nomor, `q` untuk selesai). Link juga disimpan di `docs/verification/testnet.md`.
 
 ## B13 · Deploy mainnet (butuh password keystore) · `OPEN`
 
@@ -181,7 +183,7 @@ Setelah itu bilang "B13 selesai". Lalu aku:
 
 ## B14 · Rekam layar verifikasi mainnet · `OPEN` (setelah B13)
 
-API explorer mainnet menolak koneksi dari sini (Cloudflare, HTTP 403). **Nyalakan VPN dulu.** Tanpa VPN, pakai `VERIFIER=sourcify`.
+API explorer mainnet menolak koneksi dari sini (Cloudflare, HTTP 403). **Nyalakan VPN dulu.** `mainnet-deploy.sh --broadcast` sudah menyiapkan paket verifikasi otomatis. Sebelum merekam, bilang ke aku dulu supaya aku cek paketnya.
 
 ```bash
 # Jalankan di: ROOT

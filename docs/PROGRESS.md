@@ -124,7 +124,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 
 - Web: `/faucet` page (testnet and local only; hidden from the nav on mainnet). Claims each Aethra test token once a day (`faucet()`, cooldown shown), wraps and unwraps ETH, links the Robinhood Chain ETH faucet. Dark and light screenshots in `docs/ui-style/screens/faucet-*.png`.
 - Found: every testnet stock pool was halted. The mock stock feeds had a 1 day staleness window and were last updated 2026-10-22, so the hook failed closed (quotes returned 0).
-- `script/testnet/DeepenLiquidity.s.sol` + `scripts/testnet-liquidity.sh`: refreshes all mock feeds with a 365 day window, adds full-range v4 liquidity (0.003 WETH on WETH/aUSD, 400 tokens on each stock pool ≈ $250k), opens DLMM aTSLA/aUSD (21 bins) and DAMM aNVDA/aUSD and aAAPL/aUSD. Rehearsed on a testnet fork: 1,000 aUSD to aTSLA quotes 3.95 aTSLA on v4, DLMM and DAMM quote correctly. Live run: 5.8M gas ≈ 0.00012 ETH. Waits for the user (B11).
+- `script/testnet/DeepenLiquidity.s.sol` + `scripts/testnet-liquidity.sh`: refreshes all mock feeds with a 365 day window, adds full-range v4 liquidity (0.003 WETH on WETH/aUSD, 400 tokens on each stock pool ≈ $250k), opens DLMM aTSLA/aUSD (21 bins) and DAMM aNVDA/aUSD and aAAPL/aUSD. Rehearsed on a testnet fork: 1,000 aUSD to aTSLA quotes 3.95 aTSLA on v4, DLMM and DAMM quote correctly. Live run: 5.8M gas ≈ 0.00012 ETH. Broadcast by the user on 2026-10-30 (B11). Live: 7 pools, TVL ≈ $828k on the indexer, quotes on v4, DLMM and DAMM.
 - Mainnet release: `script/DeployMainnet.s.sol` (`deployAll()`) = `Deploy` (core, DLMM, DAMM) + `GatedModules` (`script/DeployGated.s.sol`): assets, launchpad, AETH, buyback, lending vault (caps 0, no credit manager), credit manager. Writes `mainnet.json` only on a real broadcast. `scripts/mainnet-deploy.sh` runs the dry run and cost report, or with `--broadcast` checks the keystore first.
 - Rehearsed on a mainnet fork: 38 transactions, 42,122,152 gas used. All 10 owned contracts are owned by the deployer. Launchpad `create` reverts `NotRegistrar`, a TSLA/USDG pool reverts at initialize, the vault has no credit manager, protocol fee share 0, and a WETH/USDG v4 pool initializes.
 - **Final mainnet dry run (2026-10-30, no broadcast):** gas price 0.020046 gwei, ETH $2,233.62 (CoinGecko). L1 data component 0 (NodeInterface `gasEstimateL1Component`). Forge gas limits (estimate × 1.3) total 54.60M = 0.0010946 ETH = **$2.44**, an upper bound. Gas actually used on the fork: 42.12M ≈ 0.000844 ETH ≈ **$1.89**. **Within the $7 budget.** Deployer balance 0.00297 ETH. Forge needs about 0.00218 ETH up front (gas limit × 0.04 gwei max fee).
@@ -142,6 +142,13 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 
 - Verification: `bash scripts/verify-contracts.sh <testnet|mainnet>` verifies every deployed contract on Blockscout from the broadcast records (`scripts/verify-list.mjs` matches each creation against the local build), checks the explorer API, and writes `docs/verification/<network>.md`. Output shows names, addresses and explorer links, never local paths. Testnet: 32 contracts (the 3 implementations replaced on 2026-10-30 are skipped). One verification was tested on testnet (aUSD mock feed `0xCD07…aEd2`, not in the list).
 - 190 forge tests, 9 SDK and 32 web unit tests, 14 Playwright tests pass; lint and typecheck clean.
+- Verification hardened before recording:
+  - `forge verify-contract` would have failed for the testnet DLMM pool. With via-IR, its bytecode depends on which files are compiled together, and forge submits a minimal set.
+  - The forge path also risked publishing absolute local paths (remappings in build-info).
+  - `scripts/verify-prepare.mjs` now builds one source package per contract and proves it with solc 0.8.26: creation code must equal the broadcast bytes. It strips local paths and shrinks build-info packages: the explorer gave up on a 172-file package (164 s compile), while the DLMM package is now 138 files (13 s).
+  - `verify-contracts.sh` submits those packages through the Blockscout API with a spinner, reads every contract back as proof, and opens explorer links on request.
+  - Testnet: 32/32 packages proven. DLMM pool implementation verified for real as the end-to-end test (no local path in the published sources).
+  - Mock feeds verified while testing the script: aUSD, WETH, aTSLA, AMZN.
 
 ## 2026-10-30 · Router + hook security review
 
