@@ -324,3 +324,15 @@ Catatan v1.4: buyback mainnet terikat ke AETH lama `0xd373…7409` (tanpa setter
 Selesai: sesi aethra-15 mempromosikan `main` ke `mainnet` (PR #26) dan `testnet` (PR #27) atas persetujuan kamu. Landing baru dan blok CA (masih tersembunyi) sudah ada di production. Untuk B23 cukup isi CA, lalu promosikan lagi. Teks di bawah adalah catatan asli.
 
 `main` berisi landing baru dari sesi aethra-15 (sudah di testnet, PR #25) dan blok CA di atas. Promosi berikutnya ke production membawa keduanya. Cek dulu https://testnet.aethra.finance, lalu beri izin.
+
+## B24 · Promosikan hero ring 3D ke mainnet · `OPEN`
+
+Ring hero yang dibangun ulang (torus 3D miring dengan orbit, `f31f2b8`) sudah di `main` dan live di testnet (PR #30, `aethra-fi-testnet.vercel.app`). Produksi `aethra.finance` masih memakai ring lama. Cek tampilannya di testnet dulu. Kalau sudah sesuai, beri izin dan saya yang menjalankan promosinya, atau jalankan sendiri:
+
+```bash
+# Jalankan di: ROOT
+gh pr create --base mainnet --head main --title "Hero ring as a tilted 3D glyph torus with orbits (mainnet)" --body "Promotes the hero ring rebuild to production."
+gh pr merge <nomor-PR> --merge
+```
+
+Ikut terbawa ke mainnet: `72fe3b5` (hanya docs). Setelah merge, saya cek status Vercel dan `aethra.finance`.
