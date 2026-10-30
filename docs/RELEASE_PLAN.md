@@ -4,6 +4,19 @@ Disusun 2026-10-30, direvisi hari yang sama. Cakupan: urutan fitur, syarat tekni
 
 > **Revisi 2026-10-30 (keputusan kamu):** owner mainnet = wallet deployer (tanpa Safe dulu), semua modul di-deploy sekaligus lewat `script/DeployMainnet.s.sol` (`scripts/mainnet-deploy.sh`), tanpa seed likuiditas sampai ada top-up. Stablecoin = USDG `0x5fc5…d168`, token saham terkunci = TSLA, NVDA, AAPL resmi. Pembukaan modul dikirim langsung oleh deployer, bukan Safe. Dry run final: 42,1 juta gas ≈ $1,89 (rincian di `PROGRESS.md`).
 
+> **Status mainnet 2026-10-31 (setelah B13):**
+>
+> | Rilis | Isi | Status |
+> |---|---|---|
+> | v1.0 | v4 + hook, router, positions, analytics, docs, API | Hidup. Belum ada: seed pool (menunggu top-up), SDK di npm (`@aethra/sdk` masih `private`, prasyarat 13). |
+> | v1.1 | DLMM + limit orders + DAMM | Terbuka saat deploy, dikunci lagi dengan `bash scripts/mainnet-v11.sh lock` (B18). Dibuka dengan `bash scripts/mainnet-v11.sh open`. Web membaca `hub.isRegistrar(factory)`, jadi ikut tampil atau tersembunyi tanpa redeploy. |
+> | v1.2 | Stock pools + oracle guard | Terkunci: TSLA, NVDA, AAPL `STOCK` dan dinonaktifkan. |
+> | v1.3 | Launchpad, fee ke treasury | Terkunci (bukan registrar). **Sebelum dibuka:** DLMM pool dan hook v4 hanya bisa menyapu protocol fee ke kontrak buyback (DAMM sudah bisa ke treasury). "Fee ke treasury dulu" butuh upgrade DLMM pool (beacon) dan hook (UUPS) dengan fallback ke treasury, atau fee share tetap 0 sampai v1.4. |
+> | v1.4 | AETH + pool AETH + buyback | Buyback terkunci (fee share 0). Token AETH sudah ada di chain, 1 miliar di deployer. |
+> | v2.0 | Credit | Terkunci: vault tanpa credit manager, cap 0. |
+>
+> Source code semua 28 kontrak mainnet diterbitkan saat B14 (keputusan kamu, bukan ditunda per modul).
+
 ## 1. Model rilis
 
 **Deploy sekali, buka bertahap.** Semua kontrak yang siap di-deploy sekaligus (Batch A, dan Batch B bila syaratnya terpenuhi). Fitur yang belum waktunya dikunci **di on-chain**, bukan hanya disembunyikan di UI, lalu dibuka satu per satu lewat satu batch transaksi Safe ditambah satu flag.

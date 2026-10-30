@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { usePools } from "@/hooks/use-api";
 import { useTx } from "@/hooks/use-tx";
+import { useOpenVenues } from "@/hooks/use-venues";
 import type { ApiPool } from "@/lib/api";
 import { ABIS, addressOf } from "@/lib/contracts";
 import { binFromPrice, priceFromBin } from "@/lib/dlmm";
@@ -163,6 +164,7 @@ function MyOrders({ orders, pools }: { orders: Address; pools: ApiPool[] }) {
 
 export function OrdersView() {
   const orders = addressOf("dlmmLimitOrders");
+  const venues = useOpenVenues();
   const pools = usePools();
   const [poolId, setPoolId] = React.useState<string>();
   return (
@@ -175,6 +177,12 @@ export function OrdersView() {
       {!orders ? (
         <div className="mt-8">
           <NotDeployed name="Limit orders" />
+        </div>
+      ) : !venues.dlmm ? (
+        <div className="mt-8">
+          <EmptyState title={venues.loading ? "Loading…" : "Limit orders are not open on this network yet"}>
+            {venues.loading ? null : "Limit orders live on DLMM pools, which open in a later release on this network."}
+          </EmptyState>
         </div>
       ) : (
         <QueryState query={pools}>
