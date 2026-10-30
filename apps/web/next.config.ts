@@ -23,11 +23,21 @@ const X402_MODULES = [
   "@x402/fetch",
 ];
 
+// No full CSP: wallet connectors load scripts and frames from many origins. frame-ancestors alone stops clickjacking.
+const SECURITY_HEADERS = [
+  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
+];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@aethrafi/sdk"],
   poweredByHeader: false,
   images: { formats: ["image/avif", "image/webp"] },
+  headers: async () => [{ source: "/:path*", headers: SECURITY_HEADERS }],
   webpack: (config) => {
     // WalletConnect / MetaMask SDK pull optional node-only deps; keep them out of the browser bundle.
     config.externals = [...(config.externals ?? []), "pino-pretty", "lokijs", "encoding"];
