@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const PAGES = ["/", "/swap", "/pools", "/positions"];
+const PAGES = ["/", "/swap", "/pools", "/positions", "/faucet"];
 const OUT = "../../docs/ui-style/screens";
 
 test("dark is the default theme for new visitors", async ({ page }) => {
@@ -28,6 +28,8 @@ for (const theme of ["dark", "light"] as const) {
       await page.emulateMedia({ reducedMotion: "reduce" });
       await page.goto(path);
       await expect(page.locator("html")).toHaveClass(theme === "dark" ? /dark/ : /^(?!.*dark)/);
+      // the faucet reads its token list from the chain
+      if (path === "/faucet") await expect(page.getByText("Aethra Test USD")).toBeVisible({ timeout: 20_000 });
       await page.waitForTimeout(800);
       const name = path === "/" ? "landing" : path.slice(1);
       await page.screenshot({ path: `${OUT}/${name}-${theme}.png`, fullPage: false });
