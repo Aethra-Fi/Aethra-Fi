@@ -167,7 +167,9 @@ bash scripts/testnet-redeploy.sh --broadcast
 
 Setelah itu bilang "B15 selesai". Aku membersihkan data indexer lama, sync alamat baru ke Supabase, promosikan web ke `testnet`, lalu membuktikan exact match dengan memverifikasi satu mock feed (bukan bagian dari rekaman).
 
-## B16 · Redeploy testnet sekali lagi (butuh password keystore) · `OPEN` — kerjakan sebelum B12
+## B16 · Redeploy testnet sekali lagi (butuh password keystore) · `DONE` 2026-10-30
+
+Selesai: 117 transaksi sukses, 32/32 paket verifikasi (semuanya paket kecil) cocok dengan bytecode di chain. Indexer sudah di-sync ke alamat baru. Teks di bawah adalah catatan asli.
 
 Rekaman pertama: 31 dari 32 kontrak sebenarnya exact match ("Unknown UID" hanya tiket status yang hilang di explorer). DLMM pool implementation gagal: bytecode-nya cuma bisa direproduksi dengan paket ±160 file, yang butuh 67 detik untuk dikompilasi, dan explorer menyerah. Sekarang DLMM pool di-deploy dari bytecode paket kecilnya (17 file, 2 detik), jadi yang di-deploy sama dengan yang diverifikasi. Script verifikasi juga tidak lagi menganggap "Unknown UID" sebagai gagal. Sudah dicoba di fork: 32/32 paket cocok.
 
@@ -180,7 +182,7 @@ bash scripts/testnet-redeploy.sh --broadcast
 
 Setelah itu bilang "B16 selesai".
 
-## B12 · Rekam layar verifikasi testnet · `OPEN` (setelah B16)
+## B12 · Rekam layar verifikasi testnet · `OPEN` (siap direkam)
 
 Tidak butuh keystore. 32 kontrak, semua tampil fresh di rekaman.
 

@@ -161,7 +161,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
     - `scripts/build-verifiable.mjs` compiles DLMMPool from its small explorer package (17 files, 2 s) to `packages/contracts/verifiable/DLMMPool.bin`. `Deploy.s.sol` deploys that bytecode on testnet and mainnet, so the deployed code is the verified code by construction.
     - `verify-prepare.mjs` now only accepts the small package. A mismatch stops the run instead of falling back to a heavy package.
     - `verify-contracts.sh` treats the contract page as the source of truth when the status ticket is lost.
-    - Fork rehearsal: 32/32 small packages match. Mainnet dry run: $2.51 upper bound. The user redeploys testnet once more (B16) for a fresh recording.
+    - Fork rehearsal: 32/32 small packages match. Mainnet dry run: $2.51 upper bound. The user redeployed testnet once more (B16): 117 transactions, all succeeded, 32/32 small packages match. Indexer re-synced.
   - Mainnet dry run with metadata: 55.05M gas limit = 0.0011210 ETH = $2.48 at 0.020364 gwei and $2,212.93 (upper bound). Within budget.
 
 ## 2026-10-30 · Router + hook security review
