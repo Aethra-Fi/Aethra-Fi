@@ -305,3 +305,18 @@ gh pr merge <nomor-PR> --merge
 ```
 
 Atau izinkan saya menjalankannya. Setelah merge, saya cek status Vercel dan `aethra.finance`.
+
+## B21 · CA token AETH untuk hero landing · `OPEN`
+
+Kamu meluncurkan token AETH sendiri. Setelah itu, kirim CA-nya. Blok `$AETH  CA  0x…` (salin + link explorer) di hero landing sudah siap dan tersembunyi selama `AETH_TOKEN.address` di `apps/web/src/lib/token.ts` masih `null`.
+
+Langkah sesi berikutnya:
+1. Cek di chain bahwa CA itu token (kode ada, `symbol()`, `decimals()`).
+2. Isi `address`, lalu build dan test.
+3. Promosikan ke mainnet (butuh B22), lalu cek `aethra.finance`.
+
+Catatan v1.4: buyback mainnet terikat ke AETH lama `0xd373…7409` (tanpa setter). Token baru harus punya `burn()`, dan buyback butuh upgrade sebelum dibuka.
+
+## B22 · Izin promosi `main` → `mainnet` · `OPEN`
+
+`main` berisi landing baru dari sesi aethra-15 (sudah di testnet, PR #25) dan blok CA di atas. Promosi berikutnya ke production membawa keduanya. Cek dulu https://testnet.aethra.finance, lalu beri izin.

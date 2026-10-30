@@ -144,6 +144,13 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 - Tests: `tests/e2e/landing.spec.ts` (badge, ring hand-over, new titles fit on one line, press effects). 17 e2e pass (1 skipped as before), 32 web unit tests, lint and typecheck clean. Landing screenshots regenerated in `docs/ui-style/screens/`.
 - Note: a parallel session's commit `2f3a37f` (v1.0 release notes, PRs #23/#24, tag `v1.0.0`) staged an unfinished snapshot of this work with `git add -A`. That snapshot built and worked. This entry's commit completes it.
 
+## 2026-10-31 · Handoff after v1.0
+
+- v1.0 is done (tag `v1.0.0`). Open items: B21 (AETH CA in the hero, waits for the user's token launch), B22 (user's go for the next main → mainnet promotion, which also ships the landing refresh from session aethra-15), B19 (seed, deferred until funds).
+- Hero CA block: `apps/web/src/lib/token.ts` (`AETH_TOKEN.address`, null = hidden), `TokenCA` in `components/landing/landing-sections.tsx`. Previewed in both themes.
+- Production checks: read `aethra.finance` directly. Vercel does not report GitHub commit statuses, so do not wait on them.
+- `docs/verification/mainnet.md` (written by the verify script) is left untracked at the user's request.
+
 ## 2026-10-31 · v1.0 released
 
 - v1.0 is live on mainnet:
