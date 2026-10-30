@@ -31,6 +31,8 @@ OK="${G}✓${N}"; BAD="${R}✗${N}"
 
 short() { echo "${1:0:6}…${1: -4}"; }
 link() { echo "${EXPLORER}/address/$1?tab=contract"; }
+# clickable in terminals that support OSC 8 hyperlinks; the URL text is shown either way
+hyperlink() { if [ "$TTY" = 1 ]; then printf '\e]8;;%s\e\\%s\e]8;;\e\\' "$1" "$1"; else printf '%s' "$1"; fi; }
 pause() { [ "$TTY" = 1 ] && { printf "  ${C}?${N} %s ${DIM}[Enter]${N} " "$1"; read -r _; }; }
 
 # run "$@" in the background with a spinner and a status text; the command's output goes to $TMP/out
@@ -102,7 +104,7 @@ submit() { # $1 manifest index -> prints: verified | already | failed:<reason>
     --data-urlencode "codeformat=solidity-standard-json-input" \
     --data-urlencode "contractaddress=${address}" --data-urlencode "contractname=${name}" \
     --data-urlencode "compilerversion=v0.8.26+commit.8a97fa7a" \
-    --data-urlencode "constructorArguements=${args}" \
+    --data-urlencode "constructorArguements=${args}" --data-urlencode "licenseType=3" \
     --data-urlencode "sourceCode@${PKG}/${file}")"
   if grep -qi "already verified" <<<"$res"; then echo already; return; fi
   status="$(json 'j.status' <<<"$res")"; guid="$(json 'j.result' <<<"$res")"
@@ -145,11 +147,15 @@ proven=0
 for idx in "${!ADDRS[@]}"; do
   a="${ADDRS[$idx]}"; v=""
   for t in 1 2 3 4 5; do
-    v="$(api "${EXPLORER}/api/v2/addresses/${a}" | json 'j.is_verified ? "yes" : "no"')"
-    [ "$v" = yes ] && break; sleep 2
+    v="$(api "${EXPLORER}/api/v2/smart-contracts/${a}" | json 'j.is_fully_verified ? "full" : j.is_partially_verified ? "partial" : j.is_verified ? "verified" : "no"')"
+    [ "$v" = full ] && break; sleep 2
   done
-  if [ "$v" = yes ]; then mark="$OK"; proven=$((proven + 1)); else mark="$BAD"; fi
-  printf "  %s %2d  %-36s %s\n" "$mark" "$((idx + 1))" "${LABELS[$idx]}" "$(link "$a")"
+  case "$v" in
+    full) mark="$OK"; match="${G}exact match${N}  "; proven=$((proven + 1)) ;;
+    partial|verified) mark="$OK"; match="${Y}partial match${N}"; proven=$((proven + 1)) ;;
+    *) mark="$BAD"; match="${R}not verified${N} " ;;
+  esac
+  printf "  %s %2d  %-36s %s  %s\n" "$mark" "$((idx + 1))" "${LABELS[$idx]}" "$match" "$(hyperlink "$(link "$a")")"
 done
 
 mkdir -p "$ROOT/docs/verification"

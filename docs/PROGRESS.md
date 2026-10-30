@@ -37,6 +37,8 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 
 ## Decisions log (one line each)
 
+- 2026-10-30: Compiler keeps the CBOR metadata hash (`bytecode_hash = "ipfs"`, `cbor_metadata = true`). Without it the explorer can only show "verified (partial match)" with a "Verify & publish" prompt. `auto_detect_remappings = false` (remappings.txt only) keeps absolute local paths out of the published metadata. Testnet is redeployed with it (user's choice, B15). Mainnet cost +$0.04.
+
 - 2026-10-30: Mainnet owner = deployer `0xd09D…9a7C` (user's choice), no Safe for now. All modules deploy; launchpad, AETH + buyback and credit are locked on-chain.
 - 2026-10-30: Mainnet stablecoin = USDG `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` (Global Dollar, 6 decimals, admin-verified on the explorer). Vault asset and CANONICAL asset.
 - 2026-10-30: Mainnet stock tokens TSLA, NVDA, AAPL ("• Robinhood Token", checked with name()/symbol() on-chain) registered as STOCK, enabled=false. Other stock tokens are not registered yet: a pool with one of them would start in DYNAMIC mode.
@@ -148,7 +150,13 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
   - `scripts/verify-prepare.mjs` now builds one source package per contract and proves it with solc 0.8.26: creation code must equal the broadcast bytes. It strips local paths and shrinks build-info packages: the explorer gave up on a 172-file package (164 s compile), while the DLMM package is now 138 files (13 s).
   - `verify-contracts.sh` submits those packages through the Blockscout API with a spinner, reads every contract back as proof, and opens explorer links on request.
   - Testnet: 32/32 packages proven. DLMM pool implementation verified for real as the end-to-end test (no local path in the published sources).
-  - Mock feeds verified while testing the script: aUSD, WETH, aTSLA, AMZN.
+  - Mock feeds verified while testing the script: aUSD, WETH, aTSLA, AMZN, PLTR (old testnet, partial match).
+- Exact match: every contract deployed so far lacked the metadata hash, so the explorer could only give "partial match" (screenshot check: DLMM pool page showed "verified (partial match)" + "Verify & publish"; WETH, which has metadata, shows "verified (exact match)").
+  - Metadata hash is now on, and auto-detected remappings are off so no local path reaches the metadata.
+  - `scripts/testnet-redeploy.sh` does a fresh testnet with one password prompt: Deploy, SetupMarkets, DeployGated (testnet now has the same gated modules as mainnet), DeepenLiquidity, start block, SDK build, verification packages.
+  - Rehearsed on a fork (chain id 31337): 58.9M gas. All 32 verification packages reproduce the deployed bytes including the metadata hash.
+  - The verify script now reads the match type back from the explorer ("exact match" / "partial match") and sends the MIT license.
+  - Mainnet dry run with metadata: 55.05M gas limit = 0.0011210 ETH = $2.48 at 0.020364 gwei and $2,212.93 (upper bound). Within budget.
 
 ## 2026-10-30 · Router + hook security review
 

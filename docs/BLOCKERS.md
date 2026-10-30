@@ -151,9 +151,23 @@ bash scripts/testnet-liquidity.sh --broadcast # 2x prompt password
 
 Setelah itu bilang "B11 selesai". Aku cek indexer, quote di semua venue, dan halaman faucet.
 
-## B12 · Rekam layar verifikasi testnet · `OPEN`
+## B15 · Redeploy testnet dengan metadata hash (butuh password keystore) · `OPEN` — kerjakan sebelum B12
 
-Tidak butuh keystore. Semua 32 paket source sudah disiapkan dan terbukti menghasilkan bytecode yang identik dengan di chain. `DLMM pool (implementation)` sudah aku verifikasi duluan sebagai uji nyata paket terbesar, jadi di rekaman ia tampil "already verified". 31 kontrak lain tampil fresh.
+Supaya explorer menampilkan "Contract source code verified (exact match)", bukan "partial match". Semua alamat testnet berubah. Web, SDK, dan indexer aku perbarui setelahnya.
+
+1. Isi saldo testnet dari https://faucet.testnet.chain.robinhood.com. Sisa saldo 0,0013 ETH; script butuh minimal 0,003 ETH (gas ±0,0006 ETH + seed WETH 0,001 ETH).
+2. Jalankan (password diminta sekali):
+
+```bash
+# Jalankan di: ROOT
+bash scripts/testnet-redeploy.sh --broadcast
+```
+
+Setelah itu bilang "B15 selesai". Aku membersihkan data indexer lama, sync alamat baru ke Supabase, promosikan web ke `testnet`, lalu membuktikan exact match dengan memverifikasi satu mock feed (bukan bagian dari rekaman).
+
+## B12 · Rekam layar verifikasi testnet · `OPEN` (setelah B15)
+
+Tidak butuh keystore. 32 kontrak, semua tampil fresh di rekaman.
 
 ```bash
 # Jalankan di: ROOT
@@ -163,7 +177,7 @@ clear
 bash scripts/verify-contracts.sh testnet
 ```
 
-Alur di layar: cek koneksi, tekan Enter, 32 kontrak diverifikasi satu per satu (spinner lalu ✓), bukti dibaca balik dari explorer beserta link, lalu prompt untuk membuka kontrak mana pun di browser (ketik nomor, `q` untuk selesai). Link juga disimpan di `docs/verification/testnet.md`.
+Di layar: cek koneksi, tekan Enter, 32 kontrak diverifikasi satu per satu (spinner lalu ✓), bukti dari explorer dengan label "exact match" dan link yang bisa diklik, lalu prompt untuk membuka kontrak di browser (ketik nomor, `q` selesai). Halaman explorer menampilkan "Contract source code verified (exact match)". Link juga disimpan di `docs/verification/testnet.md`.
 
 ## B13 · Deploy mainnet (butuh password keystore) · `OPEN`
 

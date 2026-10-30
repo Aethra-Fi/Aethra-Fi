@@ -46,10 +46,13 @@ abstract contract GatedModules is Script {
         for (uint256 i; i < stocks.length; i++) require(stocks[i].code.length > 0, "DeployGated: stock token missing");
         address owner = GATED_DEPLOYER;
 
+        // Assets that are already registered keep their config (testnet registers them with mock oracles first).
         AethraHub h = AethraHub(hub);
-        h.setAsset(weth, AssetClass.CANONICAL, true, address(0), 0);
-        h.setAsset(stable, AssetClass.CANONICAL, true, address(0), 0);
-        for (uint256 i; i < stocks.length; i++) h.setAsset(stocks[i], AssetClass.STOCK, false, address(0), 0);
+        if (h.asset(weth).class == AssetClass.NONE) h.setAsset(weth, AssetClass.CANONICAL, true, address(0), 0);
+        if (h.asset(stable).class == AssetClass.NONE) h.setAsset(stable, AssetClass.CANONICAL, true, address(0), 0);
+        for (uint256 i; i < stocks.length; i++) {
+            if (h.asset(stocks[i]).class == AssetClass.NONE) h.setAsset(stocks[i], AssetClass.STOCK, false, address(0), 0);
+        }
 
         o.launchpad = address(
             new ERC1967Proxy(

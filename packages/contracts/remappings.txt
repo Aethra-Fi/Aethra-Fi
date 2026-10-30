@@ -8,3 +8,4 @@ v4-periphery/=lib/v4-periphery/src/
 permit2/=lib/v4-periphery/lib/permit2/
 solady/=lib/solady/src/
 forge-std/=lib/forge-std/src/
+solmate/=lib/v4-core/lib/solmate/
