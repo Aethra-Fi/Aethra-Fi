@@ -45,11 +45,22 @@ abstract contract DLMMBase is Test {
     uint24 constant BASE_FEE = 3000; // 0.30%
     uint24 constant MAX_FEE = 50_000;
 
+    /// @dev DLMM_VERIFIABLE=1 runs the suite against verifiable/DLMMPool.bin, the bytecode testnet and mainnet deploy
+    ///      (compiled from the explorer source package, see scripts/build-verifiable.mjs).
+    function _poolImpl() internal returns (address a) {
+        if (!vm.envOr("DLMM_VERIFIABLE", false)) return address(new DLMMPool());
+        bytes memory code = vm.parseBytes(vm.trim(vm.readFile(string.concat(vm.projectRoot(), "/verifiable/DLMMPool.bin"))));
+        assembly {
+            a := create(0, add(code, 0x20), mload(code))
+        }
+        require(a != address(0), "DLMMBase: verifiable create failed");
+    }
+
     function setUp() public virtual {
         hub = AethraHub(
             address(new ERC1967Proxy(address(new AethraHub()), abi.encodeCall(AethraHub.initialize, (owner))))
         );
-        beacon = new UpgradeableBeacon(address(new DLMMPool()), owner);
+        beacon = new UpgradeableBeacon(_poolImpl(), owner);
         factory = DLMMFactory(
             address(
                 new ERC1967Proxy(
