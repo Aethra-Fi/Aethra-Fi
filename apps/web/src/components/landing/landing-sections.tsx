@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { StatusDot } from "@/components/kit";
 import { useDashboard } from "@/hooks/use-api";
 import { FEATURES } from "@/lib/features";
+import { useOpenVenues } from "@/hooks/use-venues";
 import { formatNumber, formatUsd } from "@/lib/format";
 import { CHAIN, CHAIN_ID } from "@/lib/network";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,9 @@ interface Section {
   shape: number;
   /** section is dropped while this feature is hidden */
   feature?: keyof typeof FEATURES;
+  /** the CTA needs a venue that may still be closed on the active network; `closedCta` replaces it then */
+  needs?: "dlmm" | "stock";
+  closedCta?: { href: string; label: string } | { soon: string };
 }
 
 const ALL_SECTIONS: Section[] = [
@@ -87,6 +91,8 @@ const ALL_SECTIONS: Section[] = [
       ["breaker ARMED", 16, 80],
     ],
     cta: { href: "/pools?filter=stock", label: "Explore stock pools" },
+    needs: "stock",
+    closedCta: { href: "/pools", label: "Explore pools" },
     schematic: <FeeSchematic />,
     form: "Volatility wave",
     shape: 2,
@@ -108,6 +114,8 @@ const ALL_SECTIONS: Section[] = [
       ["▶ token0", 72, 70],
     ],
     cta: { href: "/orders", label: "Place a limit order" },
+    needs: "dlmm",
+    closedCta: { soon: "Opening soon on this network" },
     schematic: <BinsSchematic />,
     form: "Bin histogram",
     shape: 3,
@@ -266,6 +274,8 @@ function Reveal({ active, delay = 0, blur = false, className, children }: { acti
 }
 
 function Panel({ s, i }: { s: Section; i: number }) {
+  const venues = useOpenVenues();
+  const cta = s.needs && !venues[s.needs] ? s.closedCta : s.cta;
   const Heading = i === 0 ? "h1" : "h2";
   // reveal as the section scrolls into view, so neighbours are never blank mid-scroll
   const [ref, active] = useInView<HTMLElement>(0.3);
@@ -334,13 +344,17 @@ function Panel({ s, i }: { s: Section; i: number }) {
                   ))}
                 </dl>
               </Reveal>
-              {s.cta && (
+              {cta && (
                 <Reveal active={active} delay={530}>
-                  <Button asChild variant="secondary">
-                    <Link href={s.cta.href}>
-                      {s.cta.label} <ArrowRight />
-                    </Link>
-                  </Button>
+                  {"soon" in cta ? (
+                    <span className="inline-flex h-10 items-center border px-4 font-mono text-[12px] uppercase tracking-button text-muted">{cta.soon}</span>
+                  ) : (
+                    <Button asChild variant="secondary">
+                      <Link href={cta.href}>
+                        {cta.label} <ArrowRight />
+                      </Link>
+                    </Button>
+                  )}
                 </Reveal>
               )}
             </>

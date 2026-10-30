@@ -242,7 +242,38 @@ bash scripts/mainnet-v11.sh lock
 
 Saat v1.1 rilis: `bash scripts/mainnet-v11.sh open`.
 
-## B14 · Rekam layar verifikasi mainnet · `OPEN` (siap direkam, boleh sebelum atau sesudah B18)
+## B19 · Launch v1.0: top-up lalu seed WETH/USDG (butuh password keystore) · `OPEN`
+
+1. Kirim ke deployer `0xd09D9c87ECfe008B4D6D3cEbeAd25103c16d9a7C` di Robinhood Chain: **±0,004 ETH** (saldo sekarang 0,0021 ETH; dibutuhkan 0,005 seed + 0,0001 smoke test + 0,0003 cadangan gas) dan **±11,5 USDG** (`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`; saldo sekarang 0,12).
+2. Jalankan:
+
+```bash
+# Jalankan di: ROOT
+bash scripts/mainnet-launch-v1.sh
+```
+
+Script mengambil harga ETH dari CoinGecko, menampilkan jumlah seed, dan menunggu konfirmasi `y` serta password (sekali). Lalu script membuka pool WETH/USDG, mengisi posisi full-range, dan menjalankan smoke test swap 0,0001 ETH → USDG. Sudah dilatih di fork mainnet (`FORK_MAINNET=1 forge test --match-path test/fork/MainnetLaunch.t.sol`).
+
+Tombol darurat bila perlu: `bash scripts/mainnet-pool-switch.sh off` (swap ditolak, likuiditas tetap bisa ditarik), `... on` untuk menyalakan lagi.
+
+## B20 · Terbitkan SDK ke npm · `OPEN`
+
+Paket sudah siap (`packages/sdk`: README, metadata, `viem` sebagai peer, `npm pack` 47,6 kB, 9 test).
+
+1. Buat organisasi npm `aethra` di https://www.npmjs.com/org/create. Kalau nama itu sudah dipakai, kabari aku untuk mengganti nama paket (misalnya `@aethra-fi/sdk`).
+2. Jalankan di terminalmu sendiri:
+
+```bash
+# Jalankan di: ROOT/packages/sdk
+npm login
+npm publish
+```
+
+`prepublishOnly` menjalankan build dan test terlebih dulu. Setelah terbit, bilang "B20 selesai": aku tambahkan baris install di halaman Developers.
+
+## B14 · Rekam layar verifikasi mainnet · `DONE` 2026-10-31
+
+Selesai: 28/28 kontrak mainnet exact match lewat Sourcify (rekaman kamu). Teks di bawah adalah catatan asli.
 
 VPN tidak diperlukan: untuk mainnet script otomatis memakai Sourcify. Paket verifikasi disiapkan otomatis oleh `mainnet-deploy.sh --broadcast`. Kabari aku dulu setelah B13 supaya aku cek paketnya.
 

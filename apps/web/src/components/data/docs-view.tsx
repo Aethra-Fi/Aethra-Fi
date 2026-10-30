@@ -44,6 +44,7 @@ const BLOCKS: Block[] = [
             ["Router", "One quote across every venue, direct or two hops, settled in one transaction."],
             ["Fees", "Base fee plus a volatility component that widens in fast markets and decays in calm ones."],
             ["Stock pools", "Pools for stock tokens read a reference price and charge more for trades away from it."],
+            ["Availability", "Testnet runs every venue. Mainnet opens in stages: v4 hook pools first, then DLMM, DAMM and limit orders, then stock pools. A venue appears in the app as soon as it opens on chain."],
           ]}
         />
       </>
