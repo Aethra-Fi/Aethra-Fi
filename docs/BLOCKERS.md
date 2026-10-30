@@ -292,7 +292,9 @@ bash scripts/verify-contracts.sh mainnet
 
 Link disimpan di `docs/verification/mainnet.md`.
 
-## B21 · Promosikan landing refresh ke mainnet · `OPEN`
+## B21 · Promosikan landing refresh ke mainnet · `DONE` 2026-10-31
+
+Selesai atas izin kamu: PR #26 di-merge ke `mainnet`, Vercel production sukses, `aethra.finance` diperiksa di browser (dark dan light, efek hover dan klik, tanpa error). PR #27 menyamakan `testnet`. Ikut terbawa: `058fd87` dari sesi lain (blok CA AETH, tersembunyi sampai alamatnya diisi). Teks di bawah adalah catatan asli.
 
 Landing refresh (hero ring, badge "On Robinhood Chain", copy baru, efek tombol cyber) sudah di `main` (`0310016`) dan live di testnet (PR #25). Merge ke `mainnet` (produksi `aethra.finance`) ditolak oleh pengaman auto mode Claude Code, jadi langkah ini harus kamu jalankan.
 
