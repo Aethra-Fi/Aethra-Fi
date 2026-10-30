@@ -14,6 +14,7 @@ import { formatNumber, formatUsd } from "@/lib/format";
 import { CHAIN, CHAIN_ID } from "@/lib/network";
 import { cn } from "@/lib/utils";
 import type { RibbonFrame } from "./glyph-ribbon";
+import { HeroRing } from "./hero-ring";
 import { BinsSchematic, BurnSchematic, CodeSchematic, CurveSchematic, FeeSchematic, HealthSchematic, RouterSchematic } from "./schematics";
 
 const GlyphRibbon = dynamic(() => import("./glyph-ribbon").then((m) => m.GlyphRibbon), { ssr: false });
@@ -46,11 +47,11 @@ const ALL_SECTIONS: Section[] = [
     body: "Aethra aggregates liquidity across Uniswap v4 hook pools, DLMM bins and DAMM ranges on Robinhood Chain, with volatility-adaptive fees and oracle-guarded stock markets.",
     specs: [],
     tags: [
-      ["MÖBIUS · 1 SURFACE", 24, 18],
-      ["∞ PATHS", 72, 70],
-      ["5,280 GLYPHS", 12, 78],
+      ["V4 · DLMM · DAMM", 30, 16],
+      ["∞ PATHS → 1 ROUTE", 64, 80],
+      ["ORBIT · ON-CHAIN QUOTES", 4, 74],
     ],
-    form: "Möbius loop",
+    form: "Liquidity ring",
     shape: 0,
   },
   {
@@ -77,7 +78,7 @@ const ALL_SECTIONS: Section[] = [
   {
     key: "fees",
     label: "Adaptive fees · Oracle guard",
-    title: "Fees that\nadapt.",
+    title: "Volatility-aware fees.\nOracle-guarded markets.",
     body: "One v4 hook prices every pool. The fee rises with realized volatility and decays as the market settles, so LPs are paid for the risk they carry. Stock pools add an oracle guard: swaps toward the reference price pay the base fee, swaps away pay more, and a circuit breaker reverts swaps that push the pool too far from the oracle.",
     specs: [
       ["Base fee", "0.05% · 0.30% stock"],
@@ -100,7 +101,7 @@ const ALL_SECTIONS: Section[] = [
   {
     key: "bins",
     label: "DLMM · Limit orders",
-    title: "Liquidity,\nbin by bin.",
+    title: "Precision liquidity.\nBin by bin.",
     body: "Liquidity sits in discrete price bins with zero slippage inside each bin. Shape a deposit as spot, curve or bid-ask, or place a limit order in a single bin that fills as price crosses it. Filled orders can be claimed by you or by any keeper.",
     specs: [
       ["Bin steps", "1 · 5 · 10 · 25 · 50 · 100 bps"],
@@ -189,7 +190,7 @@ const ALL_SECTIONS: Section[] = [
   {
     key: "build",
     label: "Developers",
-    title: "Typed SDK.\nOpen API.",
+    title: "Type-safe SDK.\nPublic REST API.",
     body: "Typed addresses and ABIs for every network, route and price helpers, and a public read-only REST API backed by the Aethra indexer. Everything the app does, you can build on.",
     specs: [
       ["Package", "@aethrafi/sdk"],
@@ -213,6 +214,16 @@ const SECTIONS = ALL_SECTIONS.filter((s) => !s.feature || FEATURES[s.feature]);
 const SHAPES = SECTIONS.map((s) => s.shape);
 
 const pad = (n: number) => String(n).padStart(2, "0");
+
+/** Hero badge: where Aethra runs. */
+function ChainBadge() {
+  return (
+    <span className="inline-flex items-center gap-2 border border-primary/40 bg-primary-soft px-2.5 py-1 text-primary-text [clip-path:polygon(0_0,calc(100%-7px)_0,100%_7px,100%_100%,7px_100%,0_calc(100%-7px))]">
+      <StatusDot state="live" />
+      On Robinhood Chain
+    </span>
+  );
+}
 
 function LiveStats() {
   const d = useDashboard();
@@ -277,6 +288,9 @@ function Panel({ s, i }: { s: Section; i: number }) {
   const venues = useOpenVenues();
   const cta = s.needs && !venues[s.needs] ? s.closedCta : s.cta;
   const Heading = i === 0 ? "h1" : "h2";
+  const lines = s.title.split("\n");
+  // long titles shrink so every line stays on one line in the text column (cqi = column width)
+  const fit = 100 / (Math.max(...lines.map((l) => l.length)) * 0.5);
   // reveal as the section scrolls into view, so neighbours are never blank mid-scroll
   const [ref, active] = useInView<HTMLElement>(0.3);
   return (
@@ -288,16 +302,17 @@ function Panel({ s, i }: { s: Section; i: number }) {
       className={cn("relative flex min-h-[calc(100dvh-var(--header-h))] scroll-mt-[var(--header-h)] items-center overflow-x-hidden lg:h-[calc(100dvh-var(--header-h))]", !active && "[&_*]:![animation-play-state:paused]")}
     >
       <div className="container grid h-full items-center gap-8 pb-20 pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:pb-16 lg:pt-10">
-        <div className="relative z-10 max-w-2xl space-y-6">
+        <div className="relative z-10 max-w-2xl space-y-6 [container-type:inline-size]">
           <Reveal active={active}>
-            <p className="eyebrow flex items-center gap-3">
+            <p className="eyebrow flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="text-primary-text">{pad(i)}</span>
               <span className="h-px w-8 bg-border-strong" />
               {s.label}
+              {i === 0 && <ChainBadge />}
             </p>
           </Reveal>
-          <Heading className="text-[clamp(2.9rem,6.6vw,5.75rem)] font-semibold leading-[0.98] tracking-[-0.04em]">
-            {s.title.split("\n").map((line, n) => (
+          <Heading className="font-semibold leading-[0.98] tracking-[-0.04em]" style={{ fontSize: `min(clamp(2.9rem, 6.6vw, 5.75rem), ${fit.toFixed(2)}cqi)` }}>
+            {lines.map((line, n) => (
               <Reveal key={n} active={active} delay={90 + n * 110} blur>
                 <span
                   className={cn(
@@ -318,12 +333,12 @@ function Panel({ s, i }: { s: Section; i: number }) {
             <>
               <Reveal active={active} delay={430}>
                 <div className="flex flex-wrap gap-3">
-                  <Button asChild size="lg">
+                  <Button asChild size="lg" className="fx-cyber">
                     <Link href="/swap">
                       Launch app <ArrowRight />
                     </Link>
                   </Button>
-                  <Button asChild size="lg" variant="secondary">
+                  <Button asChild size="lg" variant="secondary" className="fx-cyber">
                     <Link href="/pools">Explore pools</Link>
                   </Button>
                 </div>
@@ -349,7 +364,7 @@ function Panel({ s, i }: { s: Section; i: number }) {
                   {"soon" in cta ? (
                     <span className="inline-flex h-10 items-center border px-4 font-mono text-[12px] uppercase tracking-button text-muted">{cta.soon}</span>
                   ) : (
-                    <Button asChild variant="secondary">
+                    <Button asChild variant="secondary" className="fx-cyber">
                       <Link href={cta.href}>
                         {cta.label} <ArrowRight />
                       </Link>
@@ -410,6 +425,7 @@ export function LandingSections() {
   const morphRef = React.useRef<HTMLSpanElement>(null);
   const crossRef = React.useRef<HTMLDivElement>(null);
   const progressRef = React.useRef<HTMLDivElement>(null);
+  const heroRef = React.useRef<HTMLDivElement>(null);
   const n = SECTIONS.length;
 
   // One gesture, one section. On desktop a wheel flick, a key press or a nav click flies to the neighbouring
@@ -577,6 +593,13 @@ export function LandingSections() {
       sectionRef.current = pos;
       setActive((a) => (Math.round(pos) === a ? a : Math.round(pos)));
       if (progressRef.current) progressRef.current.style.transform = `scaleY(${pos / (n - 1)})`;
+      // the hero ring hands over to the glyph ribbon as the page leaves the first section
+      const hero = heroRef.current;
+      if (hero) {
+        const leave = Math.min(1, pos / 0.75);
+        hero.style.setProperty("--leave", leave.toFixed(3));
+        hero.toggleAttribute("data-off", leave >= 1);
+      }
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(measure);
@@ -620,7 +643,14 @@ export function LandingSections() {
     <div ref={rootRef} className="relative [--header-h:57px]" aria-label="Aethra Fi overview">
       {/* fixed backdrop: blueprint grid + ribbon, below the sticky header */}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)] bg-[linear-gradient(rgb(var(--border)/0.35)_1px,transparent_1px),linear-gradient(90deg,rgb(var(--border)/0.35)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_70%_50%,black,transparent_75%)]" />
-      <GlyphRibbon sectionRef={sectionRef} shapes={SHAPES} onFrame={onFrame} className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)]" />
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)] overflow-hidden">
+        <div className="container relative h-full">
+          <div className="absolute left-1/2 top-[7%] w-[170vw] -translate-x-[40%] opacity-50 sm:w-[120vw] lg:left-[37%] lg:top-1/2 lg:w-[70%] lg:translate-x-0 lg:-translate-y-[54%] lg:opacity-100">
+            <HeroRing ref={heroRef} />
+          </div>
+        </div>
+      </div>
+      <GlyphRibbon sectionRef={sectionRef} shapes={SHAPES} onFrame={onFrame} hideFirst className="pointer-events-none fixed inset-x-0 bottom-0 top-[var(--header-h)]" />
 
       {/* sections */}
       <div className="relative z-10">
@@ -678,10 +708,10 @@ export function LandingSections() {
             <span ref={morphRef} className="hidden text-muted lg:inline" />
             <span ref={coordRef} className="ml-auto hidden text-muted xl:inline" />
             <div className="ml-auto flex gap-1 xl:ml-4">
-              <Button variant="ghost" size="icon-sm" aria-label="Previous section" disabled={active === 0} onClick={() => goTo(active - 1)}>
+              <Button variant="ghost" size="icon-sm" className="fx-cyber" aria-label="Previous section" disabled={active === 0} onClick={() => goTo(active - 1)}>
                 <ArrowUp />
               </Button>
-              <Button variant="ghost" size="icon-sm" aria-label="Next section" disabled={active === n - 1} onClick={() => goTo(active + 1)}>
+              <Button variant="ghost" size="icon-sm" className="fx-cyber" aria-label="Next section" disabled={active === n - 1} onClick={() => goTo(active + 1)}>
                 <ArrowDown />
               </Button>
             </div>
