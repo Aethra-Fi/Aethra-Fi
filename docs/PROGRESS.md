@@ -123,6 +123,17 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · Hero ring rebuilt as a tilted 3D torus
+
+- User feedback (fourth round): the ring did not look like `docs/ui-reference/hero-ring-shape-reference.jpg`. It should read as a 3D object, slightly tilted, with orbits around it.
+- Shape 0 (`ribbon-shaders.ts`, `RING`): a wide, flat torus band (R 1.5, tube 0.42, height 0.55 of its width). Glyphs cover only the camera-facing half of the band and are shaded per glyph (key light, light spilling in from the edges, a dense far wall), so the front wall reads as solid. The two glowing edges follow the band's silhouette: outer (far side, left flank) and inner (near rim of the hole), as in the reference.
+- Framing: pitch 0.38, roll 0.34, base yaw −0.06, depth squeeze `uDepth` 0.4 (a longer lens, so perspective on the off-centre ring doesn't undo the tilt). Fitted against silhouette measurements of the reference: outer tilt 15.7° vs 14.5°, about the same height-to-width ratio.
+- The ring's glyph set (atlas row 0) is drawn rather than typed: outlined chips, squares, brackets.
+- New `ring-orbits.ts`: edge glow strips, four orbits (solid strips and bead trails), five lit nodes that travel along them, 3k dust specks. It shares the ribbon's transform uniforms and fades out early when the ring morphs away.
+- Narrow screens: the ring sits behind the headline instead of the body copy, edges at 70%.
+- Dropped during tuning: a soft haze sprite pass. It cost ~20% frame time under software GL for a barely visible effect.
+- Checks: lint, typecheck, 32 unit tests, `next build`. Landing and theme e2e pass except `buttons: brackets open on hover…`, which is flaky in this headless SwiftShader setup and fails the same way on the previous commit. Landing screenshots regenerated (dark, light).
+
 ## 2026-10-31 · Hero back to the glyph ribbon, simpler buttons
 
 - User feedback: the hero picture was a shape reference, not an asset, and the button effects were too much.
@@ -133,6 +144,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
   - `FRAMING` gained a per-shape sway factor (ring 0.3), because the full yaw swing tipped the ring into a steep diagonal.
 - Removed: the image layer (`hero-ring.tsx`, `public/brand/hero-ring-*`, `pnpm brand:hero`), the ribbon `hideFirst` fade, and `cyber-fx.tsx` (glitch, label decode, spark burst) with its tokens `--glitch-a`, `--glitch-b`, `--fx-spark`. The source picture moved to `docs/ui-reference/hero-ring-shape-reference.jpg`.
 - Buttons (`.fx-cyber`, CSS only): brackets open on hover and focus, lock onto the edge on press.
+- Live: testnet (PR #28) and mainnet (PR #29, user approved). Both Vercel deploys succeeded; `aethra.finance` checked in a browser (dark and light, hover and press). The old hero assets now return 404.
 
 ## 2026-10-31 · Landing refresh: hero ring, chain badge, new copy, cyber buttons
 
