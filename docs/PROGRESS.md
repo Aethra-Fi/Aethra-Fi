@@ -133,6 +133,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 - Narrow screens: the ring sits behind the headline instead of the body copy, edges at 70%.
 - Dropped during tuning: a soft haze sprite pass. It cost ~20% frame time under software GL for a barely visible effect.
 - Checks: lint, typecheck, 32 unit tests, `next build`. Landing and theme e2e pass except `buttons: brackets open on hover…`, which is flaky in this headless SwiftShader setup and fails the same way on the previous commit. Landing screenshots regenerated (dark, light).
+- Live on testnet (PR #30, Vercel deploy succeeded, checked in a browser). Mainnet waits for the user's approval (B24).
 
 ## 2026-10-31 · Hero back to the glyph ribbon, simpler buttons
 
