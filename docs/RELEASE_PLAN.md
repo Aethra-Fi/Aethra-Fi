@@ -2,6 +2,8 @@
 
 Disusun 2026-10-30, direvisi hari yang sama. Cakupan: urutan fitur, syarat teknis, biaya gas, dan langkah operasional. Narasi dan konten X tidak dibahas di sini.
 
+> **Revisi 2026-10-30 (keputusan kamu):** owner mainnet = wallet deployer (tanpa Safe dulu), semua modul di-deploy sekaligus lewat `script/DeployMainnet.s.sol` (`scripts/mainnet-deploy.sh`), tanpa seed likuiditas sampai ada top-up. Stablecoin = USDG `0x5fc5…d168`, token saham terkunci = TSLA, NVDA, AAPL resmi. Pembukaan modul dikirim langsung oleh deployer, bukan Safe. Dry run final: 42,1 juta gas ≈ $1,89 (rincian di `PROGRESS.md`).
+
 ## 1. Model rilis
 
 **Deploy sekali, buka bertahap.** Semua kontrak yang siap di-deploy sekaligus (Batch A, dan Batch B bila syaratnya terpenuhi). Fitur yang belum waktunya dikunci **di on-chain**, bukan hanya disembunyikan di UI, lalu dibuka satu per satu lewat satu batch transaksi Safe ditambah satu flag.
@@ -59,7 +61,7 @@ Total muat di $7–8 sampai harga gas naik sekitar 2×. Karena Batch A dibayar d
 
 10. Safe multisig di Robinhood Chain. Singleton dan factory kanonik punya kode di mainnet (dicek 2026-10-30: `0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67`, `0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2`). Verifikasi alamat di explorer. Dukungan UI Safe untuk chain ini belum dicek; kalau belum ada, kirim transaksi lewat `safe-cli` atau skrip.
 11. Supabase mainnet: Vault secrets (`project_url`, `indexer_token`), function secret `INDEXER_TOKEN`, cron, `sync-deployments.mjs mainnet`, `startBlock` dari receipt L2 (`set-start-block.mjs`).
-12. Sertifikat apex: `vercel certs issue aethra.finance`.
+12. ✅ Sertifikat apex `aethra.finance`: Let's Encrypt, berlaku sampai 2027-01-26 (dicek 2026-10-30). DNS di Hostinger sudah menunjuk ke Vercel (B9).
 13. SDK `@aethra/sdk`: klaim scope npm, hapus `private: true`, terbitkan v0.1.0 (halaman `/developers` merujuk SDK).
 14. Flag UI dan API per modul (`dlmm`, `damm`, `orders`, `stock`, `launchpad`, `credit`, `buyback`). Verifikasi dulu apakah alamat `hidden` sudah menyembunyikan fitur otomatis.
 15. Verifikasi Blockscout ditunda untuk modul tersembunyi sampai dibuka (opsional, mengurangi kebocoran peta jalan).

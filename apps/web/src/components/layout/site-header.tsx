@@ -15,7 +15,8 @@ import {
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { IndexerStatus } from "@/components/kit";
 import { cn } from "@/lib/utils";
-import { MORE_NAV, PRIMARY_NAV } from "./nav";
+import { useNetwork } from "@/lib/network";
+import { MORE_NAV as ALL_MORE_NAV, PRIMARY_NAV, navFor } from "./nav";
 import { NetworkNotice } from "./network-notice";
 import { NetworkToggle } from "./network-toggle";
 import { ThemeToggle } from "./theme-toggle";
@@ -56,6 +57,7 @@ function WalletButton() {
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const MORE_NAV = navFor(ALL_MORE_NAV, useNetwork());
   return (
     <>
     <header className="sticky top-0 z-40 border-b bg-bg/85 backdrop-blur supports-[backdrop-filter]:bg-bg/70">

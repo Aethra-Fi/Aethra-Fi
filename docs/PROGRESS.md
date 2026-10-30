@@ -16,7 +16,7 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 | 8 | DAMM/DLMM, limit orders, credit, buyback | ✅ | Contracts + UI |
 | 9 | UI modification (style guide → tokens, 2 themes) | ✅ | Tokens + 2 themes; Playwright dark/light screenshots in `docs/ui-style/screens/` |
 | 10 | Testnet deploy | ✅ | https://aethra-fi-testnet.vercel.app live: contracts on 46630, hosted indexer + API, Vercel Git deploys from `testnet` |
-| 11 | Mainnet dry run (no broadcast) | ⬜ | optional per the user (2026-10-22) |
+| 11 | Mainnet dry run (no broadcast) | ✅ | 2026-10-30: full release (all modules) 42.1M gas ≈ $1.89, within $7. Broadcast by the user (B13) |
 
 ## Setup checklist
 
@@ -36,6 +36,13 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 - ✅ Hooks `.githooks/commit-msg` + `pre-push`, `core.hooksPath` set, commit-msg tested
 
 ## Decisions log (one line each)
+
+- 2026-10-30: Mainnet owner = deployer `0xd09D…9a7C` (user's choice), no Safe for now. All modules deploy; launchpad, AETH + buyback and credit are locked on-chain.
+- 2026-10-30: Mainnet stablecoin = USDG `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` (Global Dollar, 6 decimals, admin-verified on the explorer). Vault asset and CANONICAL asset.
+- 2026-10-30: Mainnet stock tokens TSLA, NVDA, AAPL ("• Robinhood Token", checked with name()/symbol() on-chain) registered as STOCK, enabled=false. Other stock tokens are not registered yet: a pool with one of them would start in DYNAMIC mode.
+- 2026-10-30: AETH holder = deployer. No mainnet seed liquidity until a top-up (user's choice).
+- 2026-10-30: Testnet mock feeds (stocks included) use a 365 day staleness window. With 1 day, every stock pool halted a day after seeding because nobody updates the mock feeds.
+- 2026-10-30: Explorer verification uses Blockscout (forge verify-contract). The mainnet explorer API is behind Cloudflare and refuses this machine's IP (HTTP 403): run with a VPN, or `VERIFIER=sourcify`.
 
 - 2026-10-22: Moved `ui-reference/` → `docs/ui-reference/` and the user-provided logo → `docs/brand/aethra-logo.svg` (CLAUDE.md expects `docs/ui-reference`).
 - 2026-10-22: Use the user-supplied Aethra logo (lime→teal mark) as the brand mark; teal from the logo becomes the secondary accent.
@@ -112,6 +119,29 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 4. Vercel / Supabase hosted setup (after B1).
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
+
+## 2026-10-30 · Faucet, testnet liquidity, mainnet release scripts and final dry run
+
+- Web: `/faucet` page (testnet and local only; hidden from the nav on mainnet). Claims each Aethra test token once a day (`faucet()`, cooldown shown), wraps and unwraps ETH, links the Robinhood Chain ETH faucet. Dark and light screenshots in `docs/ui-style/screens/faucet-*.png`.
+- Found: every testnet stock pool was halted. The mock stock feeds had a 1 day staleness window and were last updated 2026-10-22, so the hook failed closed (quotes returned 0).
+- `script/testnet/DeepenLiquidity.s.sol` + `scripts/testnet-liquidity.sh`: refreshes all mock feeds with a 365 day window, adds full-range v4 liquidity (0.003 WETH on WETH/aUSD, 400 tokens on each stock pool ≈ $250k), opens DLMM aTSLA/aUSD (21 bins) and DAMM aNVDA/aUSD and aAAPL/aUSD. Rehearsed on a testnet fork: 1,000 aUSD to aTSLA quotes 3.95 aTSLA on v4, DLMM and DAMM quote correctly. Live run: 5.8M gas ≈ 0.00012 ETH. Waits for the user (B11).
+- Mainnet release: `script/DeployMainnet.s.sol` (`deployAll()`) = `Deploy` (core, DLMM, DAMM) + `GatedModules` (`script/DeployGated.s.sol`): assets, launchpad, AETH, buyback, lending vault (caps 0, no credit manager), credit manager. Writes `mainnet.json` only on a real broadcast. `scripts/mainnet-deploy.sh` runs the dry run and cost report, or with `--broadcast` checks the keystore first.
+- Rehearsed on a mainnet fork: 38 transactions, 42,122,152 gas used. All 10 owned contracts are owned by the deployer. Launchpad `create` reverts `NotRegistrar`, a TSLA/USDG pool reverts at initialize, the vault has no credit manager, protocol fee share 0, and a WETH/USDG v4 pool initializes.
+- **Final mainnet dry run (2026-10-30, no broadcast):** gas price 0.020046 gwei, ETH $2,233.62 (CoinGecko). L1 data component 0 (NodeInterface `gasEstimateL1Component`). Forge gas limits (estimate × 1.3) total 54.60M = 0.0010946 ETH = **$2.44**, an upper bound. Gas actually used on the fork: 42.12M ≈ 0.000844 ETH ≈ **$1.89**. **Within the $7 budget.** Deployer balance 0.00297 ETH. Forge needs about 0.00218 ETH up front (gas limit × 0.04 gwei max fee).
+
+  | Module | Gas (forge limit) | ETH | USD |
+  |---|---|---|---|
+  | Core (hub, positions, router, CREATE2 hook, impl + proxy each) | 17.10M | 0.0003429 | $0.77 |
+  | DLMM (pool impl + beacon, factory, limit orders) | 10.15M | 0.0002035 | $0.45 |
+  | DAMM (pool impl + beacon, factory) | 7.02M | 0.0001407 | $0.31 |
+  | Launchpad + LaunchToken impl | 7.04M | 0.0001411 | $0.32 |
+  | AETH + buyback | 3.85M | 0.0000772 | $0.17 |
+  | Credit (vault + credit manager) | 9.16M | 0.0001836 | $0.41 |
+  | Wiring (registrars, fee config, 5 assets, caps) | 0.28M | 0.0000057 | $0.01 |
+  | **Total** | **54.60M** | **0.0010946** | **$2.44** |
+
+- Verification: `bash scripts/verify-contracts.sh <testnet|mainnet>` verifies every deployed contract on Blockscout from the broadcast records (`scripts/verify-list.mjs` matches each creation against the local build), checks the explorer API, and writes `docs/verification/<network>.md`. Output shows names, addresses and explorer links, never local paths. Testnet: 32 contracts (the 3 implementations replaced on 2026-10-30 are skipped). One verification was tested on testnet (aUSD mock feed `0xCD07…aEd2`, not in the list).
+- 190 forge tests, 9 SDK and 32 web unit tests, 14 Playwright tests pass; lint and typecheck clean.
 
 ## 2026-10-30 · Router + hook security review
 

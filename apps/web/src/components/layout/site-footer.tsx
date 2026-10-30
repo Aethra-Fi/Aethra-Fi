@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MORE_NAV, PRIMARY_NAV, RESOURCE_NAV } from "./nav";
+import { useNetwork } from "@/lib/network";
+import { MORE_NAV as ALL_MORE_NAV, PRIMARY_NAV, RESOURCE_NAV, navFor } from "./nav";
 import { Logo } from "./site-header";
 
 export function SiteFooter() {
+  const MORE_NAV = navFor(ALL_MORE_NAV, useNetwork());
   // the landing is a full-height horizontal page with its own bottom bar
   if (usePathname() === "/") return null;
   return (

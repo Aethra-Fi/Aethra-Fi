@@ -16,7 +16,29 @@
   "creditManager": null,
   "buyback": null,
   "aeth": null,
-  "tokens": {},
+  "tokens": {
+    "WETH": {
+      "address": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+      "decimals": 18,
+      "kind": "canonical",
+      "name": "Wrapped Ether",
+      "symbol": "WETH"
+    },
+    "USDG": {
+      "address": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+      "decimals": 6,
+      "kind": "canonical",
+      "name": "Global Dollar",
+      "symbol": "USDG"
+    }
+  },
   "oracles": {},
-  "startBlock": 0
+  "startBlock": 0,
+  "hidden": {
+    "launchpad": null,
+    "lendingVault": null,
+    "creditManager": null,
+    "buyback": null,
+    "aeth": null
+  }
 }
