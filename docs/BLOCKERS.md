@@ -231,7 +231,9 @@ Setelah itu bilang "B13 selesai". Lalu aku:
 - promosikan `main` ke `mainnet` (Vercel production `aethra.finance`),
 - smoke test.
 
-## B18 · Kunci v1.1 di mainnet (butuh password keystore) · `OPEN`
+## B18 · Kunci v1.1 di mainnet (butuh password keystore) · `DONE` 2026-10-31
+
+Selesai: factory DLMM dan DAMM bukan registrar lagi (`createPool` revert `NotRegistrar`), hook v4 tetap registrar. Web mainnet hanya menawarkan v4, dan halaman limit orders menampilkan "not open on this network yet". Teks di bawah adalah catatan asli.
 
 DLMM, DAMM, dan limit orders ikut terbuka saat deploy, padahal rencananya rilis v1.1. Script ini mencabut status registrar kedua factory: 2 transaksi, ±79k gas, ±$0,004, password diminta sekali. Sudah disimulasikan di mainnet. Web otomatis menyembunyikan DLMM/DAMM/limit orders setelahnya.
 
@@ -258,7 +260,7 @@ Script mengambil harga ETH dari CoinGecko, menampilkan jumlah seed, dan menunggu
 
 Tombol darurat bila perlu: `bash scripts/mainnet-pool-switch.sh off` (swap ditolak, likuiditas tetap bisa ditarik), `... on` untuk menyalakan lagi.
 
-## B20 · Terbitkan SDK ke npm · `OPEN`
+## B20 · Terbitkan SDK ke npm · `OPEN` (organisasi npm `aethra` sudah dibuat 2026-10-31; tinggal login + publish)
 
 Paket sudah siap (`packages/sdk`: README, metadata, `viem` sebagai peer, `npm pack` 47,6 kB, 9 test).
 
