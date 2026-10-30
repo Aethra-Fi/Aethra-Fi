@@ -231,7 +231,9 @@ Setelah itu bilang "B13 selesai". Lalu aku:
 - promosikan `main` ke `mainnet` (Vercel production `aethra.finance`),
 - smoke test.
 
-## B18 · Kunci v1.1 di mainnet (butuh password keystore) · `OPEN`
+## B18 · Kunci v1.1 di mainnet (butuh password keystore) · `DONE` 2026-10-31
+
+Selesai: factory DLMM dan DAMM bukan registrar lagi (`createPool` revert `NotRegistrar`), hook v4 tetap registrar. Web mainnet hanya menawarkan v4, dan halaman limit orders menampilkan "not open on this network yet". Teks di bawah adalah catatan asli.
 
 DLMM, DAMM, dan limit orders ikut terbuka saat deploy, padahal rencananya rilis v1.1. Script ini mencabut status registrar kedua factory: 2 transaksi, ±79k gas, ±$0,004, password diminta sekali. Sudah disimulasikan di mainnet. Web otomatis menyembunyikan DLMM/DAMM/limit orders setelahnya.
 
@@ -242,7 +244,9 @@ bash scripts/mainnet-v11.sh lock
 
 Saat v1.1 rilis: `bash scripts/mainnet-v11.sh open`.
 
-## B19 · Launch v1.0: top-up lalu seed WETH/USDG (butuh password keystore) · `OPEN`
+## B19 · Seed WETH/USDG (butuh password keystore) · `DITUNDA` sampai ada dana
+
+Keputusan 2026-10-31: v1.0 diluncurkan tanpa seed. Sisa saldo deployer (±$4,7) disimpan sebagai gas untuk pembukaan v1.1–v2.0 dan cadangan upgrade. Swap di aethra.finance aktif begitu ada LP pertama: siapa pun, atau script di bawah ini saat dana tersedia.
 
 1. Kirim ke deployer `0xd09D9c87ECfe008B4D6D3cEbeAd25103c16d9a7C` di Robinhood Chain: **±0,004 ETH** (saldo sekarang 0,0021 ETH; dibutuhkan 0,005 seed + 0,0001 smoke test + 0,0003 cadangan gas) dan **±11,5 USDG** (`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`; saldo sekarang 0,12).
 2. Jalankan:
@@ -256,7 +260,7 @@ Script mengambil harga ETH dari CoinGecko, menampilkan jumlah seed, dan menunggu
 
 Tombol darurat bila perlu: `bash scripts/mainnet-pool-switch.sh off` (swap ditolak, likuiditas tetap bisa ditarik), `... on` untuk menyalakan lagi.
 
-## B20 · Terbitkan SDK ke npm · `OPEN`
+## B20 · Terbitkan SDK ke npm · `OPEN` (organisasi npm `aethra` sudah dibuat 2026-10-31; tinggal login + publish)
 
 Paket sudah siap (`packages/sdk`: README, metadata, `viem` sebagai peer, `npm pack` 47,6 kB, 9 test).
 
