@@ -64,6 +64,16 @@ function artifacts() {
       list.push({ code, source: `${path}:${name}`, name });
     }
   }
+  // contracts deployed from their explorer source package (scripts/build-verifiable.mjs)
+  const verifiable = join(CONTRACTS, "verifiable");
+  if (existsSync(verifiable)) {
+    for (const f of readdirSync(verifiable)) {
+      if (!f.endsWith(".bin")) continue;
+      const name = f.replace(/\.bin$/, "");
+      const known = list.find((a) => a.name === name);
+      if (known) list.push({ code: readFileSync(join(verifiable, f), "utf8").trim().replace(/^0x/, ""), source: known.source, name });
+    }
+  }
   // longest first, so a contract never matches a shorter one that happens to be its prefix
   return list.sort((a, b) => b.code.length - a.code.length);
 }

@@ -157,6 +157,11 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
   - Rehearsed on a fork (chain id 31337): 58.9M gas. All 32 verification packages reproduce the deployed bytes including the metadata hash.
   - The verify script now reads the match type back from the explorer ("exact match" / "partial match") and sends the MIT license.
   - Testnet redeployed by the user (B15): 117 transactions, all succeeded. Addresses equal the fork rehearsal. Indexer rows of the old deployment deleted, new deployment synced: 7 pools, TVL ≈ $828k. Exact match proven on the new aUSD mock feed `0x631b…a4c2` (not in the recording list). 32 verification packages ready.
+  - First recording run on the redeployed testnet: 31/32 exact match. "Unknown UID" rows had succeeded: the explorer lost the status ticket. DLMM pool implementation failed: its deployed bytecode (compiled inside the whole project, via-IR) is only reproducible with a ~160-file package that compiles in 67 s, and the explorer gives up. Fix:
+    - `scripts/build-verifiable.mjs` compiles DLMMPool from its small explorer package (17 files, 2 s) to `packages/contracts/verifiable/DLMMPool.bin`. `Deploy.s.sol` deploys that bytecode on testnet and mainnet, so the deployed code is the verified code by construction.
+    - `verify-prepare.mjs` now only accepts the small package. A mismatch stops the run instead of falling back to a heavy package.
+    - `verify-contracts.sh` treats the contract page as the source of truth when the status ticket is lost.
+    - Fork rehearsal: 32/32 small packages match. Mainnet dry run: $2.51 upper bound. The user redeployed testnet once more (B16): 117 transactions, all succeeded, 32/32 small packages match. Indexer re-synced.
   - Mainnet dry run with metadata: 55.05M gas limit = 0.0011210 ETH = $2.48 at 0.020364 gwei and $2,212.93 (upper bound). Within budget.
 
 ## 2026-10-30 · Router + hook security review

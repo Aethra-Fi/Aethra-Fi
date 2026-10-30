@@ -3,10 +3,10 @@
 // and proves it before anything is sent: the package is compiled locally with solc 0.8.26 and its creation code must
 // equal the creation code that was broadcast on-chain, byte for byte.
 //
-// Why: with via-IR, solc output can change with the set of files compiled together. forge verify-contract submits a
-// minimal file set, which for some contracts (DLMMPool on testnet) gives different bytecode than the full build that
-// was deployed. So each contract gets the first candidate that reproduces the deployed bytes: forge's minimal input,
-// then every build-info input in out/build-info.
+// The package is forge's minimal standard JSON input (the contract and its imports). With via-IR, a contract compiled
+// inside the whole project can differ from the same contract compiled from that small package; such contracts are
+// deployed from the small package's bytecode (scripts/build-verifiable.mjs). A contract that still does not match
+// stops the run: a whole-project package would take the explorer minutes to compile and it gives up.
 //
 // Packages are scrubbed of local absolute paths (they would be published on the explorer) and written to
 // packages/contracts/verification/<network>/ (git-ignored) with a manifest.json.
@@ -79,22 +79,6 @@ function minimalInput(source) {
   return JSON.parse(out);
 }
 
-let buildInfos = null;
-function buildInfoInputs(path) {
-  if (!buildInfos) {
-    const dir = join(CONTRACTS, "out/build-info");
-    buildInfos = readdirSync(dir)
-      .filter((f) => f.endsWith(".json"))
-      .map((f) => {
-        const { input } = JSON.parse(readFileSync(join(dir, f), "utf8"));
-        for (const k of ["version", "allowPaths", "basePath", "includePaths"]) delete input[k];
-        return { id: f.replace(/\.json$/, ""), input };
-      })
-      .filter((b) => b.input.settings?.optimizer?.runs === 800);
-  }
-  return buildInfos.filter((b) => b.input.sources[path]);
-}
-
 /** Creation code of `path:name` compiled from `input`, or null on a compile error. */
 function compile(input, path, name) {
   const job = structuredClone(input);
@@ -102,35 +86,6 @@ function compile(input, path, name) {
   const r = spawnSync(SOLC, ["--standard-json"], { input: JSON.stringify(job), maxBuffer: 1 << 30 });
   const out = JSON.parse(r.stdout.toString());
   return out.contracts?.[path]?.[name]?.evm?.bytecode?.object ?? null;
-}
-
-/**
- * A build-info input holds the whole project (tests and scripts too), and the explorer compiles every file in a package:
- * that took minutes and the explorer gave up. Drop files in shrinking chunks and keep each drop that still reproduces
- * the deployed bytes; the files forge needs for the contract are never dropped.
- */
-function minimize(c, path, name, matches) {
-  const needed = new Set(Object.keys(minimalInput(`${path}:${name}`).sources));
-  let removable = Object.keys(c.input.sources).filter((k) => !needed.has(k));
-  const without = (drop) => {
-    const job = structuredClone(c.input);
-    for (const k of drop) delete job.sources[k];
-    return job;
-  };
-  for (let size = removable.length; size >= 1; size = Math.floor(size / 2)) {
-    for (let i = 0; i < removable.length; ) {
-      const chunk = removable.slice(i, i + size);
-      const job = without(chunk);
-      if (matches(compile(job, path, name))) {
-        c.input = job;
-        removable = removable.filter((k) => !chunk.includes(k));
-      } else {
-        i += size;
-      }
-    }
-  }
-  c.minimized = true;
-  c.tag += `, ${Object.keys(c.input.sources).length} files`;
 }
 
 // ------------------------------------------------------------------ prepare
@@ -149,29 +104,15 @@ for (const [i, row] of rows.entries()) {
     console.error(`no broadcast record for ${row.address}`);
     process.exit(1);
   }
-  if (!cache.has(row.source)) cache.set(row.source, []);
-  const tried = cache.get(row.source);
-
-  const check = (c) => c.code !== null && want === c.code + args;
-  let hit = tried.find(check);
-  if (!hit) {
-    const candidates = [() => ({ tag: "forge", input: scrub(minimalInput(row.source)) })];
-    for (const b of buildInfoInputs(path)) candidates.push(() => ({ tag: `build-info ${b.id}`, input: scrub(b.input) }));
-    for (const make of candidates.slice(tried.length)) {
-      const c = make();
-      if (tried.some((t) => t.tag === c.tag)) continue;
-      c.code = compile(c.input, path, name);
-      tried.push(c);
-      if (check(c)) {
-        hit = c;
-        break;
-      }
-    }
+  if (!cache.has(row.source)) {
+    const input = scrub(minimalInput(row.source));
+    cache.set(row.source, { tag: "forge", input, code: compile(input, path, name) });
   }
-  if (hit && hit.tag !== "forge" && !hit.minimized) minimize(hit, path, name, (code) => code !== null && want === code + args);
+  const c = cache.get(row.source);
+  const hit = c.code !== null && want === c.code + args ? c : null;
   if (!hit) {
     failed++;
-    console.error(`✗ ${row.label} ${row.address}: no source package reproduces the deployed bytecode`);
+    console.error(`✗ ${row.label} ${row.address}: its source package does not reproduce the deployed bytecode (deploy it through scripts/build-verifiable.mjs)`);
     continue;
   }
   if (leaks(hit.input)) {

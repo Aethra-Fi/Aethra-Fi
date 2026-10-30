@@ -82,19 +82,19 @@ pnpm dev                             # web app
 The Docker edge runtime cannot reach Anvil on 127.0.0.1, so to index the local chain run the indexer on the host:
 `cd supabase/functions && SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… RPC_URL_31337=http://127.0.0.1:8545 deno run --config deno.json -A indexer/index.ts`.
 
-## Testnet redeploy (2026-10-30, B15)
+## Testnet redeploy (2026-10-30, B16)
 
-Fresh testnet compiled with the CBOR metadata hash, so the explorer gives exact verification matches. It has the same shape as the mainnet release: core, DLMM and DAMM live; launchpad, AETH, buyback and credit deployed but locked (`hidden` in the address file). Script: `bash scripts/testnet-redeploy.sh --broadcast` (117 transactions, start block 145409915). The indexer rows of the old deployment were deleted and the new addresses synced.
+Fresh testnet compiled with the CBOR metadata hash, so the explorer gives exact verification matches. DLMMPool is deployed from the bytecode of its explorer source package (`verifiable/DLMMPool.bin`). It has the same shape as the mainnet release: core, DLMM and DAMM live; launchpad, AETH, buyback and credit deployed but locked (`hidden` in the address file). Script: `bash scripts/testnet-redeploy.sh --broadcast` (117 transactions, start block 145435281). B15 deployed an earlier set the same way; it is abandoned because its DLMM pool implementation cannot be verified. The indexer rows of older deployments were deleted and the new addresses synced.
 
 | Contract | Proxy |
 | --- | --- |
-| AethraHub | `0xdAa6BeF5EE73f2A92e93D113AEd1E49d0E138e4A` |
-| AethraHook | `0xf33177ae76c8784F967EdBDB8d6354485c4cfAcc` |
-| AethraRouter | `0x7Be615487D5781b58ED308770D63dDa3716aA6c1` |
-| AethraPositions | `0xB570dBe256B2c20A7740134F04a584f659D3dEA0` |
-| DLMM factory | `0xb642fc4e3508eA0EA48CFA04f70D204b468c20d4` |
-| DLMM limit orders | `0x303A763AFbDa9A8bd1a6b9a8E445a7Ba0244D566` |
-| DAMM factory | `0x8f0C7E971b7C76F1836c1fC9b7C9E3690Cb0b090` |
+| AethraHub | `0xf60b5eB48794960E506DfEF3b4b827429C473Cc3` |
+| AethraHook | `0xc29EF3cd019E7b2Fc52491B6EA2ebAFD097bBAcC` |
+| AethraRouter | `0x400502775f33afd20860003c7eA7f236bAa57731` |
+| AethraPositions | `0x8C0D930c38792EbEF029128F148c72EB6F23CF0D` |
+| DLMM factory | `0x3c8183537aA81182063a000Ddb7adDCc573A1Ba9` |
+| DLMM limit orders | `0x2c5bA6ab799C24cd45132F003c0bE14A3A5ABe4b` |
+| DAMM factory | `0xeE1596883BE11a6dEaD6A4D72c4B30959946C2b3` |
 
 Full list with explorer links: `docs/verification/testnet.md` (written by `scripts/verify-contracts.sh testnet`). The upgrade reference `upgrades/v0-testnet` describes the old deployment; snapshot the current commit before the next testnet upgrade.
 
