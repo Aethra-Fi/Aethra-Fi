@@ -49,7 +49,7 @@ Total muat di $7–8 sampai harga gas naik sekitar 2×. Karena Batch A dibayar d
 3. ✅ Fix hub H-2: `setAsset` menolak `maxStaleness == 0` bila oracle diisi (`InvalidStaleness`).
 4. ✅ Guard saham: aset `STOCK` yang belum `enabled` tidak bisa dipakai di pool (`AssetNotEnabled`). Daftarkan semua token saham mainnet saat Batch A sebagai `STOCK`, `enabled=false`, oracle nol.
 5. ✅ 190 tes forge hijau, termasuk tes regresi di `test/security/RouterHookAudit.t.sol`.
-6. ⬜ Invariant test DLMM dan DAMM (saldo token pool ≥ total klaim LP dan fee). Wajib sebelum DLMM/DAMM dibuka. Disarankan sebelum deploy.
+6. ✅ Invariant test DLMM dan DAMM (2026-10-30, `test/dlmm/DLMM.invariant.t.sol`, `test/damm/DAMM.invariant.t.sol`) (saldo token pool ≥ total klaim LP dan fee). Wajib sebelum DLMM/DAMM dibuka. Disarankan sebelum deploy.
 7. ⬜ Script deploy gabungan dengan env `OWNER`. Modul baru (beacon, factory, limit orders, launchpad, vault) di-initialize dengan Safe sebagai owner. Core dimiliki deployer sampai wiring selesai, lalu `transferOwnership` ke Safe.
 8. ⬜ `setCaps(0, 0)` dan tanpa `setCreditManager` di script kredit.
 9. ⬜ Pecah `DeployLaunchpadBuyback` menjadi dua script: launchpad (Batch A) dan AETH + buyback (Batch B).

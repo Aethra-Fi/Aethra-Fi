@@ -25,7 +25,7 @@ const CONTRACTS = join(ROOT, "packages/contracts");
 const SOLC = join(homedir(), ".local/share/svm/0.8.26/solc-0.8.26");
 const COMPILER = "v0.8.26+commit.8a97fa7a";
 const CHAIN = { testnet: 46630, mainnet: 4663 }[network];
-const OUT = join(CONTRACTS, "verification", network);
+const OUT = join(CONTRACTS, "verification", process.env.VERIFY_DRY_RUN ? `${network}-dry-run` : network);
 const quiet = process.argv.includes("--quiet");
 const log = (...a) => quiet || console.log(...a);
 
@@ -39,17 +39,23 @@ const rows = JSON.parse(execFileSync("node", ["scripts/verify-list.mjs", network
 
 // creation code actually broadcast for each address
 const deployed = new Map();
+const txHashes = new Map(); // creation transaction per address (Sourcify uses it to find the creation code)
 for (const dir of readdirSync(join(CONTRACTS, "broadcast"))) {
   const chainDir = join(CONTRACTS, "broadcast", dir, String(CHAIN));
   if (!existsSync(chainDir)) continue;
-  for (const f of readdirSync(chainDir)) {
-    if (!f.endsWith(".json")) continue;
-    const { transactions = [] } = JSON.parse(readFileSync(join(chainDir, f), "utf8"));
+  const files = readdirSync(chainDir).filter((f) => f.endsWith(".json")).map((f) => join(chainDir, f));
+  // VERIFY_DRY_RUN=1 proves the packages against the dry run before a real broadcast (see verify-list.mjs)
+  if (process.env.VERIFY_DRY_RUN && existsSync(join(chainDir, "dry-run"))) {
+    for (const f of readdirSync(join(chainDir, "dry-run"))) if (f.endsWith(".json")) files.push(join(chainDir, "dry-run", f));
+  }
+  for (const file of files) {
+    const { transactions = [] } = JSON.parse(readFileSync(file, "utf8"));
     for (const tx of transactions) {
       if (!tx.contractAddress || !tx.transactionType.startsWith("CREATE")) continue;
       let input = tx.transaction.input.replace(/^0x/, "");
       if (tx.transactionType === "CREATE2") input = input.slice(64);
       deployed.set(tx.contractAddress.toLowerCase(), input);
+      if (tx.hash) txHashes.set(tx.contractAddress.toLowerCase(), tx.hash);
     }
   }
 }
@@ -121,7 +127,7 @@ for (const [i, row] of rows.entries()) {
   }
   const file = `${String(i + 1).padStart(2, "0")}-${row.address}.json`;
   writeFileSync(join(OUT, file), JSON.stringify(hit.input));
-  manifest.push({ label: row.label, address: row.address, contractName: row.source, args, compiler: COMPILER, file });
+  manifest.push({ label: row.label, address: row.address, contractName: row.source, args, compiler: COMPILER, file, txHash: txHashes.get(row.address) ?? null });
   log(`✓ ${row.label.padEnd(36)} ${row.address}  (${hit.tag})`);
 }
 

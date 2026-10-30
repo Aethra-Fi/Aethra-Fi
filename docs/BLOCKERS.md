@@ -182,7 +182,9 @@ bash scripts/testnet-redeploy.sh --broadcast
 
 Setelah itu bilang "B16 selesai".
 
-## B12 · Rekam layar verifikasi testnet · `OPEN` (siap direkam)
+## B12 · Rekam layar verifikasi testnet · `DONE` 2026-10-30
+
+Selesai: 32/32 kontrak "exact match" dengan lisensi MIT di explorer testnet. Link ada di `docs/verification/testnet.md`. Teks di bawah adalah catatan asli.
 
 Tidak butuh keystore. 32 kontrak, semua tampil fresh di rekaman.
 
@@ -196,7 +198,24 @@ bash scripts/verify-contracts.sh testnet
 
 Di layar: cek koneksi, tekan Enter, 32 kontrak diverifikasi satu per satu (spinner lalu ✓), bukti dari explorer dengan label "exact match" dan link yang bisa diklik, lalu prompt untuk membuka kontrak di browser (ketik nomor, `q` selesai). Halaman explorer menampilkan "Contract source code verified (exact match)". Link juga disimpan di `docs/verification/testnet.md`.
 
-## B13 · Deploy mainnet (butuh password keystore) · `OPEN`
+## B17 · Probe verifikasi mainnet (butuh password keystore) · `DONE` 2026-10-31
+
+Selesai: `VerificationProbe` `0x549046a186026dd79c5a91cda4844097ba13713a` di mainnet. Sourcify `exact_match`, dan explorer mainnet menampilkan "Contract source code verified (exact match)" (dicek kamu di browser). Teks di bawah adalah catatan asli.
+
+API explorer mainnet menolak semua klien terminal (tantangan browser Cloudflare), VPN pun tetap 403. Jadi verifikasi mainnet lewat Sourcify, yang memverifikasi lalu meneruskan ke explorer dari server mereka. Di testnet jalur ini sudah terbukti: Sourcify `exact_match`, dan explorer menampilkan "verified (exact match)". Satu-satunya yang belum terbukti adalah penerusan ke explorer **mainnet**. Probe ini membuktikannya dengan satu kontrak mini (`VerificationProbe`, ±127k gas, < $0,01).
+
+```bash
+# Jalankan di: ROOT
+bash scripts/mainnet-verify-probe.sh   # password diminta sekali
+```
+
+Buka link yang dicetak di browser. Halamannya harus menampilkan "Contract source code verified (exact match)". Bilang "B17 selesai" beserta apa yang terlihat di halaman itu.
+
+## B13 · Deploy mainnet (butuh password keystore) · `DONE` 2026-10-31
+
+Selesai: 38 transaksi sukses, gas 43,24 juta, biaya 0,00087 ETH (±$1,92). Semua kunci on-chain sesuai rencana. 28/28 paket verifikasi cocok. Indexer di-sync, web dipromosikan ke `mainnet`. Teks di bawah adalah catatan asli.
+
+Status 2026-10-30: invariant test DLMM dan DAMM lolos. 28 paket verifikasi mainnet sudah dibuktikan terhadap dry run, termasuk metadata hash (exact match). Dry run terakhir $2,49.
 
 Satu script untuk seluruh rilis: core, DLMM, DAMM hidup, sedangkan launchpad, AETH, buyback, dan kredit terkunci on-chain. Owner = deployer. Dry run 2026-10-30: ±$1,89 (batas atas $2,44). Forge butuh ±0,00218 ETH di muka, saldo 0,00297 ETH. Kalau harga gas di atas ±0,05 gwei, tunggu turun.
 
@@ -212,9 +231,9 @@ Setelah itu bilang "B13 selesai". Lalu aku:
 - promosikan `main` ke `mainnet` (Vercel production `aethra.finance`),
 - smoke test.
 
-## B14 · Rekam layar verifikasi mainnet · `OPEN` (setelah B13)
+## B14 · Rekam layar verifikasi mainnet · `OPEN` (siap direkam)
 
-API explorer mainnet menolak koneksi dari sini (Cloudflare, HTTP 403). **Nyalakan VPN dulu.** `mainnet-deploy.sh --broadcast` sudah menyiapkan paket verifikasi otomatis. Sebelum merekam, bilang ke aku dulu supaya aku cek paketnya.
+VPN tidak diperlukan: untuk mainnet script otomatis memakai Sourcify. Paket verifikasi disiapkan otomatis oleh `mainnet-deploy.sh --broadcast`. Kabari aku dulu setelah B13 supaya aku cek paketnya.
 
 ```bash
 # Jalankan di: ROOT

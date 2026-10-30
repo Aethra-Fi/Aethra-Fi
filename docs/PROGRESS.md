@@ -16,7 +16,8 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 | 8 | DAMM/DLMM, limit orders, credit, buyback | ✅ | Contracts + UI |
 | 9 | UI modification (style guide → tokens, 2 themes) | ✅ | Tokens + 2 themes; Playwright dark/light screenshots in `docs/ui-style/screens/` |
 | 10 | Testnet deploy | ✅ | https://aethra-fi-testnet.vercel.app live: contracts on 46630, hosted indexer + API, Vercel Git deploys from `testnet` |
-| 11 | Mainnet dry run (no broadcast) | ✅ | 2026-10-30: full release (all modules) 42.1M gas ≈ $1.89, within $7. Broadcast by the user (B13) |
+| 11 | Mainnet dry run + deploy | ✅ | Deployed 2026-10-31 (B13), see below |
+| 11a | (old) Mainnet dry run | ✅ | 2026-10-30: full release (all modules) 42.1M gas ≈ $1.89, within $7. Broadcast by the user (B13) |
 
 ## Setup checklist
 
@@ -122,6 +123,57 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · Mainnet deployed (B13)
+
+- 38 transactions, all succeeded. 43,242,802 gas, 0.000869563 ETH (≈ $1.92 at ≈ $2,210/ETH), within the $6–7 budget. Remaining deployer balance 0.0020918 ETH. Start block 101899930.
+- Proxies: hub `0x939aCB0cB63B42ef0A77Aa22ea895C56575941F1`, hook `0x4512E102B8b93a236b56e6437B6AD6b9eD963ACC`, router `0xeb836E4ec538E094e06643b135DD9DDA2f01B85F`, positions `0xc85c3Ce038a37ca04e2571a3F4738aDAC5e5E3A5`, DLMM factory `0xc2364a63291672Bce714255ff1e8D4bE3771Bc7b`, DLMM limit orders `0x7Ebc6dFF0d10eE822B55464b1F1e3a318E60f823`, DAMM factory `0x99aC6317725593D0be7462eC88b218Ce758eEDB7`. Gated modules in `hidden`.
+- On-chain checks on mainnet:
+  - all 11 owned contracts are owned by the deployer;
+  - hook, DLMM and DAMM factories are registrars; the launchpad is not;
+  - protocol fee share 0 and no buyback set;
+  - the vault has no credit manager;
+  - TSLA, NVDA and AAPL are STOCK and disabled;
+  - 1B AETH is held by the deployer;
+  - hook address flags `0x3acc`.
+- 28/28 verification packages reproduce the deployed bytecode. Indexer synced (`sync-deployments.mjs mainnet`). Web promoted to the `mainnet` branch (`aethra.finance`).
+
+## 2026-10-31 · Mainnet readiness: verification path, rehearsal, indexer
+
+- The mainnet Blockscout API refuses every command-line client: HTTP 403 Cloudflare browser challenge, also with the user's VPN (Cloudflare WARP IP). The web pages load and the testnet explorer is open. Neither forge nor curl can verify there.
+- Sourcify (chain 4663 supported) verifies the same package and forwards it to the explorer from its own servers. Proven on testnet:
+  - three mock feeds verified through Sourcify only (`exact_match`) appear on the testnet Blockscout as verified (exact match);
+  - the license shows as none on this path.
+- `verify-contracts.sh` gained `VERIFIER=sourcify` (Sourcify v2 API: submit, poll, read back) and uses it by default on mainnet. The manifest now carries the creation transaction hash. End-to-end run on testnet: 2 new contracts verified, 1 already verified, all exact match.
+- The forwarding to the **mainnet** explorer can only be shown on mainnet: `scripts/mainnet-verify-probe.sh` deploys a 377-byte `VerificationProbe` from its explorer package bytecode (rehearsed on a fork, 126k gas), verifies it through Sourcify and prints the explorer link (B17).
+- Mainnet release rehearsed on a fork with chain id 4663: `deployAll` broadcast, `set-start-block`, SDK build, `verify-prepare mainnet` gives 28/28 small packages. Web unit tests and a production (mainnet) build pass with the addresses filled in.
+  - Fixed an e2e test that assumed testnet as the default network.
+  - All fork traces were removed and `mainnet.json` restored.
+- Supabase mainnet brought up to date:
+  - migration `20261026000001_pool_sparkline` applied;
+  - `api` and `indexer` functions redeployed from the current code;
+  - `INDEXER_TOKEN` function secret and Vault secrets `project_url` / `indexer_token` set; cron active.
+  - Cron to indexer returns HTTP 200 `skipped: no deployment`. After B13 only `sync-deployments.mjs mainnet` is left.
+- B17 done: `VerificationProbe` `0x5490…713a` on mainnet (tx `0xb8e1…884b`). Sourcify gives `exact_match` and the mainnet explorer shows "Contract source code verified (exact match)" (checked by the user in a browser). The mainnet verification path is proven end to end. Dry run repeated after the probe moved the nonce: $2.48, 28/28 packages match.
+- Vercel production env checked: `NEXT_PUBLIC_NETWORK`, `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SITE_URL` are set. The `mainnet` branch is promoted after B13.
+
+## 2026-10-30 · DLMM/DAMM invariants and mainnet verification proof
+
+- `test/damm/DAMM.invariant.t.sol` covers a concentrated-range pool with a launch fee and a 20% protocol share, through random add, remove, swap, fee claim, protocol fee collection and time steps. Invariants:
+  - token balances ≥ reserves + fees owed to LPs + protocol fees;
+  - shares + MIN_LIQUIDITY = liquidity;
+  - price stays inside the range;
+  - reserves can pay out the curve to either edge.
+  Result: 256 runs × 500 calls, all pass. `afterInvariant` checks that swaps and removals really happened.
+- `test/dlmm/DLMM.invariant.t.sol` covers random add (shaped bins), remove, share transfer, swap, limit order place, claim and cancel, protocol fee collection and time steps. Invariants:
+  - token balances ≥ bin reserves + protocol fees;
+  - bins below the active bin hold no token0 and bins above hold no token1;
+  - bin shares add up (at most MIN_SHARES unowned);
+  - the limit order contract owns exactly the shares of its open orders.
+  Result: 128 runs × 200 calls, all pass, on the forge build and on `verifiable/DLMMPool.bin` (`DLMM_VERIFIABLE=1`), the bytecode that testnet and mainnet deploy. Default config is 64 × 100 to keep pre-push fast.
+- Release plan gate 6 (DLMM/DAMM invariants) is done.
+- Mainnet verification proven before broadcast: `VERIFY_DRY_RUN=1 node scripts/verify-prepare.mjs mainnet` gives 28/28 contracts with small source packages that reproduce the dry-run bytecode including the metadata hash, with no local paths. `mainnet-deploy.sh --broadcast` prepares the real packages right after the broadcast.
+- Mainnet dry run 2026-10-30: 55.06M gas limit = 0.0011190 ETH = $2.49 (0.020324 gwei). Deployer balance 0.002964 ETH.
+
 ## 2026-10-30 · Faucet, testnet liquidity, mainnet release scripts and final dry run
 
 - Web: `/faucet` page (testnet and local only; hidden from the nav on mainnet). Claims each Aethra test token once a day (`faucet()`, cooldown shown), wraps and unwraps ETH, links the Robinhood Chain ETH faucet. Dark and light screenshots in `docs/ui-style/screens/faucet-*.png`.
@@ -162,6 +214,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
     - `verify-prepare.mjs` now only accepts the small package. A mismatch stops the run instead of falling back to a heavy package.
     - `verify-contracts.sh` treats the contract page as the source of truth when the status ticket is lost.
     - Fork rehearsal: 32/32 small packages match. Mainnet dry run: $2.51 upper bound. The user redeployed testnet once more (B16): 117 transactions, all succeeded, 32/32 small packages match. Indexer re-synced.
+  - B12 recorded by the user: all 32 testnet contracts verified, exact match with the MIT license (checked through the explorer API). Links: `docs/verification/testnet.md`.
   - Mainnet dry run with metadata: 55.05M gas limit = 0.0011210 ETH = $2.48 at 0.020364 gwei and $2,212.93 (upper bound). Within budget.
 
 ## 2026-10-30 · Router + hook security review
