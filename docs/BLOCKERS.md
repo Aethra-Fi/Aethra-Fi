@@ -291,3 +291,17 @@ bash scripts/verify-contracts.sh mainnet
 ```
 
 Link disimpan di `docs/verification/mainnet.md`.
+
+## B21 · Promosikan landing refresh ke mainnet · `OPEN`
+
+Landing refresh (hero ring, badge "On Robinhood Chain", copy baru, efek tombol cyber) sudah di `main` (`0310016`) dan live di testnet (PR #25). Merge ke `mainnet` (produksi `aethra.finance`) ditolak oleh pengaman auto mode Claude Code, jadi langkah ini harus kamu jalankan.
+
+Produksi saat ini sudah memuat versi awal yang belum lengkap, terbawa commit rilis `2f3a37f`. Versi itu berfungsi, tapi belum punya backdrop label rail dan perbaikan aksesibilitas decode.
+
+```bash
+# Jalankan di: ROOT
+gh pr create --base mainnet --head main --title "Landing refresh: hero ring, chain badge, cyber buttons (mainnet)" --body "Completes the landing refresh on production."
+gh pr merge <nomor-PR> --merge
+```
+
+Atau izinkan saya menjalankannya. Setelah merge, saya cek status Vercel dan `aethra.finance`.

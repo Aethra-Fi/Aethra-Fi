@@ -27,6 +27,9 @@ function decode(el: HTMLElement, busy: WeakSet<HTMLElement>) {
   const total = runs.reduce((sum, r) => sum + r.text.length, 0);
   if (!total || total > MAX_DECODE) return;
   busy.add(el);
+  // the accessible name stays the real label while the visible text is scrambled
+  const named = el.hasAttribute("aria-label");
+  if (!named) el.setAttribute("aria-label", el.textContent?.trim() ?? "");
   const t0 = performance.now();
   const duration = 240 + total * 16;
   let lastStep = 0;
@@ -54,7 +57,10 @@ function decode(el: HTMLElement, busy: WeakSet<HTMLElement>) {
       offset += r.text.length;
     }
     if (p < 1) requestAnimationFrame(step);
-    else busy.delete(el);
+    else {
+      if (!named) el.removeAttribute("aria-label");
+      busy.delete(el);
+    }
   };
   requestAnimationFrame(step);
 }

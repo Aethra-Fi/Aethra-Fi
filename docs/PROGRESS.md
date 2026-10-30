@@ -123,6 +123,27 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · Landing refresh: hero ring, chain badge, new copy, cyber buttons
+
+- Hero: "On Robinhood Chain" badge (live dot) beside the eyebrow. Other places for it are under discussion with the user.
+- Copy:
+  - "Fees that adapt." → "Volatility-aware fees. Oracle-guarded markets.";
+  - "Liquidity, bin by bin." → "Precision liquidity. Bin by bin.";
+  - "Typed SDK. Open API." → "Type-safe SDK. Public REST API.".
+  - Titles now shrink to fit their column (`cqi` on the text column), so every line stays on one line.
+- Hero visual: the glyph ribbon is replaced there by the user's ring render.
+  - Source: `docs/brand/hero-ring-source.jpg`. `pnpm brand:hero` (`apps/web/scripts/build-hero-ring.mjs`, ImageMagick) paints out the baked-in headline, crops the ring and turns black into transparency.
+  - Light theme gets a deep green ink variant. Each theme loads only its own layer: 273 / 169 kB, or 97 / 62 kB below lg.
+  - Motion: entrance after decode, float, pointer tilt, pinging orbit nodes, a light band across the glyphs.
+  - Scrolling out of the hero fades the ring while the ribbon assembles; the ribbon skips rendering while hidden (`hideFirst`).
+- Cyber interactions (`.fx-cyber`) on landing buttons and every header control. App page buttons are unchanged.
+  - Hover: glitch, scan sweep, label decode, target brackets.
+  - Press: harder glitch plus a spark burst (`components/fx/cyber-fx.tsx`, one document-level listener).
+  - The accessible name is kept during the decode. Everything is off with reduced motion.
+  - New tokens `--glitch-a`, `--glitch-b`, `--fx-spark` in both themes (style guide updated).
+- Tests: `tests/e2e/landing.spec.ts` (badge, ring hand-over, new titles fit on one line, press effects). 17 e2e pass (1 skipped as before), 32 web unit tests, lint and typecheck clean. Landing screenshots regenerated in `docs/ui-style/screens/`.
+- Note: a parallel session's commit `2f3a37f` (v1.0 release notes, PRs #23/#24, tag `v1.0.0`) staged an unfinished snapshot of this work with `git add -A`. That snapshot built and worked. This entry's commit completes it.
+
 ## 2026-10-31 · v1.0 released
 
 - v1.0 is live on mainnet:
