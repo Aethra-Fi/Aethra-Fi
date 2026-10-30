@@ -14,6 +14,8 @@ coverage/
 # foundry
 packages/contracts/out/
 packages/contracts/cache/
+packages/contracts/out-upgrade/
+packages/contracts/cache-upgrade/
 packages/contracts/broadcast/*/31337/
 packages/contracts/broadcast/**/dry-run/
 # supabase
@@ -22,3 +24,11 @@ supabase/.temp
 # playwright
 apps/web/test-results/
 apps/web/playwright-report/
+
+# claude worktrees
+.claude/worktrees/
+packages/contracts/foundry-pp/
+*.tsbuildinfo
+supabase/functions/node_modules/
+packages/contracts/upgrades/
+packages/contracts/verification/

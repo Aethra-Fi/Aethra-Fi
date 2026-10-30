@@ -24,7 +24,7 @@ interface IAethraHub {
         AssetClass class;
         bool enabled;
         address oracle; // Chainlink-style aggregator (latestRoundData + decimals), optional
-        uint32 maxStaleness; // seconds; 0 = never stale
+        uint32 maxStaleness; // seconds; must be > 0 whenever an oracle is set (0 is only valid without an oracle)
     }
 
     struct PoolInfo {
@@ -54,6 +54,7 @@ interface IAethraHub {
     error NoOracle();
     error StalePrice();
     error BadPrice();
+    error InvalidStaleness();
 
     // --- assets & oracles
     function setAsset(address token, AssetClass class, bool enabled, address oracle, uint32 maxStaleness) external;

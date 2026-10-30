@@ -9,14 +9,31 @@ evm_version = "cancun"
 optimizer = true
 optimizer_runs = 800
 via_ir = true
-bytecode_hash = "none"
-cbor_metadata = false
+# Keep the CBOR metadata hash: the explorer needs it for a full (not partial) verification match.
+bytecode_hash = "ipfs"
+cbor_metadata = true
+# Only remappings.txt: auto-detected remappings of nested libraries carry absolute local paths, and the metadata
+# (published with the verified source) would include them.
+auto_detect_remappings = false
 ffi = true
 ast = true
 build_info = true
 extra_output = ["storageLayout"]
-fs_permissions = [{ access = "read-write", path = "./" }, { access = "read", path = "../sdk" }]
+fs_permissions = [{ access = "read-write", path = "./" }, { access = "read-write", path = "../sdk" }]
 gas_reports = ["*"]
+# PoolManager (tests only) needs its upstream optimizer setting to avoid stack-too-deep
+additional_compiler_profiles = [{ name = "v4core", via_ir = true, optimizer_runs = 44444444 }]
+compilation_restrictions = [{ paths = "lib/v4-core/src/PoolManager.sol", optimizer_runs = 44444444 }]
+
+# Used by script/upgrade/Upgrade.s.sol. The OpenZeppelin validator reads every file in the build-info directory and rejects
+# the duplicate contracts that the PoolManager profile above produces, so this profile builds the protocol alone
+# (same compiler settings, no tests, no PoolManager profile) into its own output directory.
+[profile.upgrade]
+out = "out-upgrade"
+cache_path = "cache-upgrade"
+skip = ["*/test/**"]
+additional_compiler_profiles = []
+compilation_restrictions = []
 
 [profile.default.fuzz]
 runs = 256

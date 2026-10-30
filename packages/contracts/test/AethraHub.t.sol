@@ -124,7 +124,7 @@ contract AethraHubTest is Test {
         vm.assume(raw > 0);
         MockPriceFeed feed = new MockPriceFeed(address(this), dec, "X", int256(uint256(raw)));
         vm.prank(owner);
-        hub.setAsset(token, AssetClass.CANONICAL, true, address(feed), 0);
+        hub.setAsset(token, AssetClass.CANONICAL, true, address(feed), 1 days);
         uint256 expected = dec <= 18 ? uint256(raw) * 10 ** (18 - dec) : uint256(raw) / 10 ** (dec - 18);
         if (expected == 0) {
             vm.expectRevert(IAethraHub.BadPrice.selector);
