@@ -58,6 +58,9 @@ The primary colour is fixed: **`#86F61F`**.
 | `--danger` | `#FF6B5E` | `#C4321F` | |
 | `--warning` | `#F5B53D` | `#9A5B00` | |
 | `--info` | `#2ED3B7` | `#0E7C6B` | |
+| `--glitch-a` | `#2ED3B7` | `#0E7C6B` | chromatic split, first channel (cyber interactions) |
+| `--glitch-b` | `#A78BFA` | `#6D4FD1` | chromatic split, second channel |
+| `--fx-spark` | `#86F61F` | `#3A7A0A` | press burst |
 | `--glow` | `0 0 0 1px rgb(134 246 31/.25), 0 0 32px -4px rgb(134 246 31/.35)` | `0 0 0 1px rgb(58 122 10/.25), 0 8px 24px -8px rgb(58 122 10/.25)` | |
 | `--shadow-card` | `none` (borders only) | `0 1px 0 rgb(18 18 17/.04)` | |
 
@@ -107,6 +110,7 @@ Both come from the `geist` npm package, so they are self-hosted with no external
   - *Primary:* `--primary` fill and `--primary-fg` text. Hover uses `--primary-hover` plus `--glow`.
   - *Secondary:* transparent with a 1px `--border-strong` border and `--text`. Hover turns the border `--primary` and the text `--primary-text`.
   - *Ghost:* text only.
+  - *Cyber interactions* (`.fx-cyber`, landing buttons and the header only; app pages stay calm). Hover plays one 340ms glitch (slice clip plus a `--glitch-a` / `--glitch-b` chromatic split), a scan band sweeps across, the label decodes from glyphs left to right, and four L brackets in `--primary-text` open 4px outward (also on keyboard focus). Press nudges the button down 1px, replays a harder glitch with a brightness flash, and bursts a diamond pulse with shards in `--fx-spark` at the pointer (button centre for keyboard). The accessible name stays the real label while the text is scrambled. All of it is off under `prefers-reduced-motion`.
 - **Cards.** `--surface` background, 1px `--border`, no shadow in dark mode. Header row: an eyebrow label on the left and a status chip on the right.
 - **Chips / badges.** Mono 10–11px uppercase with 2px radius, a `*-soft` background and `*-text` coloured text (for example `ORACLE GUARDED`, `DYNAMIC FEE`, `LOCKED`).
 - **Inputs.** `--surface-2` background with a 1px `--border` and a 2px radius. Focus shows a 1px `--ring` border plus a 3px soft ring. Numeric inputs use Geist Mono at 28px for swap amounts.
@@ -116,6 +120,7 @@ Both come from the `geist` npm package, so they are self-hosted with no external
 
 ## 6. Motion
 
+- **Hero ring.** The landing hero shows the Aethra ring render (`docs/brand/hero-ring-source.jpg`, built into transparent per-theme layers by `pnpm brand:hero`): a deep green ink variant on the light theme. It enters with a fade, scale and de-blur once decoded, floats slowly, tilts a few degrees toward the pointer, pings its orbit nodes, and a light band sweeps across its glyphs every 7s. Scrolling out of the hero fades and enlarges it while the glyph ribbon assembles in its place.
 - **Generative background.** A slow canvas field of characters or dots (`· : + ×`) in the hero. Density follows a travelling sine wave tinted with `--primary` at 15–35% opacity, and the cursor nudges the wave frequency. It respects `prefers-reduced-motion` by rendering a static frame.
 - **Micro-interactions:** 150ms `cubic-bezier(.2,.8,.2,1)` on colour and border. Number changes tick, then fade, over 300ms.
 - **Section reveal:** 8px rise plus a fade over 400ms, once only, staggered by 60ms.

@@ -684,7 +684,7 @@ export function LandingSections() {
         <nav aria-label="Sections" className="pointer-events-auto absolute right-8 top-1/2 hidden -translate-y-1/2 flex-col items-end gap-1 md:flex">
           {SECTIONS.map((sec, i) => (
             <button key={sec.key} onClick={() => goTo(i)} aria-label={`Go to ${sec.label}`} aria-current={i === active ? "step" : undefined} className="group flex items-center gap-2 py-1">
-              <span className={cn("font-mono text-[10px] uppercase tracking-eyebrow transition-opacity duration-300", i === active ? "text-primary-text opacity-100" : "text-muted opacity-0 group-hover:opacity-100")}>
+              <span className={cn("bg-bg/75 px-1 font-mono text-[10px] uppercase tracking-eyebrow transition-opacity duration-300", i === active ? "text-primary-text opacity-100" : "text-muted opacity-0 group-hover:opacity-100")}>
                 {pad(i)} {sec.label}
               </span>
               <span className={cn("w-0.5 transition-all duration-500", i === active ? "h-6 bg-primary" : "h-2.5 bg-border-strong group-hover:bg-fg-2")} />
