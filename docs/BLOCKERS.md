@@ -319,6 +319,8 @@ Langkah sesi berikutnya:
 
 Catatan v1.4: buyback mainnet terikat ke AETH lama `0xd373…7409` (tanpa setter). Token baru harus punya `burn()`, dan buyback butuh upgrade sebelum dibuka.
 
-## B22 · Izin promosi `main` → `mainnet` · `OPEN`
+## B22 · Izin promosi `main` → `mainnet` · `DONE` 2026-10-31
+
+Selesai: sesi aethra-15 mempromosikan `main` ke `mainnet` (PR #26) dan `testnet` (PR #27) atas persetujuan kamu. Landing baru dan blok CA (masih tersembunyi) sudah ada di production. Untuk B21 cukup isi CA, lalu promosikan lagi. Teks di bawah adalah catatan asli.
 
 `main` berisi landing baru dari sesi aethra-15 (sudah di testnet, PR #25) dan blok CA di atas. Promosi berikutnya ke production membawa keduanya. Cek dulu https://testnet.aethra.finance, lalu beri izin.
