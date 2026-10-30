@@ -11,8 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "brand": "node scripts/build-brand.mjs",
-    "brand:hero": "node scripts/build-hero-ring.mjs"
+    "brand": "node scripts/build-brand.mjs"
   },
   "dependencies": {
     "@aethrafi/sdk": "workspace:*",

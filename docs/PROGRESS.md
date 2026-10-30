@@ -123,6 +123,17 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · Hero back to the glyph ribbon, simpler buttons
+
+- User feedback: the hero picture was a shape reference, not an asset, and the button effects were too much.
+- Hero: ribbon shape 0 (was the Möbius loop) is now the liquidity ring, drawn by the same WebGL glyph ribbon as every section:
+  - a flattened torus of glyphs with a crisp, glowing inner rim;
+  - three outer orbit tracks (one dotted) and one inner track, with two bright `●` nodes per outer track;
+  - it morphs into the router figure-eight on scroll like the rest.
+  - `FRAMING` gained a per-shape sway factor (ring 0.3), because the full yaw swing tipped the ring into a steep diagonal.
+- Removed: the image layer (`hero-ring.tsx`, `public/brand/hero-ring-*`, `pnpm brand:hero`), the ribbon `hideFirst` fade, and `cyber-fx.tsx` (glitch, label decode, spark burst) with its tokens `--glitch-a`, `--glitch-b`, `--fx-spark`. The source picture moved to `docs/ui-reference/hero-ring-shape-reference.jpg`.
+- Buttons (`.fx-cyber`, CSS only): brackets open on hover and focus, lock onto the edge on press.
+
 ## 2026-10-31 · Landing refresh: hero ring, chain badge, new copy, cyber buttons
 
 - Hero: "On Robinhood Chain" badge (live dot) beside the eyebrow. Other places for it are under discussion with the user.
@@ -143,6 +154,13 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
   - New tokens `--glitch-a`, `--glitch-b`, `--fx-spark` in both themes (style guide updated).
 - Tests: `tests/e2e/landing.spec.ts` (badge, ring hand-over, new titles fit on one line, press effects). 17 e2e pass (1 skipped as before), 32 web unit tests, lint and typecheck clean. Landing screenshots regenerated in `docs/ui-style/screens/`.
 - Note: a parallel session's commit `2f3a37f` (v1.0 release notes, PRs #23/#24, tag `v1.0.0`) staged an unfinished snapshot of this work with `git add -A`. That snapshot built and worked. This entry's commit completes it.
+
+## 2026-10-31 · Handoff after v1.0
+
+- v1.0 is done (tag `v1.0.0`). The landing refresh and the hidden CA block reached production through PR #26 (session aethra-15, with the user's approval). Open items: B23 (AETH CA in the hero, waits for the user's token launch) and B19 (seed, deferred until funds).
+- Hero CA block: `apps/web/src/lib/token.ts` (`AETH_TOKEN.address`, null = hidden), `TokenCA` in `components/landing/landing-sections.tsx`. Previewed in both themes.
+- Production checks: read `aethra.finance` directly. Vercel does not report GitHub commit statuses, so do not wait on them.
+- `docs/verification/mainnet.md` (written by the verify script) is left untracked at the user's request.
 
 ## 2026-10-31 · v1.0 released
 

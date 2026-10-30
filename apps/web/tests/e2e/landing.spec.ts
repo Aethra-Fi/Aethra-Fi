@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-test("hero: chain badge, ring visual, and the glyph ribbon held back until the page leaves the hero", async ({ page }) => {
+test("hero: chain badge and the glyph ribbon (liquidity ring) behind it", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Every venue.");
   await expect(page.getByText("On Robinhood Chain", { exact: true })).toBeVisible();
-  await expect(page.locator(".hero-ring[data-ready]")).toBeAttached({ timeout: 10_000 });
-  await expect(page.locator(".hero-ring")).not.toHaveAttribute("data-off", "");
-  await page.locator("#section-router").scrollIntoViewIfNeeded();
-  await expect(page.locator(".hero-ring")).toHaveAttribute("data-off", "");
+  await expect(page.getByText("FORM 00 · Liquidity ring")).toBeAttached();
+  // the hero uses the same WebGL ribbon as every other section, no image layer
+  await expect(page.locator("div[aria-hidden] > canvas")).toHaveCount(1, { timeout: 10_000 });
+  await expect(page.locator("main img")).toHaveCount(0);
 });
 
 test("section titles use the new copy and every title line fits on one line", async ({ page }) => {
@@ -23,19 +23,23 @@ test("section titles use the new copy and every title line fits on one line", as
   expect(wrapped).toEqual([]);
 });
 
-test("cyber buttons: decode keeps the accessible name, press replays the glitch and bursts sparks", async ({ page }) => {
+test("buttons: brackets open on hover and lock on press, the label never changes", async ({ page }) => {
   await page.goto("/");
   const launch = page.getByRole("link", { name: "Launch app" });
+  const brackets = () => launch.evaluate((el) => {
+    const s = getComputedStyle(el, "::after");
+    return { opacity: s.opacity, inset: s.top };
+  });
+  await expect.poll(brackets).toEqual({ opacity: "0", inset: "-1px" });
   await launch.hover();
-  await expect(page.getByRole("link", { name: "Launch app" })).toBeVisible();
+  await expect.poll(brackets).toEqual({ opacity: "1", inset: "-5px" });
+  await expect(launch).toHaveText("Launch app");
   const box = (await launch.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await expect(launch).toHaveAttribute("data-fx-hit", "");
-  await expect(page.locator(".fx-burst")).toHaveCount(1);
+  await expect.poll(brackets).toEqual({ opacity: "1", inset: "-2px" });
   // release elsewhere so the press does not navigate
   await page.mouse.move(5, 400);
   await page.mouse.up();
-  await expect(page.locator(".fx-burst")).toHaveCount(0);
-  await expect(launch).not.toHaveAttribute("data-fx-hit", "");
+  await expect.poll(brackets).toEqual({ opacity: "0", inset: "-1px" });
 });

@@ -3,7 +3,6 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import "@rainbow-me/rainbowkit/styles.css";
 import "@/styles/globals.css";
-import { CyberFx } from "@/components/fx/cyber-fx";
 import { Providers } from "@/components/providers";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -31,7 +30,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SiteFooter />
           </div>
         </Providers>
-        <CyberFx />
       </body>
     </html>
   );

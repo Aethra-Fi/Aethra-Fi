@@ -292,7 +292,9 @@ bash scripts/verify-contracts.sh mainnet
 
 Link disimpan di `docs/verification/mainnet.md`.
 
-## B21 · Promosikan landing refresh ke mainnet · `OPEN`
+## B21 · Promosikan landing refresh ke mainnet · `DONE` 2026-10-31
+
+Selesai atas izin kamu: PR #26 di-merge ke `mainnet`, Vercel production sukses, `aethra.finance` diperiksa di browser (dark dan light, efek hover dan klik, tanpa error). PR #27 menyamakan `testnet`. Ikut terbawa: `058fd87` dari sesi lain (blok CA AETH, tersembunyi sampai alamatnya diisi). Teks di bawah adalah catatan asli.
 
 Landing refresh (hero ring, badge "On Robinhood Chain", copy baru, efek tombol cyber) sudah di `main` (`0310016`) dan live di testnet (PR #25). Merge ke `mainnet` (produksi `aethra.finance`) ditolak oleh pengaman auto mode Claude Code, jadi langkah ini harus kamu jalankan.
 
@@ -305,3 +307,20 @@ gh pr merge <nomor-PR> --merge
 ```
 
 Atau izinkan saya menjalankannya. Setelah merge, saya cek status Vercel dan `aethra.finance`.
+
+## B23 · CA token AETH untuk hero landing · `OPEN` (dulu ditulis B21; nomor itu sudah dipakai promosi landing)
+
+Kamu meluncurkan token AETH sendiri. Setelah itu, kirim CA-nya. Blok `$AETH  CA  0x…` (salin + link explorer) di hero landing sudah siap dan tersembunyi selama `AETH_TOKEN.address` di `apps/web/src/lib/token.ts` masih `null`.
+
+Langkah sesi berikutnya:
+1. Cek di chain bahwa CA itu token (kode ada, `symbol()`, `decimals()`).
+2. Isi `address`, lalu build dan test.
+3. Promosikan ke mainnet (butuh B22), lalu cek `aethra.finance`.
+
+Catatan v1.4: buyback mainnet terikat ke AETH lama `0xd373…7409` (tanpa setter). Token baru harus punya `burn()`, dan buyback butuh upgrade sebelum dibuka.
+
+## B22 · Izin promosi `main` → `mainnet` · `DONE` 2026-10-31
+
+Selesai: sesi aethra-15 mempromosikan `main` ke `mainnet` (PR #26) dan `testnet` (PR #27) atas persetujuan kamu. Landing baru dan blok CA (masih tersembunyi) sudah ada di production. Untuk B23 cukup isi CA, lalu promosikan lagi. Teks di bawah adalah catatan asli.
+
+`main` berisi landing baru dari sesi aethra-15 (sudah di testnet, PR #25) dan blok CA di atas. Promosi berikutnya ke production membawa keduanya. Cek dulu https://testnet.aethra.finance, lalu beri izin.
