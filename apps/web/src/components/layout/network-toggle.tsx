@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccount, useSwitchChain } from "wagmi";
-import { chainsByNetwork } from "@aethra/sdk";
+import { chainsByNetwork } from "@aethrafi/sdk";
 import { NETWORK_LABEL, SELECTABLE_NETWORKS, isSelectable, setNetwork, useNetwork, type NetworkName } from "@/lib/network";
 import { cn } from "@/lib/utils";
 

@@ -105,7 +105,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 **Done and committed on `main` (pushed through `5dca465`; later commits are local only):**
 - Hub, VolatilityFee, AethraHook (dynamic fee, oracle guard, circuit breaker, protocol fee), AethraRouter, AethraPositions (lock + vesting). **41 forge tests green.**
 - `script/Deploy.s.sol` (hook CREATE2 salt mining) and `script/SetupMarkets.s.sol` (faucet tokens, mock feeds, seeded v4 pools). Both verified on an Anvil fork.
-- SDK: chains, addresses, ABI export (`pnpm --filter @aethra/sdk abis`), smart-route finder, price/bin math. 9 vitest tests green.
+- SDK: chains, addresses, ABI export (`pnpm --filter @aethrafi/sdk abis`), smart-route finder, price/bin math. 9 vitest tests green.
 - Mainnet dry run of the core alone: 16.86M gas ≈ 0.00034 ETH ≈ $0.81 at 0.02 gwei and $2,410/ETH. **This does not include the Arbitrum L1 data component.** The final dry run must re-estimate it with `eth_estimateGas` / NodeInterface `0xC8`.
 
 **Interrupted when the usage limit hit. Partial work, not merged:**
@@ -143,7 +143,7 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 - v1.1 (DLMM, DAMM, limit orders) was open on mainnet right after deploy: `Deploy.s.sol` registers both factories. By the user's choice it is locked again until v1.1:
   - `scripts/mainnet-v11.sh lock|open` (B18);
   - `useOpenVenues` in the web app reads `hub.isRegistrar(factory)` and hides the DLMM/DAMM venues in create pool, the limit orders nav entry and page while closed. Testnet stays open (e2e `venues.spec.ts`).
-- Still open for v1.0: seed liquidity (waits for a top-up) and publishing `@aethra/sdk` to npm.
+- Still open for v1.0: seed liquidity (waits for a top-up) and publishing `@aethrafi/sdk` to npm.
 - v1.3 note: DLMM and the v4 hook only sweep protocol fees to a buyback. Treasury-first fees need an upgrade (see RELEASE_PLAN status).
 - B14 verifies all 28 contracts (user's choice).
 

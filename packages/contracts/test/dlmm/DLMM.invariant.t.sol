@@ -107,7 +107,8 @@ contract DLMMHandler is Test {
 
     function swap(uint256 actorSeed, bool zeroForOne, uint256 amount) external {
         address a = actors[actorSeed % actors.length];
-        amount = bound(amount, 1e3, 1e25);
+        // up to about a bin's worth, so most swaps fill (bigger ones only revert for lack of liquidity)
+        amount = bound(amount, 1e3, 1e22);
         vm.prank(a);
         try pool.swapExactInput(zeroForOne ? address(token0) : address(token1), amount, 0, a, block.timestamp) {
             swaps++;

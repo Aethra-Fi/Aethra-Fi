@@ -194,7 +194,7 @@ export function CodeSchematic() {
     ["", "  args: [hops, 10n ** 18n] })", "", ""],
   ];
   return (
-    <Frame label="@aethra/sdk · typed">
+    <Frame label="@aethrafi/sdk · typed">
       {lines.map((l, i) => (
         <text key={i} x="6" y={22 + i * 22} className="font-mono text-[8.5px]">
           <tspan className="fill-accent">{l[0]}</tspan>

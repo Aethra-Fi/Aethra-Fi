@@ -17,7 +17,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@aethra/sdk':
+      '@aethrafi/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
       '@radix-ui/react-dialog':

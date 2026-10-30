@@ -1,4 +1,4 @@
-import type { ApiDashboard, ApiHealth, ApiPool, ApiSwapEvent, ApiToken } from "@aethra/sdk";
+import type { ApiDashboard, ApiHealth, ApiPool, ApiSwapEvent, ApiToken } from "@aethrafi/sdk";
 import { API_URL, CHAIN_ID } from "./network";
 
 export { API_URL };
@@ -8,7 +8,7 @@ export type { ApiDashboard, ApiHealth, ApiPool, ApiSwapEvent, ApiToken };
 // API_URL (re-exported above) follows the active network; see lib/network.ts.
 
 // ---------------------------------------------------------------------------
-// Response types not (yet) in @aethra/sdk. The lead may move these into packages/sdk/src/types.ts.
+// Response types not (yet) in @aethrafi/sdk. The lead may move these into packages/sdk/src/types.ts.
 // ---------------------------------------------------------------------------
 
 export type EventType = "swap" | "liquidity" | "launch" | "order" | "loan" | "buyback";

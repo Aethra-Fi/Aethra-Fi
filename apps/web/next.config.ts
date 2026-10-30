@@ -25,7 +25,7 @@ const X402_MODULES = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@aethra/sdk"],
+  transpilePackages: ["@aethrafi/sdk"],
   poweredByHeader: false,
   images: { formats: ["image/avif", "image/webp"] },
   webpack: (config) => {

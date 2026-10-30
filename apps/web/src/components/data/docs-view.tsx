@@ -198,7 +198,7 @@ const BLOCKS: Block[] = [
     body: (
       <>
         <p>
-          <Mono>@aethra/sdk</Mono> ships addresses, ABIs and route helpers for each network. The REST API is public and read only, and every response is
+          <Mono>@aethrafi/sdk</Mono> ships addresses, ABIs and route helpers for each network. The REST API is public and read only, and every response is
           shaped as <Mono>{"{ data }"}</Mono>. See <A href="/developers">Developers</A> for endpoints and examples, and <A href="/contracts">Contracts</A> for
           every deployed address.
         </p>

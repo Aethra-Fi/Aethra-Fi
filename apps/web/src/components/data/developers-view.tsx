@@ -36,12 +36,12 @@ export function DevelopersView() {
         <Panel title="SDK · addresses and ABIs">
           <div className="space-y-3">
             <p className="text-sm text-fg-2">
-              <span className="font-mono">@aethra/sdk</span> ships chain definitions, proxy addresses per network, full ABIs generated from the contracts, and
+              <span className="font-mono">@aethrafi/sdk</span> ships chain definitions, proxy addresses per network, full ABIs generated from the contracts, and
               price and route helpers.
             </p>
             <Code>{`
 import { createPublicClient, http } from "viem";
-import { chainsByNetwork, getDeployment, aethraRouterAbi } from "@aethra/sdk";
+import { chainsByNetwork, getDeployment, aethraRouterAbi } from "@aethrafi/sdk";
 
 const chain = chainsByNetwork.testnet;
 const d = getDeployment("testnet");

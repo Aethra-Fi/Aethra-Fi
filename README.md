@@ -140,7 +140,7 @@ End-to-end browser tests use Playwright (`apps/web/tests`) and cover the main pa
 The SDK lives in [`packages/sdk`](packages/sdk). It exports the ABIs, addresses per network, chain definitions, the route finder and price and bin math. It is currently a private workspace package.
 
 ```ts
-import { getDeployment } from "@aethra/sdk";
+import { getDeployment } from "@aethrafi/sdk";
 
 const testnet = getDeployment("testnet");
 testnet.router; // proxy address
