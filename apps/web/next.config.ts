@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import pkg from "./package.json";
 
 const X402_MODULES = [
   "@x402/core/client",
@@ -34,6 +35,7 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  env: { NEXT_PUBLIC_APP_VERSION: pkg.version },
   transpilePackages: ["@aethrafi/sdk"],
   poweredByHeader: false,
   images: { formats: ["image/avif", "image/webp"] },

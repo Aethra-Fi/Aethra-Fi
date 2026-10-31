@@ -9,7 +9,7 @@ Disusun 2026-10-30, direvisi hari yang sama. Cakupan: urutan fitur, syarat tekni
 > | Rilis | Isi | Status |
 > |---|---|---|
 > | v1.0 | v4 + hook, router, positions, analytics, docs, API, SDK | **Dirilis 2026-10-31** (git tag `v1.0.0`). Kontrak terverifikasi, web `aethra.finance`, indexer + API, SDK `@aethrafi/sdk@0.1.0` di npm. Tanpa seed (budget $7 hanya untuk gas); seed WETH/USDG menyusul saat ada dana (`scripts/mainnet-launch-v1.sh`, B19). |
-> | v1.1 | DLMM + limit orders + DAMM | Terbuka saat deploy, dikunci lagi dengan `bash scripts/mainnet-v11.sh lock` (B18). Dibuka dengan `bash scripts/mainnet-v11.sh open`. Web membaca `hub.isRegistrar(factory)`, jadi ikut tampil atau tersembunyi tanpa redeploy. |
+> | v1.1 | DLMM + limit orders + DAMM | Terbuka saat deploy, dikunci lagi dengan `bash scripts/mainnet-v11.sh lock` (B18). Dibuka dengan `bash scripts/mainnet-v11.sh open`. **Gerbang lolos 2026-10-31** (fuzz klaim limit order, `test/fork/MainnetV11.t.sol`); menunggu B25. Web membaca `hub.isRegistrar(factory)`, jadi ikut tampil atau tersembunyi tanpa redeploy. |
 > | v1.2 | Stock pools + oracle guard | Terkunci: TSLA, NVDA, AAPL `STOCK` dan dinonaktifkan. |
 > | v1.3 | Launchpad, fee ke treasury | Terkunci (bukan registrar). **Sebelum dibuka:** DLMM pool dan hook v4 hanya bisa menyapu protocol fee ke kontrak buyback (DAMM sudah bisa ke treasury). "Fee ke treasury dulu" butuh upgrade DLMM pool (beacon) dan hook (UUPS) dengan fallback ke treasury, atau fee share tetap 0 sampai v1.4. |
 > | v1.4 | AETH + pool AETH + buyback | Buyback terkunci (fee share 0). Token AETH sudah ada di chain, 1 miliar di deployer. |

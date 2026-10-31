@@ -340,3 +340,19 @@ gh pr merge <nomor-PR> --merge
 ```
 
 Ikut terbawa ke mainnet: `72fe3b5` (hanya docs). Setelah merge, saya cek status Vercel dan `aethra.finance`.
+
+## B25 · Buka v1.1 di mainnet (butuh password keystore) · `OPEN`
+
+Gerbang v1.1 sudah lolos: fuzz klaim limit order, dan latihan pembukaan di fork mainnet (pool DLMM dan DAMM WETH/USDG, quote router sama dengan quote pool, swap, limit order terisi lalu diklaim). Versi web `v1.1.0` sudah di `main` dan live di testnet.
+
+1. Buka DLMM, DAMM, dan limit orders: 2 transaksi, ±79k gas, kurang dari $0,01. Password diminta sekali.
+
+```bash
+# Jalankan di: ROOT
+bash scripts/mainnet-v11.sh open
+```
+
+2. Bilang "B25 selesai" dan beri izin promosi `main` → `mainnet`. Setelah itu aku merge PR ke `mainnet` (web production menampilkan `v1.1.0`), cek `aethra.finance`, lalu membuat tag `v1.1.0`.
+
+Ikut terbawa ke mainnet: versi di footer dan landing, perbaikan tema RainbowKit, tes kontrak, dan docs. Venue dibuka tanpa likuiditas karena seed masih menunggu dana (seperti B19).
+
