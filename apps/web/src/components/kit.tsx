@@ -212,9 +212,15 @@ export function TxLink({ hash }: { hash: string }) {
   );
 }
 
-export function VenueBadge({ venue }: { venue: string }) {
+export function VenueBadge({ venue, external }: { venue: string; external?: boolean }) {
+  // an external pool is plain Uniswap v4, not one of Aethra's hook pools
+  if (external) return <Badge variant="neutral">Uniswap v4</Badge>;
   const variant = venue === "V4" ? "default" : venue === "LAUNCH" ? "warning" : "accent";
   return <Badge variant={variant}>{VENUE_LABEL[venue] ?? venue}</Badge>;
+}
+
+export function ExternalBadge({ pool }: { pool: Pick<ApiPool, "external"> }) {
+  return pool.external ? <Badge variant="outline">External</Badge> : null;
 }
 
 export function ModeBadge({ mode }: { mode: ApiPool["mode"] }) {
