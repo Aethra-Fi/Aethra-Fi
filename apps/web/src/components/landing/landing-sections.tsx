@@ -14,7 +14,7 @@ import { AETH_TOKEN } from "@/lib/token";
 import { formatNumber, formatUsd } from "@/lib/format";
 import { CHAIN, CHAIN_ID } from "@/lib/network";
 import { cn } from "@/lib/utils";
-import { APP_VERSION, RELEASE_URL } from "@/lib/version";
+import { APP_VERSION } from "@/lib/version";
 import type { RibbonFrame } from "./glyph-ribbon";
 import { BinsSchematic, BurnSchematic, CodeSchematic, CurveSchematic, FeeSchematic, HealthSchematic, RouterSchematic } from "./schematics";
 
@@ -731,9 +731,7 @@ export function LandingSections() {
             <span ref={morphRef} className="hidden text-muted lg:inline" />
             <span ref={coordRef} className="ml-auto hidden text-muted xl:inline" />
             <div className="ml-auto flex items-center gap-1 xl:ml-4">
-              <a href={RELEASE_URL} target="_blank" rel="noreferrer" className="mr-3 hidden normal-case text-muted transition-ui hover:text-primary-text sm:inline">
-                {APP_VERSION}
-              </a>
+              <span className="mr-3 hidden normal-case text-muted sm:inline">{APP_VERSION}</span>
               <Button variant="ghost" size="icon-sm" className="fx-cyber" aria-label="Previous section" disabled={active === 0} onClick={() => goTo(active - 1)}>
                 <ArrowUp />
               </Button>

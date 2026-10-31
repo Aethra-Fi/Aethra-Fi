@@ -123,6 +123,17 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · v1.2 release preparation (stock pools + oracle guard)
+
+- Feeds found and checked on-chain (chain 4663, `description()`, `decimals()` = 8, `latestRoundData()`): Chainlink proxies for TSLA `0x4A11…5C38`, NVDA `0x379E…9F15`, AAPL `0x6B22…2cD0`, WETH `0x78F3…d3A9`, USDG `0x61B7…9aD2`. Source: the EqualFi oracle whitelist matrix; each address matched its stock token and returned a live price. Chainlink's docs pages were not reachable, so the checks above are the proof.
+- Finding: a stock pool needs a fresh feed for **both** tokens (`g.fresh = f0 && f1`), and WETH and USDG had none. Without them every TSLA/USDG swap reverts `OracleUnavailable`. So v1.2 also registers the WETH and USDG feeds. WETH/USDG is a DYNAMIC pool and does not read them (proven in the fork test, also after a 7 day warp).
+- Staleness windows, from sampling feed rounds: stocks 24h (longest in-session gap about 13.5h overnight; the weekend is a longer gap, so stock pools halt fail-closed from about Saturday evening until the Sunday-night restart and LP can still withdraw), WETH 24h (longest gap 7.8h), USDG 48h (heartbeat 24h). Ambiguous call, chosen for safety over weekend availability.
+- Scope stays TSLA, NVDA, AAPL (the three registered at deploy). Other Robinhood stock tokens have feeds too but are not registered; a pool with one of them would start in DYNAMIC mode, so they need `setAsset` before anyone pools them (v1.2.x).
+- `scripts/mainnet-v12.sh <open|lock>`: 5 `setAsset` transactions, every call simulated from the deployer and every feed read first; keystore address checked before sending.
+- `test/fork/MainnetV12.t.sol` (opt-in, `FORK_MAINNET=1`), 3 tests green on a mainnet fork: closed today, 10% skewed opening reverts, TSLA/USDG pool seeded at the oracle price, swap both ways with quote = executed amount, stale feed halts swaps but `decreaseLiquidity` works, NVDA and AAPL pools open (they sort after USDG, so token order flips), canonical pool unaffected.
+- Observed in the test: a swap that would leave the 5% band returns quote 0 (breaker), so a thin stock pool cannot take large trades. Seed depth matters for the stock pools later.
+- Web `1.2.0`; the docs page now says mainnet stock pools use Chainlink feeds and halt over weekends. Stock tokens reach the UI through `addresses/mainnet.json` after B27.
+
 ## 2026-10-31 · v1.1 released
 
 - B25: the user ran `mainnet-v11.sh open`. On-chain: DLMM and DAMM factories are registrars, the hook still is; deployer balance 0.002086 ETH.
