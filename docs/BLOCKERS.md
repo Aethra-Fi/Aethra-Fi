@@ -435,3 +435,22 @@ bash scripts/verify-v12.sh
 ```
 
 Catatan untuk rekaman: feed saham hanya update saat pasar AS buka. Kalau kamu merekam di akhir pekan dan feed sudah lewat 24 jam, baris saham tampil kuning `paused` (pool berhenti sendiri, memang disengaja) dan catatan penjelasnya muncul; cek tetap lulus. Pada hari bursa baris itu hijau `live`. Laporan dengan link tersimpan di `docs/verification/mainnet-v1.2.md` (dibiarkan untracked, seperti `mainnet-v1.1.md`). Untuk tampilan terbaik, lebar terminal minimal 120 kolom.
+
+## B28 · Tiga pool saham tambahan, dana minimal (butuh password keystore) · `DONE` 2026-10-31
+
+Selesai: 15 transaksi sukses, 3.772.567 gas. TSLA/WETH (`0x1e017f3d…3f4b47`), TSLA/USDG (`0x27fcb1c4…e793`), dan NVDA/WETH (`0x182fbd1a…8cda`) terinisialisasi dan berlikuiditas di mainnet. Saldo deployer 0,001713 ETH (turun 0,00029 ETH ≈ \$0,65 termasuk modal seed). Teks di bawah adalah catatan asli.
+
+Buka TSLA/WETH, TSLA/USDG, dan NVDA/WETH di hook Aethra (mode ORACLE, full range, posisi milik deployer). Biaya semua: ±0,00024 ETH (≈ \$0,54: gas ±0,00008 ETH, sisanya modal seed ±\$0,40 yang tetap jadi likuiditas). Saldo deployer 0,002003 ETH, tetap aman untuk rilis berikutnya (sisa ±0,0018 ETH, rencana gas ±0,0007 ETH).
+
+Cara kerja `packages/contracts/script/mainnet/SeedStock.s.sol`: TSLA tidak punya pool ETH atau WETH, jadi script membelinya (ETH → USDG di pool ETH/USDG native, lalu USDG → TSLA di pool TSLA/USDG 0,3%, keduanya Uniswap v4 eksternal; id pool dicek). NVDA memakai 0,000104 NVDA yang sudah ada di deployer (NVDA dan AAPL tidak punya pool likuid dengan WETH, USDG, atau ETH). AAPL tidak dibuka karena tidak ada cara membelinya di chain; kirim ±0,0003 AAPL ke deployer bila pool AAPL/WETH diinginkan, lalu tambahkan ke script. Harga awal tiap pool diambil dari oracle hub; hook menolak initialize jika feed stale atau harga meleset.
+
+Dilatih 2026-10-31: simulasi di state mainnet asli ok (4,82 juta gas), dan broadcast penuh di fork mainnet ok. Harga awal cocok dengan oracle (5,628 TSLA per WETH, 3,9945e-10 TSLA/USDG mentah, 10,95 NVDA per WETH), ketiga pool berlikuiditas.
+
+**Batas waktu:** feed saham stale 24 jam setelah update terakhirnya (Jumat 19:09 UTC). Script menolak jalan bila sisa kesegaran feed kurang dari 30 menit, dan sebelum itu memeriksa semua feed dan mensimulasikan seluruh run. Jika sudah ditolak, ulangi setelah pasar saham memperbarui feed (Senin).
+
+```bash
+# Jalankan di: ROOT
+bash scripts/mainnet-seed-stock.sh
+```
+
+Setelah selesai, pool tampil di aethra.finance begitu indexer mainnet sampai ke blok transaksinya (saat ini indexer masih mengejar). Pool saham hanya bisa di-swap saat feed saham segar (fail closed); likuiditas selalu bisa ditarik.
