@@ -219,10 +219,6 @@ export function VenueBadge({ venue, external }: { venue: string; external?: bool
   return <Badge variant={variant}>{VENUE_LABEL[venue] ?? venue}</Badge>;
 }
 
-export function ExternalBadge({ pool }: { pool: Pick<ApiPool, "external"> }) {
-  return pool.external ? <Badge variant="outline">External</Badge> : null;
-}
-
 export function ModeBadge({ mode }: { mode: ApiPool["mode"] }) {
   if (mode === "oracle") return <Badge variant="accent">Oracle guarded</Badge>;
   if (mode === "dynamic") return <Badge variant="default">Dynamic fee</Badge>;

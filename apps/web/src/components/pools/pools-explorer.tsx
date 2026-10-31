@@ -26,7 +26,7 @@ const VENUES = ["ALL", "V4", "DLMM", "DAMM"] as const;
 const SOURCES = [
   { key: "all", label: "All sources" },
   { key: "aethra", label: "Aethra pools" },
-  { key: "external", label: "External v4" },
+  { key: "external", label: "Uniswap v4" },
 ] as const;
 type SourceKey = (typeof SOURCES)[number]["key"];
 
@@ -58,7 +58,7 @@ export function PoolsExplorer() {
       <PageHeader
         eyebrow="Pools"
         title="Liquidity pools"
-        description="Discover Aethra pools across Uniswap v4 hooks, DLMM bins and DAMM ranges, next to the most active external Uniswap v4 pools on Robinhood Chain. Totals below count Aethra pools only."
+        description="Discover Aethra pools across Uniswap v4 hooks, DLMM bins and DAMM ranges, next to the most active Uniswap v4 pools on Robinhood Chain. Totals below count Aethra pools only."
         actions={
           <Button asChild>
             <Link href="/pools/create">
