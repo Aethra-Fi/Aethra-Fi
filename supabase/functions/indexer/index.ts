@@ -806,8 +806,12 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
 
   // The API role cuts statements at 8s. A replay batch can touch many external pools over a long window, so refresh
   // them in small groups (the global steps are cheap); with nothing touched one call refreshes everything.
+  // Aethra's own pools are few, so they are always recomputed: reserves are rebuilt from events, and a pool whose
+  // events landed in a busy batch must not wait for its next touch while external pools keep every run non-empty.
+  const refreshIds = new Set(touched);
+  if (refreshIds.size) for (const p of pools.values()) if (!p.external) refreshIds.add(p.pool_id);
   let refreshed: unknown;
-  for (const part of touched.size ? chunked([...touched], REFRESH_POOLS) : [null]) {
+  for (const part of refreshIds.size ? chunked([...refreshIds], REFRESH_POOLS) : [null]) {
     const { data, error: refreshErr } = await db.rpc("aethra_refresh", {
       p_chain: chainId,
       p_pools: part,
