@@ -123,6 +123,12 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · B28: three more stock pools on mainnet
+
+- TSLA/WETH, TSLA/USDG and NVDA/WETH opened behind the Aethra hook (ORACLE mode, full range) with about \$0.40 of seed. 15 transactions, 3.77M gas, deployer balance 0.001713 ETH afterwards.
+- TSLA has no ETH or WETH venue, so `SeedStock.s.sol` buys it through a small swapper (ETH to USDG in the native ETH/USDG pool, then USDG to TSLA in the plain 0.3% pool). The router only handles ERC20 hops, hence the helper. NVDA uses the deployer's existing dust. AAPL was left out: no liquid venue to buy it.
+- Estimated remaining gas for the planned releases is about \$1.6 at the current gas price, so the balance still covers them (about \$3.2 at 2x gas).
+
 ## 2026-10-31 · External Uniswap v4 pools in the Pools list
 
 - Why the list was thin: the PoolManager on mainnet holds hundreds of thousands of pools (about 5,000 new per day, 80k+ swaps per day); the indexer read all their events but dropped every pool that did not use the Aethra hook.
