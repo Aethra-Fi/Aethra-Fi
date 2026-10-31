@@ -13,6 +13,8 @@ export interface OverviewRow {
   is_fresh: boolean;
   launch_token: string | null;
   created_at: string;
+  /** a non-Aethra v4 pool, listed read-only */
+  external?: boolean;
 }
 
 const DAY = 86_400_000;
@@ -58,7 +60,8 @@ export function rankDashboard<T extends OverviewRow>(rows: T[], now = Date.now()
 
 /** Featured market: highest 24h volume, else deepest TVL, else most trades, else the newest pool. */
 export function pickFeatured<T extends OverviewRow>(rows: T[]): T | null {
-  const live = rows.filter((r) => r.enabled);
+  // Aethra's own markets only: the featured card links into the swap flow
+  const live = rows.filter((r) => r.enabled && !r.external);
   if (live.length === 0) return null;
   const byVolume = sortBy(live.filter((r) => r.volume_24h_usd > 0), (r) => r.volume_24h_usd);
   if (byVolume.length) return byVolume[0];
@@ -70,7 +73,8 @@ export function pickFeatured<T extends OverviewRow>(rows: T[]): T | null {
 }
 
 export function dashboardStats(rows: OverviewRow[], assets: number) {
-  const live = rows.filter((r) => r.enabled);
+  // headline numbers are Aethra's; external pools are listed but not counted
+  const live = rows.filter((r) => r.enabled && !r.external);
   return {
     tvl_usd: live.reduce((s, r) => s + (r.tvl_usd || 0), 0),
     volume_24h_usd: live.reduce((s, r) => s + (r.volume_24h_usd || 0), 0),
