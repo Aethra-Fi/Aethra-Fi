@@ -18,11 +18,21 @@ import {
 } from "../_shared/abis.ts";
 import { backoffMs, ChunkSizer, chunked, DEFAULT_CHUNK, nextRange, planStart, safeHead } from "../_shared/chunking.ts";
 import { amountsForLiquidity, big, isStableToken, priceFromBin, priceFromSqrtX96, swapUsd, toHuman } from "../_shared/math.ts";
-import { decodeLog, dedupeRawLogs, type DecodedLog, type RawLog, sortLogs, TOPICS, UINT64_MAX, ZERO_ADDRESS } from "../_shared/normalize.ts";
+import { decodeLog, dedupeRawLogs, type DecodedLog, logTimestamp, type RawLog, sortLogs, TOPICS, UINT64_MAX, ZERO_ADDRESS } from "../_shared/normalize.ts";
 import { derivePrices, scaleE18 } from "../_shared/pricing.ts";
+import { NATIVE } from "../_shared/external.ts";
+import { discoverExternal, type PoolKeyRow } from "./discover.ts";
 
 const BUDGET_MS = 45_000;
 const MAX_LOGS_PER_CALL = 10_000;
+// External v4 pools: bounded watchlist, refreshed on a slow cadence (env overrides, EXTERNAL_POOLS=off disables).
+const EXTERNAL_ON = (Deno.env.get("EXTERNAL_POOLS") ?? "on") !== "off";
+const EXTERNAL_MAX = Number(Deno.env.get("EXTERNAL_MAX") ?? 150);
+const EXTERNAL_MIN_USD = Number(Deno.env.get("EXTERNAL_MIN_USD") ?? 2_000);
+const EXTERNAL_MIN_SWAPS = Number(Deno.env.get("EXTERNAL_MIN_SWAPS") ?? 3);
+const EXTERNAL_WINDOW_BLOCKS = Number(Deno.env.get("EXTERNAL_WINDOW_BLOCKS") ?? 40_000);
+const DISCOVER_EVERY_MS = 10 * 60_000;
+const BACKFILL_BUDGET_MS = 20_000;
 
 type Row = Record<string, unknown>;
 
@@ -32,6 +42,12 @@ interface PoolRow {
   pool_address: string | null;
   token0: string;
   token1: string;
+  /** a non-Aethra v4 pool we track (see discover.ts) */
+  external?: boolean;
+  enabled?: boolean;
+  /** last block of the external pool's history that is already stored (null: replay not started) */
+  ext_synced_block?: number | null;
+  created_block?: number | null;
 }
 
 interface TokenRow {
@@ -140,9 +156,27 @@ async function getLogs(rpc: string, params: Record<string, unknown>): Promise<Ra
   return logs;
 }
 
+/** The node (or `getLogs` above) refused the range because it holds too many logs: retrying cannot help, splitting can. */
+const tooManyLogs = (e: unknown) => /too many results|exceeds limit|more than \d+ results/i.test(e instanceof Error ? e.message : String(e));
+
+/** `getLogs` with retries for transient errors (rate limits); a "too many logs" error is thrown at once. */
+async function getLogsRetry(rpc: string, params: Record<string, unknown>, tries = 5): Promise<RawLog[]> {
+  let last: unknown;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await getLogs(rpc, params);
+    } catch (e) {
+      if (tooManyLogs(e)) throw e;
+      last = e;
+      await new Promise((r) => setTimeout(r, backoffMs(i)));
+    }
+  }
+  throw last;
+}
+
 // ------------------------------------------------------------------ chain indexing
 
-async function indexChain(db: SupabaseClient, chainId: number, deadline: number) {
+async function indexChain(db: SupabaseClient, chainId: number, deadline: number, forceDiscover = false) {
   const started = Date.now();
   const [{ data: chain }, { data: dep }, { data: state }] = await Promise.all([
     db.from("chains").select("*").eq("chain_id", chainId).single(),
@@ -163,12 +197,13 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
   const depHash = JSON.stringify([A.hub, A.router, A.launchpad, dep.start_block]);
   const meta = (state?.meta ?? {}) as Record<string, unknown>;
   let lastBlock: number | null = state?.last_block ?? null;
+  let discoveryAt = Number(meta.lastDiscovery ?? 0);
   if (meta.deployment !== depHash) lastBlock = null;
 
   await db.from("indexer_state").upsert({ chain_id: chainId, status: "running", updated_at: new Date().toISOString() });
 
   // known pools and tokens
-  const { data: poolRows } = await db.from("pools").select("pool_id,venue,pool_address,token0,token1,bin_step_bps,sqrt_price_x96").eq("chain_id", chainId);
+  const { data: poolRows } = await db.from("pools").select("pool_id,venue,pool_address,token0,token1,bin_step_bps,sqrt_price_x96,external,enabled,ext_synced_block,created_block").eq("chain_id", chainId);
   const binSteps = new Map<string, number>((poolRows ?? []).filter((p) => p.bin_step_bps).map((p) => [p.pool_id, p.bin_step_bps]));
   // current v4 sqrt prices, advanced by Initialize/Swap so ModifyLiquidity can be converted into token amounts
   const sqrtOf = new Map<string, bigint>((poolRows ?? []).filter((p) => p.venue === "V4" && p.sqrt_price_x96).map((p) => [p.pool_id, BigInt(p.sqrt_price_x96)]));
@@ -196,11 +231,37 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
   let logsIndexed = 0;
 
   const blockTs = new Map<number, number>();
-  async function timestampsFor(logs: RawLog[]) {
-    const need = [...new Set(logs.filter((l) => !l.blockTimestamp).map((l) => Number(BigInt(l.blockNumber))))].filter((n) => !blockTs.has(n));
-    for (const part of chunked(need, 50)) {
-      const blocks = await Promise.all(part.map((n) => client.getBlock({ blockNumber: BigInt(n) })));
-      blocks.forEach((b) => blockTs.set(Number(b.number), Number(b.timestamp)));
+  async function timestampsFor(logs: RawLog[], approx = false) {
+    const need = [...new Set(logs.filter((l) => logTimestamp(l) === null).map((l) => Number(BigInt(l.blockNumber))))].filter((n) => !blockTs.has(n));
+    const exact = async (blocks: number[]) => {
+      // small batches, each retried: the public RPC answers a rate-limited batch with an error viem cannot parse
+      for (const part of chunked(blocks, 10)) {
+        const got = await withRetry(() => Promise.all(part.map((n) => client.getBlock({ blockNumber: BigInt(n) }))), 6);
+        got.forEach((b) => blockTs.set(Number(b.number), Number(b.timestamp)));
+      }
+    };
+    if (!approx) return exact(need);
+    // replayed history: read the block time on a 10,000-block grid and interpolate between grid points
+    // (a few seconds off at most, irrelevant for hourly stats; saves one RPC call per event block)
+    const GRID = 10_000;
+    const grid = new Set<number>();
+    const near: number[] = [];
+    for (const n of need) {
+      const g0 = Math.floor(n / GRID) * GRID;
+      if (g0 + GRID > safe || g0 === n) near.push(n);
+      else {
+        grid.add(g0);
+        grid.add(g0 + GRID);
+      }
+    }
+    await exact([...grid].filter((g) => !blockTs.has(g)));
+    await exact(near.filter((n) => !blockTs.has(n)));
+    for (const n of need) {
+      if (blockTs.has(n)) continue;
+      const g0 = Math.floor(n / GRID) * GRID;
+      const t0 = blockTs.get(g0)!;
+      const t1 = blockTs.get(g0 + GRID)!;
+      blockTs.set(n, Math.round(t0 + ((t1 - t0) * (n - g0)) / GRID));
     }
   }
   const tOf = (l: DecodedLog) => l.blockTimestamp ?? blockTs.get(l.blockNumber) ?? Math.floor(Date.now() / 1000);
@@ -211,34 +272,17 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
     return a;
   };
 
-  let range = nextRange(from, safe, sizer.size);
-  while (range && Date.now() < deadline) {
-    const r = range;
-    let raw: RawLog[];
-    try {
-      const fb = `0x${r.from.toString(16)}`;
-      const tb = `0x${r.to.toString(16)}`;
-      raw = await withRetry(async () => {
-        const staticLogs = await getLogs(rpc, { fromBlock: fb, toBlock: tb, address: [...roleOf.keys()] });
-        const v4Logs = await getLogs(rpc, { fromBlock: fb, toBlock: tb, address: poolManager, topics: [[TOPICS.v4Initialize, TOPICS.v4Swap, TOPICS.v4ModifyLiquidity]] });
-        // pools created inside this range: fetch their logs too, before processing in order
-        const created = staticLogs
-          .map((l) => roleOf.get(l.address.toLowerCase()) === "dlmmFactory" || roleOf.get(l.address.toLowerCase()) === "dammFactory" ? l : null)
-          .filter((l): l is RawLog => !!l && l.topics.length > 1)
-          .map((l) => ({ addr: addrFromBytes32(l.topics[1]!), role: (roleOf.get(l.address.toLowerCase()) === "dlmmFactory" ? "dlmmPool" : "dammPool") as Role }));
-        const fresh = created.filter((c) => !roleOf.has(c.addr));
-        fresh.forEach((c) => roleOf.set(c.addr, c.role));
-        const poolLogs = fresh.length ? await getLogs(rpc, { fromBlock: fb, toBlock: tb, address: fresh.map((c) => c.addr) }) : [];
-        return dedupeRawLogs([...staticLogs, ...v4Logs, ...poolLogs]);
-      });
-      sizer.success();
-    } catch (e) {
-      if (!sizer.fail()) throw e;
-      range = nextRange(from, safe, sizer.size);
-      continue;
-    }
+  const hex = (n: number) => `0x${n.toString(16)}`;
 
-    await timestampsFor(raw);
+  /** Swap / ModifyLiquidity events of the given v4 pools (topic filter on the pool id, 100 ids per query). */
+  async function v4Events(fb: string, tb: string, ids: string[], topics: string[]): Promise<RawLog[]> {
+    const parts = await Promise.all(chunked(ids, 100).map((part) => getLogs(rpc, { fromBlock: fb, toBlock: tb, address: poolManager, topics: [topics, part] })));
+    return parts.flat();
+  }
+
+  /** Decode, order and store a batch of raw logs. */
+  async function ingest(raw: RawLog[], approxTime = false) {
+    await withRetry(() => timestampsFor(raw, approxTime), 5);
     const decoded = sortLogs(
       raw
         .map((l) => {
@@ -248,7 +292,6 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
         })
         .filter((l): l is DecodedLog => !!l),
     );
-
     const b = new Batch();
     for (const l of decoded) {
       const t = tOf(l);
@@ -256,9 +299,107 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
       handle(l, t, b);
     }
     // metadata for new tokens before rows that reference them
-    await loadTokens(b);
+    await withRetry(() => loadTokens(b), 5);
     await flush(db, b);
     logsIndexed += decoded.length;
+  }
+
+  // External v4 pools: replay each one's history up to the main cursor first; only pools that are fully replayed
+  // join the main loop, so an old event can never overwrite a newer price.
+  let extError: string | undefined;
+  let extReady: string[] = [];
+  if (EXTERNAL_ON) {
+    try {
+      const upto = from - 1;
+      const until = Math.min(deadline, Date.now() + BACKFILL_BUDGET_MS);
+      const todo = [...pools.values()].filter((x) => x.external && x.enabled !== false && (x.ext_synced_block ?? -1) < upto);
+      console.log(`[external] replay: ${todo.length} pools behind block ${upto}`);
+      // Round-robin, youngest pool first (least history): one chunk per pool per round, so a busy old pool cannot
+      // starve the rest. Progress is saved per chunk and the next run resumes.
+      const sizeOf = new Map<string, number>();
+      let pending = todo.sort((x, y) => Number(y.created_block ?? 0) - Number(x.created_block ?? 0));
+      while (pending.length && Date.now() < until) {
+        const next: PoolRow[] = [];
+        for (const p of pending) {
+          if (Date.now() >= until) {
+            next.push(p);
+            continue;
+          }
+          const cursor = (p.ext_synced_block ?? Number(p.created_block ?? 1) - 1) + 1;
+          if (cursor > upto) {
+            // created after the cursor: the main loop reads it from the start
+            p.ext_synced_block = upto;
+            await db.from("pools").update({ ext_synced_block: upto }).match({ chain_id: chainId, pool_id: p.pool_id });
+            continue;
+          }
+          // one value per topic position lets the node serve 8M-block ranges (an OR-list caps them at 100k)
+          const size = sizeOf.get(p.pool_id) ?? 2_000_000;
+          const to = Math.min(upto, cursor + size - 1);
+          let raw: RawLog[];
+          try {
+            const parts = await Promise.all([TOPICS.v4Initialize, TOPICS.v4Swap, TOPICS.v4ModifyLiquidity].map((topic) =>
+              getLogsRetry(rpc, { fromBlock: hex(cursor), toBlock: hex(to), address: poolManager, topics: [topic, p.pool_id] })
+            ));
+            raw = parts.flat();
+          } catch (e) {
+            if (!tooManyLogs(e)) throw e;
+            if (size <= 500) throw e;
+            sizeOf.set(p.pool_id, Math.floor(size / 2)); // too many events in this range: retry smaller
+            next.push(p);
+            continue;
+          }
+          if (raw.length < 2_000) sizeOf.set(p.pool_id, Math.min(7_500_000, size * 2)); // quiet stretch: widen again
+          await ingest(raw, true);
+          console.log(`[external] ${p.pool_id.slice(0, 10)} blocks ${cursor}-${to}: ${raw.length} logs`);
+          p.ext_synced_block = to;
+          const { error } = await db.from("pools").update({ ext_synced_block: to }).match({ chain_id: chainId, pool_id: p.pool_id });
+          if (error) throw new Error(`pools ext_synced_block: ${error.message}`);
+          if (to < upto) next.push(p);
+        }
+        pending = next;
+      }
+      extReady = [...pools.values()].filter((x) => x.external && x.enabled !== false && (x.ext_synced_block ?? -1) >= upto).map((x) => x.pool_id);
+    } catch (e) {
+      extError = e instanceof Error ? e.message : String(e);
+      console.log(`[external] replay failed: ${e instanceof Error ? e.stack : e}`);
+    }
+  }
+  const aethraV4 = [...pools.values()].filter((p) => p.venue === "V4" && !p.external).map((p) => p.pool_id);
+
+  let range = nextRange(from, safe, sizer.size);
+  while (range && Date.now() < deadline) {
+    const r = range;
+    let raw: RawLog[];
+    try {
+      const fb = hex(r.from);
+      const tb = hex(r.to);
+      raw = await withRetry(async () => {
+        const staticLogs = await getLogs(rpc, { fromBlock: fb, toBlock: tb, address: [...roleOf.keys()] });
+        // every pool's Initialize (cheap): Aethra pools created in this range join the id filter below
+        const initLogs = await getLogs(rpc, { fromBlock: fb, toBlock: tb, address: poolManager, topics: [[TOPICS.v4Initialize]] });
+        const newAethra = hook
+          ? initLogs.map((l) => decodeLog(l, "poolManager")).filter((e) => e && e.args.hooks === hook).map((e) => hexId(e!.args.id))
+          : [];
+        const ids = [...new Set([...aethraV4, ...extReady, ...newAethra])];
+        const v4Logs = ids.length ? await v4Events(fb, tb, ids, [TOPICS.v4Swap, TOPICS.v4ModifyLiquidity]) : [];
+        // pools created inside this range: fetch their logs too, before processing in order
+        const created = staticLogs
+          .map((l) => roleOf.get(l.address.toLowerCase()) === "dlmmFactory" || roleOf.get(l.address.toLowerCase()) === "dammFactory" ? l : null)
+          .filter((l): l is RawLog => !!l && l.topics.length > 1)
+          .map((l) => ({ addr: addrFromBytes32(l.topics[1]!), role: (roleOf.get(l.address.toLowerCase()) === "dlmmFactory" ? "dlmmPool" : "dammPool") as Role }));
+        const fresh = created.filter((c) => !roleOf.has(c.addr));
+        fresh.forEach((c) => roleOf.set(c.addr, c.role));
+        const poolLogs = fresh.length ? await getLogs(rpc, { fromBlock: fb, toBlock: tb, address: fresh.map((c) => c.addr) }) : [];
+        return dedupeRawLogs([...staticLogs, ...initLogs, ...v4Logs, ...poolLogs]);
+      });
+      sizer.success();
+    } catch (e) {
+      if (!sizer.fail()) throw e;
+      range = nextRange(from, safe, sizer.size);
+      continue;
+    }
+
+    await ingest(raw);
     from = r.to + 1;
     await db.from("indexer_state").upsert({
       chain_id: chainId,
@@ -267,10 +408,15 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
       chunk_size: sizer.size,
       status: "syncing",
       logs_indexed: (state?.logs_indexed ?? 0) + logsIndexed,
-      meta: { ...meta, deployment: depHash },
+      meta: { ...meta, deployment: depHash, lastDiscovery: discoveryAt },
       updated_at: new Date().toISOString(),
     });
     range = nextRange(from, safe, sizer.size);
+  }
+  // the main loop read every ready external pool up to `from - 1`
+  if (extReady.length) {
+    const { error } = await db.from("pools").update({ ext_synced_block: from - 1 }).eq("chain_id", chainId).in("pool_id", extReady);
+    if (error) extError = `ext_synced_block: ${error.message}`;
   }
 
   // ---------------------------------------------------------------- event handlers
@@ -280,7 +426,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
   }
 
   function addPool(b: Batch, row: Row & { pool_id: string; venue: string; token0: string; token1: string; pool_address?: string | null }) {
-    const p: PoolRow = { pool_id: row.pool_id, venue: row.venue, pool_address: row.pool_address ?? null, token0: row.token0, token1: row.token1 };
+    const p: PoolRow = { ...pools.get(row.pool_id), pool_id: row.pool_id, venue: row.venue, pool_address: row.pool_address ?? null, token0: row.token0, token1: row.token1 };
     pools.set(p.pool_id, p);
     touched.add(p.pool_id);
     b.add("pools", p.pool_id, { chain_id: chainId, ...row }, true);
@@ -329,8 +475,9 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
 
       // ---------------- v4
       case "poolManager.Initialize": {
-        if (!hook || a.hooks !== hook) break;
         const id = hexId(a.id);
+        const external = !!pools.get(id)?.external;
+        if (!external && (!hook || a.hooks !== hook)) break;
         v4Ids.add(id);
         sqrtOf.set(id, BigInt(a.sqrtPriceX96));
         const t0 = token(a.currency0);
@@ -344,6 +491,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
           dynamic_fee: (Number(a.fee) & 0x800000) !== 0, fee_pips: Number(a.fee) & 0x7fffff,
           sqrt_price_x96: big(a.sqrtPriceX96), active_index: Number(a.tick), price: priceOf(t0, t1, a.sqrtPriceX96),
           created_at: ts(t), created_block: l.blockNumber, created_tx: l.txHash,
+          ...(external ? { external: true, mode: "plain" } : {}),
         });
         break;
       }
@@ -621,6 +769,11 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
   async function loadTokens(b: Batch) {
     const list = [...newTokens].filter((a) => !tokens.has(a));
     for (const a of list) {
+      if (a === NATIVE) {
+        tokens.set(a, { address: a, symbol: "ETH", decimals: 18, kind: "canonical", asset_class: null, price_usd: null });
+        b.add("tokens", a, { chain_id: chainId, address: a, symbol: "ETH", name: "Ether", decimals: 18, kind: "canonical", is_stable: false, ...(b.tables.tokens?.get(a) ?? {}) }, true);
+        continue;
+      }
       const d = depTokens.get(a);
       let symbol = d?.symbol;
       let name = d?.name;
@@ -656,6 +809,18 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
   if (refreshErr) throw new Error(`aethra_refresh: ${refreshErr.message}`);
 
   const caughtUp = from > safe;
+
+  // External pool discovery runs when caught up, every 10 minutes (or on demand with ?discover=1)
+  let discovered: Record<string, unknown> | undefined;
+  if (EXTERNAL_ON && A.poolManager && (forceDiscover || (caughtUp && Date.now() - discoveryAt > DISCOVER_EVERY_MS))) {
+    try {
+      discovered = await discoverAndStore(Date.now() + 40_000);
+      discoveryAt = Date.now();
+    } catch (e) {
+      discovered = { error: e instanceof Error ? e.message : String(e) };
+    }
+  }
+
   await db.from("indexer_state").upsert({
     chain_id: chainId,
     last_block: from - 1,
@@ -665,10 +830,58 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
     chunk_size: sizer.size,
     last_run_ms: Date.now() - started,
     logs_indexed: (state?.logs_indexed ?? 0) + logsIndexed,
-    meta: { ...meta, ...chainMeta, deployment: depHash },
+    meta: { ...meta, ...chainMeta, deployment: depHash, lastDiscovery: discoveryAt, external: { ...(meta.external as object ?? {}), ...(discovered ? { discovery: discovered } : {}), ...(extError ? { error: extError } : { error: null }) } },
     updated_at: new Date().toISOString(),
   });
-  return { chainId, from: lastBlock, to: from - 1, head, logs: logsIndexed, pools: touched.size, caughtUp, refresh: refreshed };
+  return { chainId, from: lastBlock, to: from - 1, head, logs: logsIndexed, pools: touched.size, caughtUp, refresh: refreshed, ...(discovered ? { discovered } : {}), ...(extError ? { extError } : {}) };
+
+  /** Pick the best active non-Aethra v4 pools and add them to the watchlist; their history is replayed next run. */
+  async function discoverAndStore(until: number): Promise<Record<string, unknown>> {
+    const { data: tk } = await db.from("tokens").select("address,decimals,price_usd,price_source").eq("chain_id", chainId);
+    const px = new Map((tk ?? []).map((t) => [t.address as string, t]));
+    const anchor = (currency: string) => {
+      const c = currency.toLowerCase();
+      const t = c === NATIVE ? (A.weth ? px.get(A.weth) : undefined) : px.get(c);
+      if (!t?.price_usd || t.price_usd <= 0) return null;
+      // only prices from a stable or an oracle: a price derived from some other pool could be dust
+      if (t.price_source !== "stable" && t.price_source !== "oracle") return null;
+      return { decimals: c === NATIVE ? 18 : Number(t.decimals), priceUsd: Number(t.price_usd) };
+    };
+    const have = [...pools.values()].filter((p) => p.external && p.enabled !== false).length;
+    const limit = EXTERNAL_MAX - have;
+    if (limit <= 0) return { skipped: "watchlist full", have };
+
+    const result = await discoverExternal({
+      client, getLogs: (params) => getLogsRetry(rpc, params, 6), poolManager, multicall3: A.multicall3 ?? "0xcA11bde05977b3631167028862bE2a173976CA11",
+      head: safe, skip: new Set(pools.keys()), anchor, windowBlocks: EXTERNAL_WINDOW_BLOCKS, minSwaps: EXTERNAL_MIN_SWAPS, minUsd: EXTERNAL_MIN_USD,
+      limit, softDeadline: until - 15_000, deadline: until,
+      loadKeys: async (ids) => {
+        const { data } = await db.from("v4_pool_keys").select("pool_id,currency0,currency1,fee,tick_spacing,hooks,block_number,tx_hash,sqrt_price_x96,tick").eq("chain_id", chainId).in("pool_id", ids);
+        return (data ?? []).map((r) => ({ ...r, block_number: Number(r.block_number), sqrt_price_x96: String(r.sqrt_price_x96) })) as PoolKeyRow[];
+      },
+      saveKeys: async (rows) => {
+        await upsertGrouped(db, "v4_pool_keys", rows.map((r) => ({ chain_id: chainId, ...r })));
+      },
+    });
+
+    const b = new Batch();
+    let added = 0;
+    for (const c of result.picked) {
+      if (hook && c.hooks === hook) continue; // an Aethra pool the hub has not registered yet: the main loop owns it
+      const created = Number((await client.getBlock({ blockNumber: BigInt(c.createdBlock) })).timestamp);
+      const key = result.keyRows.get(c.id)!;
+      addPool(b, {
+        pool_id: c.id, venue: "V4", token0: token(c.currency0), token1: token(c.currency1), hooks: c.hooks, tick_spacing: c.tickSpacing,
+        dynamic_fee: (c.fee & 0x800000) !== 0, fee_pips: c.fee & 0x7fffff, registered: false, mode: "plain", enabled: true, external: true,
+        created_at: ts(created), created_block: c.createdBlock, created_tx: key.tx_hash,
+      });
+      v4Ids.add(c.id);
+      added++;
+    }
+    await loadTokens(b);
+    await flush(db, b);
+    return { ...result.stats, added, limit, at: new Date().toISOString() };
+  }
 }
 
 /** Reserves/prices for non-event-sourced venues, current fees, and USD prices for every token. */
@@ -795,7 +1008,7 @@ Deno.serve(async (req) => {
   const results = [];
   for (const id of chainIds) {
     try {
-      results.push(await indexChain(db, id, deadline));
+      results.push(await indexChain(db, id, deadline, url.searchParams.get("discover") === "1"));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await db.from("indexer_state").upsert({ chain_id: id, status: "error", error: msg.slice(0, 1000), updated_at: new Date().toISOString() });

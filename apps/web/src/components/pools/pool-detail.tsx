@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeftRight } from "lucide-react";
 import { ThemedAreaChart } from "@/components/charts/area-chart";
 import { EventTable } from "@/components/events/event-table";
-import { AddressLink, EmptyState, KV, ModeBadge, PairLabel, Panel, QueryState, Stat, StatGrid, VenueBadge } from "@/components/kit";
+import { AddressLink, EmptyState, ExternalBadge, KV, ModeBadge, PairLabel, Panel, QueryState, Stat, StatGrid, VenueBadge } from "@/components/kit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useEvents, usePool } from "@/hooks/use-api";
@@ -52,16 +52,19 @@ export function PoolDetail({ poolId }: { poolId: string }) {
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-2xl">
                   <PairLabel pool={p} />
-                  <VenueBadge venue={p.venue} />
+                  <VenueBadge venue={p.venue} external={p.external} />
                   <ModeBadge mode={p.mode} />
+                  <ExternalBadge pool={p} />
                   {!p.enabled && <Badge variant="danger">Paused</Badge>}
                 </div>
               </div>
-              <Button asChild>
-                <Link href={`/swap?in=${p.token0.address}&out=${p.token1.address}`}>
-                  <ArrowLeftRight /> Trade
-                </Link>
-              </Button>
+              {!p.external && (
+                <Button asChild>
+                  <Link href={`/swap?in=${p.token0.address}&out=${p.token1.address}`}>
+                    <ArrowLeftRight /> Trade
+                  </Link>
+                </Button>
+              )}
             </div>
 
             <StatGrid className="mt-8">
@@ -91,9 +94,19 @@ export function PoolDetail({ poolId }: { poolId: string }) {
                 </div>
               </div>
               <div className="space-y-6">
-                <Panel title="Add liquidity" brackets>
-                  <DepositPanel pool={p} />
-                </Panel>
+                {p.external ? (
+                  <Panel title="External pool">
+                    <p className="text-sm text-fg-2">
+                      This Uniswap v4 pool does not use the Aethra hook. Aethra indexes it so you can compare markets, but swaps and
+                      liquidity here go through the pool&apos;s own hook and the Uniswap v4 PoolManager, not the Aethra router. Figures are
+                      rebuilt from on-chain events and can lag the chain by a few minutes.
+                    </p>
+                  </Panel>
+                ) : (
+                  <Panel title="Add liquidity" brackets>
+                    <DepositPanel pool={p} />
+                  </Panel>
+                )}
                 <OraclePanel pool={p} />
                 <Panel title="Pool">
                   <KV label="Pool id" value={<span className="font-mono text-xs">{p.pool_id.slice(0, 10)}…</span>} />

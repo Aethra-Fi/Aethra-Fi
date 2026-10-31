@@ -42,6 +42,13 @@ function normalizeArgs(args: any): Record<string, any> {
   return out;
 }
 
+/** Block time of a raw log in seconds, or null when the node did not fill it (Robinhood Chain returns `0x0`). */
+export function logTimestamp(raw: Pick<RawLog, "blockTimestamp">): number | null {
+  if (!raw.blockTimestamp) return null;
+  const sec = Number(BigInt(raw.blockTimestamp));
+  return sec > 0 ? sec : null;
+}
+
 /** Decode one log with the ABI of its role. Unknown events (e.g. ERC-20 Approval) return null. */
 export function decodeLog(raw: RawLog, role: Role): DecodedLog | null {
   if (raw.removed) return null;
@@ -62,7 +69,7 @@ export function decodeLog(raw: RawLog, role: Role): DecodedLog | null {
       logIndex: Number(BigInt(raw.logIndex)),
       txHash: raw.transactionHash.toLowerCase(),
       blockHash: raw.blockHash?.toLowerCase() ?? "",
-      blockTimestamp: raw.blockTimestamp ? Number(BigInt(raw.blockTimestamp)) : null,
+      blockTimestamp: logTimestamp(raw),
     };
   } catch {
     return null;

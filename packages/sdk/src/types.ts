@@ -61,6 +61,8 @@ export interface ApiPool {
   volume_sparkline?: number[];
   is_fresh: boolean;
   enabled: boolean;
+  /** a Uniswap v4 pool outside Aethra's hook: listed read-only, not routable through the Aethra router */
+  external?: boolean;
   created_at: string;
 }
 

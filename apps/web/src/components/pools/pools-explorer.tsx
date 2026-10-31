@@ -23,6 +23,12 @@ const FILTERS = [
 type FilterKey = (typeof FILTERS)[number]["key"];
 
 const VENUES = ["ALL", "V4", "DLMM", "DAMM"] as const;
+const SOURCES = [
+  { key: "all", label: "All sources" },
+  { key: "aethra", label: "Aethra pools" },
+  { key: "external", label: "External v4" },
+] as const;
+type SourceKey = (typeof SOURCES)[number]["key"];
 
 function select(d: ApiDashboard, f: FilterKey): ApiPool[] {
   if (f === "stock") return d.all.filter((p) => p.token0.kind === "stock" || p.token1.kind === "stock");
@@ -36,6 +42,7 @@ export function PoolsExplorer() {
   const dash = useDashboard();
   const filter = (FILTERS.find((f) => f.key === params.get("filter"))?.key ?? "all") as FilterKey;
   const [venue, setVenue] = React.useState<(typeof VENUES)[number]>("ALL");
+  const [source, setSource] = React.useState<SourceKey>("all");
   const [q, setQ] = React.useState("");
 
   const setFilter = (key: FilterKey) => {
@@ -51,7 +58,7 @@ export function PoolsExplorer() {
       <PageHeader
         eyebrow="Pools"
         title="Liquidity pools"
-        description="Discover every Aethra pool across Uniswap v4 hooks, DLMM bins and DAMM ranges. Rank by TVL, volume and momentum."
+        description="Discover Aethra pools across Uniswap v4 hooks, DLMM bins and DAMM ranges, next to the most active external Uniswap v4 pools on Robinhood Chain. Totals below count Aethra pools only."
         actions={
           <Button asChild>
             <Link href="/pools/create">
@@ -86,6 +93,18 @@ export function PoolsExplorer() {
         </div>
         <div className="flex gap-2">
           <select
+            value={source}
+            onChange={(e) => setSource(e.target.value as SourceKey)}
+            className="h-9 rounded-sm border bg-surface-2 px-2 font-mono text-[12px] uppercase"
+            aria-label="Source"
+          >
+            {SOURCES.map((o) => (
+              <option key={o.key} value={o.key}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <select
             value={venue}
             onChange={(e) => setVenue(e.target.value as (typeof VENUES)[number])}
             className="h-9 rounded-sm border bg-surface-2 px-2 font-mono text-[12px] uppercase"
@@ -111,6 +130,7 @@ export function PoolsExplorer() {
             const rows = select(d, filter).filter(
               (p) =>
                 (venue === "ALL" || p.venue === venue) &&
+                (source === "all" || (source === "external") === !!p.external) &&
                 (!needle ||
                   [p.token0.symbol, p.token1.symbol, p.token0.address, p.token1.address, p.pool_id].some((x) => x.toLowerCase().includes(needle))),
             );

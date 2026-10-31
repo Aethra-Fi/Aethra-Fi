@@ -66,7 +66,8 @@ export function candidateRoutes(
   launchpad: Address | null,
   limit = 8,
 ): CandidateRoute[] {
-  const live = pools.filter((p) => p.enabled);
+  // external pools are listed read-only: the Aethra router has no venue for them
+  const live = pools.filter((p) => p.enabled && !p.external);
   const has = (p: ApiPool, t: string) => eq(p.token0.address, t) || eq(p.token1.address, t);
   const other = (p: ApiPool, t: string) => (eq(p.token0.address, t) ? p.token1 : p.token0);
   const out: CandidateRoute[] = [];
