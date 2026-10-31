@@ -130,7 +130,8 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 - Local test against the real mainnet RPC (local Supabase): 34 external pools found, TVL up to $310k, 24h volume up to $6.6M, 70k swaps replayed. Dark and light screenshots of the list and a pool page checked.
 - Decisions: external TVL counts only stable/oracle-priced sides (doubled when the other side is untrusted), because a token priced by its own pool inflated one spam pool to $10.2M; Aethra headline stats, featured market, analytics and the global event feed exclude external pools; the web never routes swaps through them (no router venue), their page shows "External pool" instead of Trade and Add liquidity.
 - Bug fixed on the way: the node returns `blockTimestamp: 0x0` on every log, so every `created_at` and swap time was 1970 (24h volume, Most traded and Fresh could never match a swap). Testnet repaired by deleting the 1970 rows and rewinding the cursor.
-- Rollout: testnet migration, functions and repair done. Mainnet (migration, functions, repair, web on the `mainnet` branch) waits for the user's go-ahead.
+- Rollout: testnet done (PR #43, 114 pools of which 107 external). Mainnet done with the user's go-ahead on 2026-11-01: web via PR #44 (production Ready), migration applied (first `db push` hit a transient 503 and was retried), functions deployed, 1970 rows deleted, cursor rewound. The rebuild from the start block takes 1-2 hours on the public RPC (82 external pools found, replayed round-robin); the API is usable meanwhile but Aethra TVL and volume read 0 until the indexer passes the seed block.
+- Kill switch: function secret `EXTERNAL_POOLS=off`. A dedicated RPC (`RPC_URL_4663`) would remove the 429s of the public one.
 
 ## 2026-10-31 · B19 done: minimum seed on mainnet
 

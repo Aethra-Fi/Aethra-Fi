@@ -25,6 +25,9 @@ import { discoverExternal, type PoolKeyRow } from "./discover.ts";
 
 const BUDGET_MS = 45_000;
 const MAX_LOGS_PER_CALL = 10_000;
+/** Pools per aethra_refresh call (see indexChain). */
+const REFRESH_POOLS = 12;
+
 // External v4 pools: bounded watchlist, refreshed on a slow cadence (env overrides, EXTERNAL_POOLS=off disables).
 const EXTERNAL_ON = (Deno.env.get("EXTERNAL_POOLS") ?? "on") !== "off";
 const EXTERNAL_MAX = Number(Deno.env.get("EXTERNAL_MAX") ?? 150);
@@ -801,12 +804,18 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
   // ---------------------------------------------------------------- chain reads + prices
   const chainMeta = await refreshChainState(db, client, chainId, A, pools, tokens, touched);
 
-  const { data: refreshed, error: refreshErr } = await db.rpc("aethra_refresh", {
-    p_chain: chainId,
-    p_pools: touched.size ? [...touched] : null,
-    p_since: since ? ts(since) : null,
-  });
-  if (refreshErr) throw new Error(`aethra_refresh: ${refreshErr.message}`);
+  // The API role cuts statements at 8s. A replay batch can touch many external pools over a long window, so refresh
+  // them in small groups (the global steps are cheap); with nothing touched one call refreshes everything.
+  let refreshed: unknown;
+  for (const part of touched.size ? chunked([...touched], REFRESH_POOLS) : [null]) {
+    const { data, error: refreshErr } = await db.rpc("aethra_refresh", {
+      p_chain: chainId,
+      p_pools: part,
+      p_since: since ? ts(since) : null,
+    });
+    if (refreshErr) throw new Error(`aethra_refresh: ${refreshErr.message}`);
+    refreshed = data;
+  }
 
   const caughtUp = from > safe;
 

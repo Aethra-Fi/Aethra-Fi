@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeftRight } from "lucide-react";
 import { ThemedAreaChart } from "@/components/charts/area-chart";
 import { EventTable } from "@/components/events/event-table";
-import { AddressLink, EmptyState, ExternalBadge, KV, ModeBadge, PairLabel, Panel, QueryState, Stat, StatGrid, VenueBadge } from "@/components/kit";
+import { AddressLink, EmptyState, KV, ModeBadge, PairLabel, Panel, QueryState, Stat, StatGrid, VenueBadge } from "@/components/kit";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useEvents, usePool } from "@/hooks/use-api";
@@ -54,7 +54,6 @@ export function PoolDetail({ poolId }: { poolId: string }) {
                   <PairLabel pool={p} />
                   <VenueBadge venue={p.venue} external={p.external} />
                   <ModeBadge mode={p.mode} />
-                  <ExternalBadge pool={p} />
                   {!p.enabled && <Badge variant="danger">Paused</Badge>}
                 </div>
               </div>
@@ -95,7 +94,7 @@ export function PoolDetail({ poolId }: { poolId: string }) {
               </div>
               <div className="space-y-6">
                 {p.external ? (
-                  <Panel title="External pool">
+                  <Panel title="Uniswap v4 pool">
                     <p className="text-sm text-fg-2">
                       This Uniswap v4 pool does not use the Aethra hook. Aethra indexes it so you can compare markets, but swaps and
                       liquidity here go through the pool&apos;s own hook and the Uniswap v4 PoolManager, not the Aethra router. Figures are
