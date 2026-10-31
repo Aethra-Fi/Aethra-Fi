@@ -123,6 +123,17 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · v1.1 release preparation (DLMM, DAMM, limit orders)
+
+- Gate tests from RELEASE_PLAN, both green:
+  - `testFuzz_claimNeverExceedsDeposit` (`test/dlmm/DLMMLimitOrders.t.sol`): two makers share a bin, it fills, both claim. No claim exceeds the deposit's value at the bin price plus the most fees the bin could earn, each gets at least the limit price, together they never take more than the bin holds, and the orders contract keeps nothing.
+  - `test/fork/MainnetV11.t.sol` (opt-in `FORK_MAINNET=1`), against the live deployment: locked `createPool` reverts; the deployer sends what `mainnet-v11.sh open` sends; WETH/USDG DLMM (bin step 25, active -7976) and DAMM (full range) pools are created and registered in the hub; router quotes equal the pools' own quotes on each venue and across a DAMM → DLMM two-hop route, and swaps pay exactly the quote; a limit order fills when buyers push through its bin and is claimed at or above its price.
+- Mainnet still locked (both factories not registrars, checked on-chain). Opening = 2 transactions, ≈ 79k gas, < $0.01 at 0.02 gwei. Deployer balance 0.00209 ETH. B25.
+- No SDK change: DLMM, DAMM and limit order addresses were never in `hidden`.
+- Web shows the release version: `v1.1.0` in the footer bar and the landing bottom bar, linked to the GitHub release tag. Source: `version` in `apps/web/package.json`, passed in by `next.config.ts` as `NEXT_PUBLIC_APP_VERSION` (`lib/version.ts`). Bump it with each release tag. Checked in both themes.
+- Fix: RainbowKit's theme `<style>` mismatched on hydration for light-theme visitors, and React keeps the server value, so the wallet modal could keep dark variables. The first client render now matches the server (`useMounted`). No hydration warnings in either theme.
+- Seed for DLMM/DAMM waits for funds, like B19. Venues open empty; the first LP sets the price.
+
 ## 2026-10-31 · ERR_CONNECTION_REFUSED report from a visitor
 
 - One visitor saw "Web page not available … http://aethra.finance/ … net::ERR_CONNECTION_REFUSED" (Android in-app browser).
