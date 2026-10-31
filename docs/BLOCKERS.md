@@ -244,7 +244,9 @@ bash scripts/mainnet-v11.sh lock
 
 Saat v1.1 rilis: `bash scripts/mainnet-v11.sh open`.
 
-## B19 · Seed WETH/USDG (butuh password keystore) · `OPEN`
+## B19 · Seed WETH/USDG (butuh password keystore) · `DONE` 2026-10-31
+
+Selesai dengan opsi A: 5 transaksi sukses, 979.809 gas. Pool `0x6e1de9ed…8f18` terindeks di mainnet (TVL ≈ \$0,23, harga di pool 1.855 setelah smoke swap 0,000005 ETH menggeser harga pool yang sangat dangkal). Teks di bawah adalah catatan asli.
 
 Keputusan 2026-10-31: v1.0 diluncurkan tanpa seed. Sisa saldo deployer (±$4,7) disimpan sebagai gas untuk pembukaan v1.1–v2.0 dan cadangan upgrade. Swap di aethra.finance aktif begitu ada LP pertama: siapa pun, atau script di bawah ini saat dana tersedia.
 

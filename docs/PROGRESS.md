@@ -123,6 +123,12 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · B19 done: minimum seed on mainnet
+
+- WETH/USDG v4 pool (Aethra hook, dynamic fee, spacing 10) opened on mainnet with the minimum seed (option A): 0.00005 ETH + 0.112255 USDG at \$2,245.11, no top-up. 5 transactions, all succeeded, 979,809 gas. Rehearsed on a mainnet fork first (chain id 31337, records deleted).
+- Indexer shows the pool: TVL ≈ \$0.23, `/chains/4663/pools` no longer empty. The 0.000005 ETH smoke swap moved the pool price to 1,855 because the pool is only ≈ \$0.2 deep; this is a placeholder, not a usable market.
+- Known bug (also on testnet): the API returns `created_at` 1970-01-01 for every pool, so `is_fresh` is always false and the Fresh filter lists nothing. Not fixed yet.
+
 ## 2026-10-31 · v1.2 released
 
 - B27: the user ran `mainnet-v12.sh open`. On-chain: the five Chainlink feeds are registered (WETH, USDG, TSLA, NVDA, AAPL), the three stocks are enabled, all fresh.
