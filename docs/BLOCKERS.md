@@ -381,7 +381,9 @@ bash scripts/verify-v11.sh
 
 Laporan dengan link tersimpan di `docs/verification/mainnet-v1.1.md` (dibiarkan untracked, seperti `mainnet.md`). Untuk tampilan terbaik, lebar terminal minimal 120 kolom.
 
-## B27 · Buka v1.2 (stock pools) di mainnet (butuh password keystore) · `OPEN`
+## B27 · Buka v1.2 (stock pools) di mainnet (butuh password keystore) · `DONE` 2026-10-31
+
+Selesai: lima feed terdaftar dan TSLA, NVDA, AAPL aktif di hub (dicek on-chain, semua fresh). PR #41 (testnet) dan #42 (mainnet) di-merge, `aethra.finance` menampilkan `v1.2.0` dengan CTA stock pools terbuka, indexer mainnet disinkronkan, tag dan rilis `v1.2.0` dibuat. Teks di bawah adalah catatan asli.
 
 Gerbang v1.2 sudah lolos di fork mainnet (`test/fork/MainnetV12.t.sol`, 3 tes): pool TSLA/USDG dibuka di harga oracle, swap dua arah, breaker menolak pembukaan 10% di luar harga, feed basi menghentikan swap tetapi LP tetap bisa menarik likuiditas, pool NVDA dan AAPL terbuka, pool WETH/USDG tidak terganggu.
 

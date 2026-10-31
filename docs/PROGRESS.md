@@ -123,6 +123,14 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · v1.2 released
+
+- B27: the user ran `mainnet-v12.sh open`. On-chain: the five Chainlink feeds are registered (WETH, USDG, TSLA, NVDA, AAPL), the three stocks are enabled, all fresh.
+- `mainnet.json` lists TSLA, NVDA, AAPL and the feeds; mainnet indexer deployment synced (it rewinds and re-reads from the start block).
+- PR #41 (testnet) and #42 (`main` → `mainnet`): `aethra.finance` shows `v1.2.0`, landing offers "Explore stock pools". Tag `v1.2.0` on `951026d`, with a GitHub release.
+- Not done: `@aethrafi/sdk` is still 0.1.0 on npm (needs the user's npm login); other Robinhood stock tokens are not registered (v1.2.x); no seed, so stock pools are empty until someone opens one.
+- Next: v1.3 (launchpad, fee to treasury) needs the DLMM pool and hook upgrade described in RELEASE_PLAN.
+
 ## 2026-10-31 · v1.2 release preparation (stock pools + oracle guard)
 
 - Feeds found and checked on-chain (chain 4663, `description()`, `decimals()` = 8, `latestRoundData()`): Chainlink proxies for TSLA `0x4A11…5C38`, NVDA `0x379E…9F15`, AAPL `0x6B22…2cD0`, WETH `0x78F3…d3A9`, USDG `0x61B7…9aD2`. Source: the EqualFi oracle whitelist matrix; each address matched its stock token and returned a live price. Chainlink's docs pages were not reachable, so the checks above are the proof.
