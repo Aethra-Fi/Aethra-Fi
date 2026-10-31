@@ -10,12 +10,11 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useHealth } from "@/hooks/use-api";
 import { useAllowance, useTokenBalance, type TokenOption } from "@/hooks/use-token";
 import { useTx } from "@/hooks/use-tx";
 import { ApiError, type ApiPool } from "@/lib/api";
 import { formatTokenAmount, shortAddress } from "@/lib/format";
-import { CHAIN_ID, explorerAddress, explorerTx } from "@/lib/network";
+import { explorerAddress, explorerTx } from "@/lib/network";
 import { VENUE_LABEL } from "@/lib/routing";
 import { cn } from "@/lib/utils";
 
@@ -101,22 +100,6 @@ export type DotState = "live" | "degraded" | "down" | "idle";
 export function StatusDot({ state, className }: { state: DotState; className?: string }) {
   const color = { live: "bg-primary", degraded: "bg-warning", down: "bg-danger", idle: "bg-muted" }[state];
   return <span className={cn("inline-block size-1.5 rounded-full", color, state === "live" && "animate-pulse", className)} />;
-}
-
-export function IndexerStatus({ className }: { className?: string }) {
-  const h = useHealth();
-  // only this app's network matters; other chains in the same indexer may be idle or behind
-  const own = h.data?.indexing.find((i) => i.chain_id === CHAIN_ID);
-  const stale = own && h.data ? Date.parse(h.data.timestamp) - Date.parse(own.updated_at) > 5 * 60_000 : true;
-  const behind = own?.head_block && own.last_block ? own.head_block - own.last_block > 500 : false;
-  const state: DotState = h.isError ? "down" : !h.data ? "idle" : !own ? "down" : stale || behind ? "degraded" : "live";
-  const label = { live: "Indexer live", degraded: "Indexer lagging", down: "Indexer offline", idle: "Indexer…" }[state];
-  return (
-    <span className={cn("items-center gap-2 font-mono text-[11px] uppercase tracking-eyebrow text-muted", className)}>
-      <StatusDot state={state} />
-      {label}
-    </span>
-  );
 }
 
 export function EmptyState({ title, children, action }: { title: string; children?: React.ReactNode; action?: React.ReactNode }) {
