@@ -30,9 +30,36 @@
       "kind": "canonical",
       "name": "Global Dollar",
       "symbol": "USDG"
+    },
+    "TSLA": {
+      "address": "0x322F0929c4625eD5bAd873c95208D54E1c003b2d",
+      "decimals": 18,
+      "kind": "stock",
+      "name": "Tesla • Robinhood Token",
+      "symbol": "TSLA"
+    },
+    "NVDA": {
+      "address": "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC",
+      "decimals": 18,
+      "kind": "stock",
+      "name": "NVIDIA • Robinhood Token",
+      "symbol": "NVDA"
+    },
+    "AAPL": {
+      "address": "0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9",
+      "decimals": 18,
+      "kind": "stock",
+      "name": "Apple • Robinhood Token",
+      "symbol": "AAPL"
     }
   },
-  "oracles": {},
+  "oracles": {
+    "AAPL": "0x6B22A786bAa607d76728168703a39Ea9C99f2cD0",
+    "NVDA": "0x379EC4f7C378F34a1B47E4F3cbeBCbAC3E8E9F15",
+    "TSLA": "0x4A1166a659A55625345e9515b32adECea5547C38",
+    "USDG": "0x61B7e5650328764B076A108EFF5fa7282a1B9aD2",
+    "WETH": "0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9"
+  },
   "startBlock": 101899930,
   "hidden": {
     "launchpad": "0x3fB9ad92DB9D2AE816535770b6697CD7625325bC",

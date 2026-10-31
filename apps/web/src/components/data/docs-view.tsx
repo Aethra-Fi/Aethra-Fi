@@ -177,7 +177,7 @@ const BLOCKS: Block[] = [
         </p>
         <p>
           Open any stock pool to see the oracle price, the gap to the pool price and the breaker state. Use the <Mono>Stocks</Mono> filter on{" "}
-          <A href="/pools?filter=stock">Pools</A> to list them. Testnet stock tokens use mock oracles.
+          <A href="/pools?filter=stock">Pools</A> to list them. On mainnet the reference prices are Chainlink feeds. Stock feeds update only while US markets trade, so a pool halts after a day without an update (over a weekend) and trades again once the feed resumes; liquidity can always be withdrawn. Testnet stock tokens use mock oracles.
         </p>
       </>
     ),
