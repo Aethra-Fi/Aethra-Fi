@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import {IDLMMLimitOrders} from "../../src/interfaces/IAethraPools.sol";
 import {DLMMLimitOrders} from "../../src/dlmm/DLMMLimitOrders.sol";
 import {DLMMPool} from "../../src/dlmm/DLMMPool.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {DLMMBase} from "./DLMMBase.t.sol";
 
 contract DLMMLimitOrdersV2 is DLMMLimitOrders {
@@ -170,5 +171,39 @@ contract DLMMLimitOrdersTest is DLMMBase {
         // the first deposit into an empty bin locks MIN_SHARES worth of dust, nothing more
         assertLe(a0, amount);
         assertGe(a0, amount - amount / 1e6 - 1e6);
+    }
+    /// @dev v1.1 gate: two makers share a bin, the bin fills, both claim. Neither claim exceeds what its deposit is worth
+    ///      at the bin price plus the most fees the bin could earn, each gets at least the limit price, and together they
+    ///      never take more than the bin holds.
+    function testFuzz_claimNeverExceedsDeposit(uint96 amtA, uint96 amtB, uint8 offset) public {
+        address other = address(0x5555);
+        _fund(other, 1e30);
+        uint256 a = bound(uint256(amtA), 1e12, 1e22);
+        uint256 b = bound(uint256(amtB), 1e12, 1e22);
+        int24 bin = pool.activeId() + 1 + int24(uint24(bound(offset, 0, 3))); // inside the seeded range, no dust lock
+        uint256 idA = _place(bin, IDLMMLimitOrders.Side.SELL_TOKEN0, a);
+        vm.prank(other);
+        uint256 idB = orders.place(address(pool), bin, IDLMMLimitOrders.Side.SELL_TOKEN0, b, block.timestamp);
+
+        _pushUpPast(bin);
+        (, uint128 reserve1,) = pool.getBin(bin);
+        uint256 price = pool.priceX128(bin);
+
+        vm.prank(maker);
+        (uint256 a0A, uint256 a1A) = orders.claim(idA, maker);
+        vm.prank(other);
+        (uint256 a0B, uint256 a1B) = orders.claim(idB, other);
+
+        assertEq(a0A + a0B, 0, "filled orders pay token1 only");
+        assertLe(a1A + a1B, reserve1, "claims exceed the bin");
+        _assertFair(a, a1A, price);
+        _assertFair(b, a1B, price);
+        assertEq(token1.balanceOf(address(orders)), 0, "orders contract kept proceeds");
+    }
+
+    function _assertFair(uint256 amountIn, uint256 out, uint256 price) internal pure {
+        uint256 atPrice = Math.mulDiv(amountIn, price, 1 << 128);
+        assertLe(out, atPrice + Math.mulDiv(atPrice, MAX_FEE, 1e6) + 1e6, "claim above deposit value");
+        assertGe(out + atPrice / 1e6 + 1e6, atPrice, "claim below the limit price");
     }
 }

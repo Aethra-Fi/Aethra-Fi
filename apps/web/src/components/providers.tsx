@@ -6,6 +6,7 @@ import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { ThemeProvider, useTheme } from "next-themes";
 import { WagmiProvider } from "wagmi";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useMounted } from "@/hooks/use-mounted";
 import { ApiError } from "@/lib/api";
 import { CHAIN, restoreNetwork, useNetwork } from "@/lib/network";
 import { rainbowTheme } from "@/lib/rainbow-theme";
@@ -13,7 +14,9 @@ import { getWagmiConfig } from "@/lib/wagmi";
 
 function RainbowThemed({ children }: { children: React.ReactNode }) {
   const { resolvedTheme } = useTheme();
-  const theme = React.useMemo(() => rainbowTheme(resolvedTheme === "light" ? "light" : "dark"), [resolvedTheme]);
+  // the server renders the dark style; match it on the first client render so hydration keeps no stale CSS variables
+  const light = useMounted() && resolvedTheme === "light";
+  const theme = React.useMemo(() => rainbowTheme(light ? "light" : "dark"), [light]);
   return (
     <RainbowKitProvider theme={theme} initialChain={CHAIN} modalSize="compact" appInfo={{ appName: "Aethra Fi" }}>
       {children}

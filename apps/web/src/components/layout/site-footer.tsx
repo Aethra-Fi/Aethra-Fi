@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useOpenVenues } from "@/hooks/use-venues";
 import { useNetwork } from "@/lib/network";
+import { APP_VERSION, RELEASE_URL } from "@/lib/version";
 import { MORE_NAV as ALL_MORE_NAV, PRIMARY_NAV, RESOURCE_NAV, navFor } from "./nav";
 import { Logo } from "./site-header";
 
@@ -28,7 +29,13 @@ export function SiteFooter() {
       </div>
       <div className="border-t">
         <div className="container flex h-12 items-center justify-between font-mono text-[11px] uppercase tracking-eyebrow text-muted">
-          <span>Aethra Fi · {new Date().getFullYear()}</span>
+          <span>
+            Aethra Fi ·{" "}
+            <a href={RELEASE_URL} target="_blank" rel="noreferrer" className="normal-case transition-ui hover:text-primary-text">
+              {APP_VERSION}
+            </a>{" "}
+            · {new Date().getFullYear()}
+          </span>
           <span>Built on Robinhood Chain</span>
         </div>
       </div>

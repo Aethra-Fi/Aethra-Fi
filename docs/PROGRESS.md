@@ -123,6 +123,41 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · v1.1 release preparation (DLMM, DAMM, limit orders)
+
+- Gate tests from RELEASE_PLAN, both green:
+  - `testFuzz_claimNeverExceedsDeposit` (`test/dlmm/DLMMLimitOrders.t.sol`): two makers share a bin, it fills, both claim. No claim exceeds the deposit's value at the bin price plus the most fees the bin could earn, each gets at least the limit price, together they never take more than the bin holds, and the orders contract keeps nothing.
+  - `test/fork/MainnetV11.t.sol` (opt-in `FORK_MAINNET=1`), against the live deployment: locked `createPool` reverts; the deployer sends what `mainnet-v11.sh open` sends; WETH/USDG DLMM (bin step 25, active -7976) and DAMM (full range) pools are created and registered in the hub; router quotes equal the pools' own quotes on each venue and across a DAMM → DLMM two-hop route, and swaps pay exactly the quote; a limit order fills when buyers push through its bin and is claimed at or above its price.
+- Mainnet still locked (both factories not registrars, checked on-chain). Opening = 2 transactions, ≈ 79k gas, < $0.01 at 0.02 gwei. Deployer balance 0.00209 ETH. B25.
+- No SDK change: DLMM, DAMM and limit order addresses were never in `hidden`.
+- Web shows the release version: `v1.1.0` in the footer bar and the landing bottom bar, linked to the GitHub release tag. Source: `version` in `apps/web/package.json`, passed in by `next.config.ts` as `NEXT_PUBLIC_APP_VERSION` (`lib/version.ts`). Bump it with each release tag. Checked in both themes.
+- Fix: RainbowKit's theme `<style>` mismatched on hydration for light-theme visitors, and React keeps the server value, so the wallet modal could keep dark variables. The first client render now matches the server (`useMounted`). No hydration warnings in either theme.
+- Seed for DLMM/DAMM waits for funds, like B19. Venues open empty; the first LP sets the price.
+
+## 2026-10-31 · ERR_CONNECTION_REFUSED report from a visitor
+
+- One visitor saw "Web page not available … http://aethra.finance/ … net::ERR_CONNECTION_REFUSED" (Android in-app browser).
+- Not reproducible. 47 of 48 check-host.net nodes passed, Jakarta included: http 308, https 200, port 80 open. The one failure was a Swiss node with broken DNS.
+- Every public resolver returns `216.198.79.1`. Komdigi TrustPositif says "Tidak Ada". Safe Browsing does not flag the domain.
+- Likely cause on the visitor's side: the domain was registered 2026-10-27. DNS filters that block newly registered domains (Private DNS, antivirus, VPN) answer `0.0.0.0`, which gives exactly this error. It clears once the domain is about 30 days old.
+- Fallback URL: `https://aethra-fi.vercel.app` serves the same production deployment (same ETag).
+- HSTS `includeSubDomains` + preload was offered and declined by the user. Share links as `https://aethra.finance`.
+
+## 2026-10-31 · Security headers
+
+- External check of `aethra.finance`:
+  - HTTPS everywhere; HSTS 2 years (Vercel default); Let's Encrypt certificates for apex and `www` until 2027-01-26.
+  - `www` redirects 308 to the apex on purpose.
+  - The live JS bundle has no secrets: only secp256k1 constants and the public Supabase function URLs.
+  - Supabase: the indexer refuses requests without a token (401), the API refuses writes (405), PostgREST without a key gives 401.
+- Gap found: no security headers. A foreign page could frame the site, which made clickjacking possible (proven on production before the fix).
+- `apps/web/next.config.ts` now sends these headers on every route: `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and a `Permissions-Policy` that turns off camera, microphone, geolocation and topics.
+- No full CSP: the wallet connectors load scripts and frames from many origins.
+- Checked on testnet (PR #35) before promoting to mainnet (PR #36, approved by the user):
+  - the wallet modal opens and its MetaMask view works;
+  - no policy violations in the console;
+  - a page on another origin can no longer frame the site.
+
 ## 2026-10-31 · AETHRA contract address in the hero (B23)
 
 - The user launched the token: `0xE56B23204a66b43b8D788c6CD19749e5D5752C64`, name "AETHRA FI", symbol `AETHRA`, 18 decimals, 1B supply. Bytecode has `burn` and `burnFrom`, no `mint`, no `owner`.
