@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ModeBadge, PairLabel, Sparkline, VenueBadge } from "@/components/kit";
+import { ExternalBadge, ModeBadge, PairLabel, Sparkline, VenueBadge } from "@/components/kit";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ApiPool } from "@/lib/api";
@@ -24,8 +24,9 @@ function PoolCards({ pools }: { pools: ApiPool[] }) {
               <Sparkline values={p.sparkline} volume={p.volume_sparkline} className="shrink-0" />
             </div>
             <div className="flex flex-wrap gap-1">
-              <VenueBadge venue={p.venue} />
+              <VenueBadge venue={p.venue} external={p.external} />
               <ModeBadge mode={p.mode} />
+              <ExternalBadge pool={p} />
             </div>
             <dl className="grid grid-cols-4 gap-2">
               {[
@@ -89,8 +90,9 @@ function PoolTableDesktop({ pools }: { pools: ApiPool[] }) {
               </TableCell>
               <TableCell>
                 <span className="flex flex-wrap gap-1">
-                  <VenueBadge venue={p.venue} />
+                  <VenueBadge venue={p.venue} external={p.external} />
                   <ModeBadge mode={p.mode} />
+                  <ExternalBadge pool={p} />
                 </span>
               </TableCell>
               <TableCell className="num text-right">{p.fee_pips === 0 && p.mode !== "plain" ? "Dynamic" : formatFeePips(p.fee_pips)}</TableCell>

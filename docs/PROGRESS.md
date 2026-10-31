@@ -123,6 +123,29 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · External Uniswap v4 pools in the Pools list
+
+- Why the list was thin: the PoolManager on mainnet holds hundreds of thousands of pools (about 5,000 new per day, 80k+ swaps per day); the indexer read all their events but dropped every pool that did not use the Aethra hook.
+- Now a bounded watchlist of external pools is tracked read-only (`pools.external`): discovery every 10 minutes picks the most active ones (swaps in the last 40k blocks, valued by the virtual reserve of a stable/oracle/WETH side), the indexer replays each pool's history from creation and then follows it. Details and knobs in `docs/infrastructure.md`.
+- Local test against the real mainnet RPC (local Supabase): 34 external pools found, TVL up to $310k, 24h volume up to $6.6M, 70k swaps replayed. Dark and light screenshots of the list and a pool page checked.
+- Decisions: external TVL counts only stable/oracle-priced sides (doubled when the other side is untrusted), because a token priced by its own pool inflated one spam pool to $10.2M; Aethra headline stats, featured market, analytics and the global event feed exclude external pools; the web never routes swaps through them (no router venue), their page shows "External pool" instead of Trade and Add liquidity.
+- Bug fixed on the way: the node returns `blockTimestamp: 0x0` on every log, so every `created_at` and swap time was 1970 (24h volume, Most traded and Fresh could never match a swap). Testnet repaired by deleting the 1970 rows and rewinding the cursor.
+- Rollout: testnet migration, functions and repair done. Mainnet (migration, functions, repair, web on the `mainnet` branch) waits for the user's go-ahead.
+
+## 2026-10-31 · B19 done: minimum seed on mainnet
+
+- WETH/USDG v4 pool (Aethra hook, dynamic fee, spacing 10) opened on mainnet with the minimum seed (option A): 0.00005 ETH + 0.112255 USDG at \$2,245.11, no top-up. 5 transactions, all succeeded, 979,809 gas. Rehearsed on a mainnet fork first (chain id 31337, records deleted).
+- Indexer shows the pool: TVL ≈ \$0.23, `/chains/4663/pools` no longer empty. The 0.000005 ETH smoke swap moved the pool price to 1,855 because the pool is only ≈ \$0.2 deep; this is a placeholder, not a usable market.
+- Known bug (also on testnet): the API returns `created_at` 1970-01-01 for every pool, so `is_fresh` is always false and the Fresh filter lists nothing. Not fixed yet.
+
+## 2026-10-31 · v1.2 released
+
+- B27: the user ran `mainnet-v12.sh open`. On-chain: the five Chainlink feeds are registered (WETH, USDG, TSLA, NVDA, AAPL), the three stocks are enabled, all fresh.
+- `mainnet.json` lists TSLA, NVDA, AAPL and the feeds; mainnet indexer deployment synced (it rewinds and re-reads from the start block).
+- PR #41 (testnet) and #42 (`main` → `mainnet`): `aethra.finance` shows `v1.2.0`, landing offers "Explore stock pools". Tag `v1.2.0` on `951026d`, with a GitHub release.
+- Not done: `@aethrafi/sdk` is still 0.1.0 on npm (needs the user's npm login); other Robinhood stock tokens are not registered (v1.2.x); no seed, so stock pools are empty until someone opens one.
+- Next: v1.3 (launchpad, fee to treasury) needs the DLMM pool and hook upgrade described in RELEASE_PLAN.
+
 ## 2026-10-31 · v1.2 release preparation (stock pools + oracle guard)
 
 - Feeds found and checked on-chain (chain 4663, `description()`, `decimals()` = 8, `latestRoundData()`): Chainlink proxies for TSLA `0x4A11…5C38`, NVDA `0x379E…9F15`, AAPL `0x6B22…2cD0`, WETH `0x78F3…d3A9`, USDG `0x61B7…9aD2`. Source: the EqualFi oracle whitelist matrix; each address matched its stock token and returned a live price. Chainlink's docs pages were not reachable, so the checks above are the proof.
