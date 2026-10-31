@@ -18,7 +18,7 @@ import {
 } from "../_shared/abis.ts";
 import { backoffMs, ChunkSizer, chunked, DEFAULT_CHUNK, nextRange, planStart, safeHead } from "../_shared/chunking.ts";
 import { amountsForLiquidity, big, isStableToken, priceFromBin, priceFromSqrtX96, swapUsd, toHuman } from "../_shared/math.ts";
-import { decodeLog, dedupeRawLogs, type DecodedLog, type RawLog, sortLogs, TOPICS, UINT64_MAX, ZERO_ADDRESS } from "../_shared/normalize.ts";
+import { decodeLog, dedupeRawLogs, type DecodedLog, logTimestamp, type RawLog, sortLogs, TOPICS, UINT64_MAX, ZERO_ADDRESS } from "../_shared/normalize.ts";
 import { derivePrices, scaleE18 } from "../_shared/pricing.ts";
 
 const BUDGET_MS = 45_000;
@@ -197,7 +197,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number)
 
   const blockTs = new Map<number, number>();
   async function timestampsFor(logs: RawLog[]) {
-    const need = [...new Set(logs.filter((l) => !l.blockTimestamp).map((l) => Number(BigInt(l.blockNumber))))].filter((n) => !blockTs.has(n));
+    const need = [...new Set(logs.filter((l) => logTimestamp(l) === null).map((l) => Number(BigInt(l.blockNumber))))].filter((n) => !blockTs.has(n));
     for (const part of chunked(need, 50)) {
       const blocks = await Promise.all(part.map((n) => client.getBlock({ blockNumber: BigInt(n) })));
       blocks.forEach((b) => blockTs.set(Number(b.number), Number(b.timestamp)));
