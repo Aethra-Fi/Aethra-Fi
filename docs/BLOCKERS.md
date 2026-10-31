@@ -398,3 +398,26 @@ Lalu bilang "B27 selesai". Setelah itu aku menambahkan token saham ke `addresses
 
 Catatan: pool saham berhenti sendiri (fail closed) kalau feed tidak update lebih dari 24 jam, yaitu dari Sabtu malam sampai Minggu malam. Tidak ada seed likuiditas (seperti B19), jadi pool saham baru ada begitu seseorang membukanya dan mengisinya. Kunci lagi bila perlu: `bash scripts/mainnet-v12.sh lock`.
 
+
+## B28 · Rekam layar verifikasi v1.2 · `OPEN`
+
+Script read-only: tanpa transaksi, tanpa keystore, tanpa VPN. Script memeriksa 6 kontrak Aethra di belakang oracle guard (hub, hook v4, router; masing-masing proxy dan implementasi) plus 5 feed Chainlink dan 3 token saham yang dibaca hub, dalam 7 tahap. Tiap tahap menjelaskan apa yang dibuktikan, lalu mengeceknya live:
+
+1. jaringan;
+2. bytecode on-chain (14 kontrak);
+3. source code (Sourcify, exact match, 6 kontrak Aethra);
+4. wiring proxy, hook, router, hub, dan PoolManager Uniswap v4;
+5. owner dan penguncian implementasi;
+6. feed harga: tiap aset di hub punya feed, kelas, jendela staleness, dan harga live (TSLA, NVDA, AAPL, WETH, USDG);
+7. gerbang rilis: TSLA, NVDA, AAPL aktif di hub.
+
+Uji 2026-10-31: 43 dari 43 cek lolos, ±80 detik tanpa jeda (Sourcify yang paling lama). Di antara tahap, script menunggu Enter. Di akhir ada menu: angka membuka kontrak di explorer, `s` + angka membuka Sourcify, `q` keluar.
+
+```bash
+# Jalankan di: ROOT
+export PS1='$ '
+clear
+bash scripts/verify-v12.sh
+```
+
+Catatan untuk rekaman: feed saham hanya update saat pasar AS buka. Kalau kamu merekam di akhir pekan dan feed sudah lewat 24 jam, baris saham tampil kuning `paused` (pool berhenti sendiri, memang disengaja) dan catatan penjelasnya muncul; cek tetap lulus. Pada hari bursa baris itu hijau `live`. Laporan dengan link tersimpan di `docs/verification/mainnet-v1.2.md` (dibiarkan untracked, seperti `mainnet-v1.1.md`). Untuk tampilan terbaik, lebar terminal minimal 120 kolom.
