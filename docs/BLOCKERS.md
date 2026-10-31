@@ -358,3 +358,25 @@ bash scripts/mainnet-v11.sh open
 
 Ikut terbawa ke mainnet: versi di footer dan landing, perbaikan tema RainbowKit, tes kontrak, dan docs. Venue dibuka tanpa likuiditas karena seed masih menunggu dana (seperti B19).
 
+
+## B26 · Rekam layar verifikasi v1.1 · `OPEN`
+
+Script read-only: tanpa transaksi, tanpa keystore, tanpa VPN. Script memeriksa 10 kontrak v1.1 (DLMM, DAMM, limit orders) dalam 6 tahap. Tiap tahap menjelaskan apa yang dibuktikan, lalu mengeceknya live:
+
+1. jaringan;
+2. bytecode on-chain;
+3. source code (Sourcify, exact match);
+4. wiring proxy dan beacon;
+5. owner dan penguncian implementasi;
+6. gerbang rilis di hub.
+
+Uji 2026-10-31: 44 dari 44 cek lolos, ±40 detik tanpa jeda. Di antara tahap, script menunggu Enter. Di akhir ada menu: angka membuka kontrak di explorer, `s` + angka membuka Sourcify, `q` keluar.
+
+```bash
+# Jalankan di: ROOT
+export PS1='$ '
+clear
+bash scripts/verify-v11.sh
+```
+
+Laporan dengan link tersimpan di `docs/verification/mainnet-v1.1.md` (dibiarkan untracked, seperti `mainnet.md`). Untuk tampilan terbaik, lebar terminal minimal 120 kolom.
