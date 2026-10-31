@@ -123,6 +123,13 @@ Test-market seeding (`SetupMarkets`, faucet tokens, mock feeds, seed pools) is 1
 5. Testnet deploy (after B2/B3).
 6. Final mainnet dry run.
 
+## 2026-10-31 · v1.1 released
+
+- B25: the user ran `mainnet-v11.sh open`. On-chain: DLMM and DAMM factories are registrars, the hook still is; deployer balance 0.002086 ETH.
+- PR #38 (`main` → `mainnet`, with the user's permission). `aethra.finance` shows `v1.1.0` in the footer, the limit orders page is open ("No DLMM pools yet") and create pool offers DLMM and DAMM. Testnet got the same through PR #37.
+- Tag `v1.1.0` on the mainnet merge commit `677106e`, with a GitHub release (the version link in the UI points there). v1.0.0 has a tag only.
+- Next: v1.2 (stock pools + oracle guard) needs verified mainnet price feeds. Seed for the v1.0/v1.1 pools still waits for funds (B19).
+
 ## 2026-10-31 · v1.1 release preparation (DLMM, DAMM, limit orders)
 
 - Gate tests from RELEASE_PLAN, both green:

@@ -341,7 +341,9 @@ gh pr merge <nomor-PR> --merge
 
 Ikut terbawa ke mainnet: `72fe3b5` (hanya docs). Setelah merge, saya cek status Vercel dan `aethra.finance`.
 
-## B25 · Buka v1.1 di mainnet (butuh password keystore) · `OPEN`
+## B25 · Buka v1.1 di mainnet (butuh password keystore) · `DONE` 2026-10-31
+
+Selesai: factory DLMM dan DAMM kembali jadi registrar (dicek on-chain). Atas izin kamu, PR #38 di-merge ke `mainnet`. `aethra.finance` menampilkan `v1.1.0`, limit orders dan create pool DLMM/DAMM terbuka. Tag dan rilis GitHub `v1.1.0` sudah dibuat. Teks di bawah adalah catatan asli.
 
 Gerbang v1.1 sudah lolos: fuzz klaim limit order, dan latihan pembukaan di fork mainnet (pool DLMM dan DAMM WETH/USDG, quote router sama dengan quote pool, swap, limit order terisi lalu diklaim). Versi web `v1.1.0` sudah di `main` dan live di testnet.
 
