@@ -244,9 +244,22 @@ bash scripts/mainnet-v11.sh lock
 
 Saat v1.1 rilis: `bash scripts/mainnet-v11.sh open`.
 
-## B19 · Seed WETH/USDG (butuh password keystore) · `DITUNDA` sampai ada dana
+## B19 · Seed WETH/USDG (butuh password keystore) · `OPEN`
 
 Keputusan 2026-10-31: v1.0 diluncurkan tanpa seed. Sisa saldo deployer (±$4,7) disimpan sebagai gas untuk pembukaan v1.1–v2.0 dan cadangan upgrade. Swap di aethra.finance aktif begitu ada LP pertama: siapa pun, atau script di bawah ini saat dana tersedia.
+
+### Opsi A: seed minimum, tanpa tambahan dana (dipilih user)
+
+Seed 0,00005 ETH + 0,112255 USDG (≈ $0,22 TVL; saldo deployer: 0,00208 ETH dan 0,122371 USDG). Dilatih di fork mainnet (chain id 31337): seed ok (±1,38M gas, ±$0,06), quote 0,000005 ETH → 0,010199 USDG, swap ok. Jumlah USDG dihitung dari harga ETH $2.245,11; script menghitung ulang dari CoinGecko dan menolak selisih lebih dari 5%. Jika harga ETH bergeser lebih dari 5% dari $2.245, script berhenti dan tidak mengirim apa pun; ulangi dengan harga baru (USDG yang dibutuhkan ≈ 0,00005 × harga, maksimal 0,122 USDG, jadi berlaku sampai harga ± $2.440).
+
+```bash
+# Jalankan di: ROOT
+SEED_ETH=50000000000000 SMOKE_ETH=5000000000000 bash scripts/mainnet-launch-v1.sh
+```
+
+Pool ini sangat dangkal: swap di atas beberapa sen menggeser harga jauh. Untuk pool yang layak pakai, lihat opsi di bawah.
+
+### Opsi penuh
 
 1. Kirim ke deployer `0xd09D9c87ECfe008B4D6D3cEbeAd25103c16d9a7C` di Robinhood Chain: **±0,004 ETH** (saldo sekarang 0,0021 ETH; dibutuhkan 0,005 seed + 0,0001 smoke test + 0,0003 cadangan gas) dan **±11,5 USDG** (`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`; saldo sekarang 0,12).
 2. Jalankan:
