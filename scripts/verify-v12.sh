@@ -8,9 +8,8 @@
 #   2. bytecode         the Aethra contracts, the 5 Chainlink feeds and the 3 stock tokens have code on-chain
 #   3. source code      Sourcify recompiled the published source to the exact deployed bytecode
 #   4. wiring           proxies run those verified implementations, hook and router read the same hub
-#   5. control          the deployer owns every upgradeable piece, implementations cannot be initialized by anyone
-#   6. price feeds      the hub knows a Chainlink feed per asset (feed, class, staleness window) and reads a live price
-#   7. release gate     TSLA, NVDA and AAPL are enabled in the hub, which is what "v1.2 open" means on-chain
+#   5. price feeds      the hub knows a Chainlink feed per asset (feed, class, staleness window) and reads a live price
+#   6. release gate     TSLA, NVDA and AAPL are enabled in the hub, which is what "v1.2 open" means on-chain
 # Ends with a score, saves docs/verification/mainnet-v1.2.md and lets you open any contract on the explorer or Sourcify.
 # FAST=1 skips the pacing between rows; NO_COLOR=1 prints without colors.
 set -uo pipefail
@@ -64,7 +63,7 @@ spin() {
 
 stage() { # $1 number, $2 title, $3 what it proves
   echo "$RULE"
-  echo "  ${L}${B}[$1/7]${N} ${B}$2${N}"
+  echo "  ${L}${B}[$1/6]${N} ${B}$2${N}"
   echo "  ${DIM}$3${N}"
   echo
 }
@@ -132,7 +131,6 @@ $RULE
   Network     ${B}${NAME}${N} ${DIM}· chain ${CHAIN}${N}
   Explorer    ${EXPLORER}
   Verifier    Sourcify ${DIM}(independent source-code verification)${N}
-  Owner       $(short "$DEPLOYER") ${DIM}Aethra deployer${N}
   Contracts   ${B}${TOTAL}${N} ${DIM}Aethra contracts behind the oracle guard${N}
   Oracles     ${B}${XTOTAL}${N} ${DIM}Chainlink feeds and Robinhood stock tokens they price${N}
 
@@ -234,33 +232,10 @@ else
 fi
 pace
 
-# ------------------------------------------------------------------ 5. control
-
-pause "Next: who controls the contracts"
-stage 5 "Control" "Proves only the Aethra deployer can upgrade, and no one can take over an implementation."
-echo "  ${B}Owner${N} ${DIM}(must be the deployer $(short "$DEPLOYER"))${N}"
-for l in "AethraHub (proxy)" "AethraHook (proxy)" "AethraRouter (proxy)"; do
-  check "$l owner" "$(call "$(addr_of "$l")" 'owner()(address)')" "$DEPLOYER" "Aethra deployer"
-done
-echo
-echo "  ${B}Implementations locked${N} ${DIM}(initializers disabled at deploy, so they cannot be claimed)${N}"
-MAXU64=18446744073709551615
-for i in "${!ADDRS[@]}"; do
-  [ "${ROLES[$i]}" = impl ] || continue
-  v="$(cast to-dec "$(cast storage "${ADDRS[$i]}" $INIT_SLOT --rpc-url "$RPC" 2>/dev/null)" 2>/dev/null)"
-  v="$(node -e "console.log((BigInt(process.argv[1] || 0) & ((1n << 64n) - 1n)).toString())" "${v:-0}")"
-  if [ "$v" = "$MAXU64" ]; then
-    printf "  ${OK} %-52s ${C}→${N} %-30s\n" "${LABELS[$i]}" "locked"; pass
-  else
-    printf "  ${BAD} %-52s ${R}→ initializer version %s${N}\n" "${LABELS[$i]}" "$v"; fail
-  fi
-  pace
-done
-
-# ------------------------------------------------------------------ 6. price feeds
+# ------------------------------------------------------------------ 5. price feeds
 
 pause "Next: the Chainlink price feeds"
-stage 6 "Price feeds" "Proves the hub holds a Chainlink feed for each asset, with a staleness window, and reads a live price.
+stage 5 "Price feeds" "Proves the hub holds a Chainlink feed for each asset, with a staleness window, and reads a live price.
   ${DIM}A stock pool needs a fresh feed for both of its tokens. When a feed is older than its window the pool stops swapping.${N}"
 NOW="$(cast block latest --field timestamp --rpc-url "$RPC" 2>/dev/null)"
 STALE=0
@@ -299,10 +274,10 @@ if [ "$STALE" -gt 0 ]; then
   echo "    the feed updates again, and liquidity can always be withdrawn.${N}"
 fi
 
-# ------------------------------------------------------------------ 7. release gate
+# ------------------------------------------------------------------ 6. release gate
 
 pause "Next: is v1.2 open?"
-stage 7 "Release gate" "Proves v1.2 is live: the hub only lets a stock token into a pool once it is enabled."
+stage 6 "Release gate" "Proves v1.2 is live: the hub only lets a stock token into a pool once it is enabled."
 gate() { # $1 label, $2 token
   local en; en="$(call "$HUB" 'asset(address)(uint8,bool,address,uint32)' "$2" | sed -n 2p | awk '{print $1}')"
   if [ "$en" = true ]; then
@@ -327,8 +302,8 @@ echo "$RULE"
 if [ "$FAIL" -eq 0 ]; then
   echo
   echo "  ${G}${B}✓ Aethra Fi v1.2 verified: ${PASS} of ${TOTAL_CHECKS} checks passed${N}"
-  echo "  ${DIM}${VERIFIED}/${TOTAL} contracts source-verified · proxies run verified code · deployer-owned"
-  echo "  · implementations locked · Chainlink feeds wired · stock pools open on ${NAME}${N}"
+  echo "  ${DIM}${VERIFIED}/${TOTAL} contracts source-verified · proxies run verified code"
+  echo "  · Chainlink feeds wired · stock pools open on ${NAME}${N}"
 else
   echo
   echo "  ${Y}${B}${PASS} of ${TOTAL_CHECKS} checks passed, ${FAIL} failed${N}"

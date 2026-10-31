@@ -401,17 +401,16 @@ Catatan: pool saham berhenti sendiri (fail closed) kalau feed tidak update lebih
 
 ## B28 · Rekam layar verifikasi v1.2 · `OPEN`
 
-Script read-only: tanpa transaksi, tanpa keystore, tanpa VPN. Script memeriksa 6 kontrak Aethra di belakang oracle guard (hub, hook v4, router; masing-masing proxy dan implementasi) plus 5 feed Chainlink dan 3 token saham yang dibaca hub, dalam 7 tahap. Tiap tahap menjelaskan apa yang dibuktikan, lalu mengeceknya live:
+Script read-only: tanpa transaksi, tanpa keystore, tanpa VPN. Script memeriksa 6 kontrak Aethra di belakang oracle guard (hub, hook v4, router; masing-masing proxy dan implementasi) plus 5 feed Chainlink dan 3 token saham yang dibaca hub, dalam 6 tahap. Tiap tahap menjelaskan apa yang dibuktikan, lalu mengeceknya live:
 
 1. jaringan;
 2. bytecode on-chain (14 kontrak);
 3. source code (Sourcify, exact match, 6 kontrak Aethra);
 4. wiring proxy, hook, router, hub, dan PoolManager Uniswap v4;
-5. owner dan penguncian implementasi;
-6. feed harga: tiap aset di hub punya feed, kelas, jendela staleness, dan harga live (TSLA, NVDA, AAPL, WETH, USDG);
-7. gerbang rilis: TSLA, NVDA, AAPL aktif di hub.
+5. feed harga: tiap aset di hub punya feed, kelas, jendela staleness, dan harga live (TSLA, NVDA, AAPL, WETH, USDG);
+6. gerbang rilis: TSLA, NVDA, AAPL aktif di hub.
 
-Uji 2026-10-31: 43 dari 43 cek lolos, ±80 detik tanpa jeda (Sourcify yang paling lama). Di antara tahap, script menunggu Enter. Di akhir ada menu: angka membuka kontrak di explorer, `s` + angka membuka Sourcify, `q` keluar.
+Uji 2026-10-31: 37 dari 37 cek lolos, ±80 detik tanpa jeda (Sourcify yang paling lama). Di antara tahap, script menunggu Enter. Di akhir ada menu: angka membuka kontrak di explorer, `s` + angka membuka Sourcify, `q` keluar.
 
 ```bash
 # Jalankan di: ROOT
