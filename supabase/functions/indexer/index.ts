@@ -66,6 +66,8 @@ interface TokenRow {
   kind: string;
   asset_class: string | null;
   price_usd: number | null;
+  /** "stable", "oracle", or "pool:<id>" (derived from a pool, not trusted for external pools) */
+  price_source?: string | null;
 }
 
 /**
@@ -219,7 +221,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
   // current v4 sqrt prices, advanced by Initialize/Swap so ModifyLiquidity can be converted into token amounts
   const sqrtOf = new Map<string, bigint>((poolRows ?? []).filter((p) => p.venue === "V4" && p.sqrt_price_x96).map((p) => [p.pool_id, BigInt(p.sqrt_price_x96)]));
   const pools = new Map<string, PoolRow>((poolRows ?? []).map((p) => [p.pool_id, p]));
-  const { data: tokenRows } = await db.from("tokens").select("address,symbol,decimals,kind,asset_class,price_usd").eq("chain_id", chainId);
+  const { data: tokenRows } = await db.from("tokens").select("address,symbol,decimals,kind,asset_class,price_usd,price_source").eq("chain_id", chainId);
   const tokens = new Map<string, TokenRow>((tokenRows ?? []).map((t) => [t.address, t]));
   const depTokens = new Map<string, { symbol: string; name: string; decimals: number; kind: string }>(
     Object.values((dep.addresses?.tokens ?? {}) as Record<string, { address: string; symbol: string; name: string; decimals: number; kind: string }>).map((t) => [t.address.toLowerCase(), t]),
@@ -524,7 +526,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
           ...base(l, t), pool_id: id, venue: "V4", sender: a.sender, recipient: a.sender,
           token_in: zeroForOne ? p.token0 : p.token1, token_out: zeroForOne ? p.token1 : p.token0,
           amount_in: big(amountIn), amount_out: big(amountOut), fee_amount: big(feeAmount), delta0: big(d0), delta1: big(d1), price,
-          ...usdOf(zeroForOne ? p.token0 : p.token1, amountIn, zeroForOne ? p.token1 : p.token0, amountOut, feeAmount),
+          ...usdOf(zeroForOne ? p.token0 : p.token1, amountIn, zeroForOne ? p.token1 : p.token0, amountOut, feeAmount, !!p.external),
         });
         b.add("pools", id, { chain_id: chainId, pool_id: id, ...poolKeys(id), sqrt_price_x96: big(a.sqrtPriceX96), active_index: Number(a.tick), liquidity: big(a.liquidity), fee_pips: fee, price }, true);
         touched.add(id);
@@ -771,8 +773,16 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
     const px = tokens.get(tk.toLowerCase())?.price_usd;
     return px ? toHuman(raw, decimalsOf(tk.toLowerCase())) * px : null;
   }
-  function usdOf(tIn: string, aIn: bigint, tOut: string, aOut: bigint, fee: bigint) {
-    const priced = (a: string) => ({ decimals: decimalsOf(a), price: tokens.get(a)?.price_usd ?? null });
+  /**
+   * USD value of a swap. External pools count only a side priced by a stable or an oracle (same rule as their TVL):
+   * a token priced from its own pool, or a look-alike stable, would otherwise turn dust trades into billions.
+   */
+  function usdOf(tIn: string, aIn: bigint, tOut: string, aOut: bigint, fee: bigint, trustedOnly = false) {
+    const trusted = (a: string) => {
+      const src = tokens.get(a)?.price_source ?? "";
+      return src === "stable" || src === "oracle";
+    };
+    const priced = (a: string) => ({ decimals: decimalsOf(a), price: !trustedOnly || trusted(a) ? tokens.get(a)?.price_usd ?? null : null });
     const { amountUsd, feeUsd } = swapUsd(aIn, priced(tIn), aOut, priced(tOut), fee);
     return { amount_usd: amountUsd, fee_usd: feeUsd };
   }
