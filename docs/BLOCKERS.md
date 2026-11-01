@@ -455,6 +455,24 @@ bash scripts/mainnet-seed-stock.sh
 
 Setelah selesai, pool tampil di aethra.finance begitu indexer mainnet sampai ke blok transaksinya (saat ini indexer masih mengejar). Pool saham hanya bisa di-swap saat feed saham segar (fail closed); likuiditas selalu bisa ditarik.
 
+## B31 · Database mainnet read-only (disk penuh) · `OPEN` 2026-11-02 · perlu kamu jalankan
+
+Job satu kali untuk menilai ulang USD swap eksternal (migrasi `20261101000003`) terlalu berat untuk instance gratis: server mainnet restart dua kali di tengahnya. Sisanya: tabel `swaps` 696 MB dengan ±550 ribu baris mati, WAL 1 GB, dan disk penuh (`No space left on device`). Supabase memasang mode read-only karena database di atas 500 MB. Situs dan API masih bisa membaca; tulisan baru (indexer, migrasi) gagal. Job itu sudah aku hapus dari jadwal.
+
+`VACUUM FULL` butuh ruang kosong, jadi tidak bisa. `TRUNCATE` mengembalikan ruang tanpa butuh ruang, tapi dari sini diblokir izin ("Cloud Storage Mass Delete"). Script `scripts/rescue-mainnet-db.sh`:
+1. Dalam satu transaksi: kunci tabel event, simpan semua event milik Aethra ke CSV lokal (`~/.config/aethra-fi/rescue-*`), lalu `TRUNCATE` `swaps` dan `liquidity_events`.
+2. Kembalikan event Aethra, lipat jumlah berjalan pool eksternal ke `ext_base` (reserve-nya tidak bergantung pada baris yang dihapus), nolkan volume USD per jam pool eksternal (dulu dihitung lewat token palsu), vacuum.
+3. Matikan mode read-only bila database sudah di bawah 450 MB.
+
+Pool Aethra tidak kehilangan apa pun. Pool eksternal kehilangan riwayat swap tersimpan (volume 24 jam mulai dari nol, swap baru terindeks lagi).
+
+```bash
+# Jalankan di: ROOT
+bash scripts/rescue-mainnet-db.sh
+```
+
+Lalu bilang "B31 selesai". Aku terapkan migrasi `20261102000001` (versi bertahap, dan backfill tidak lagi mengunci tabel tanpa perlu), cek API, lalu tag `v1.3.0`.
+
 ## B30 · Rilis v1.3 di mainnet (butuh password keystore) · `DONE` 2026-11-01
 
 Selesai: 6 transaksi sukses, 7.686.275 gas (≈ 0,000154 ETH ≈ $0,35). Implementasi baru: hook `0xd2e3…0d23`, DLMM pool `0xDbef…A92b`. On-chain: launchpad registrar, protocol share 2000 bps, treasury = deployer. Web 1.3.0 live (PR #49 testnet, #50 mainnet), API `FEATURES=launchpad`, indexer mengindeks launchpad sejak blok broadcast 103.506.123. Saldo deployer 0,001559 ETH. Teks di bawah adalah catatan asli.
