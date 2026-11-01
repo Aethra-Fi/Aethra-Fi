@@ -7,7 +7,8 @@
 --
 -- 1. External pools: reserves become running sums. A statement trigger adds the deltas of newly inserted events
 --    (ON CONFLICT DO NOTHING rows are not in the transition table, so re-scans do not double count).
---    ext_live* = sum of stored events above ext_floor_block, ext_base* = sum of pruned events.
+--    ext_live* = sum of stored events above ext_floor_block, ext_base* = sum of pruned events. Pools that existed
+--    before are summed a few at a time by pg_cron (aethra_backfill_ext_sums) and keep their reserves until then.
 -- 2. External events older than 7 days are pruned in small batches (pg_cron). Their hourly stats stay.
 -- 3. pool_overview is served from a materialized view refreshed every minute by pg_cron.
 -- Aethra's own pools are unchanged: full history, reserves summed from the event tables.
@@ -22,10 +23,12 @@ alter table public.pools
   add column if not exists ext_base1 numeric not null default 0,
   add column if not exists ext_live0 numeric not null default 0,
   add column if not exists ext_live1 numeric not null default 0,
-  add column if not exists ext_floor_block bigint not null default -1;
+  add column if not exists ext_floor_block bigint not null default -1,
+  add column if not exists ext_sums_ready boolean not null default false;
 
 comment on column public.pools.ext_live0 is 'External pools: token0 sum of stored events above ext_floor_block (trigger-maintained)';
 comment on column public.pools.ext_base0 is 'External pools: token0 sum of events pruned at or below ext_floor_block';
+comment on column public.pools.ext_sums_ready is 'External pools: ext_live* covers every stored event (set by aethra_backfill_ext_sums)';
 
 create or replace function public.aethra_ext_sums_swaps()
 returns trigger
@@ -70,37 +73,7 @@ begin
 end;
 $$;
 
-/** Recomputes ext_live* from the stored events (repair tool; ext_base* is kept). */
-create or replace function public.aethra_rebuild_ext_sums(p_chain integer)
-returns integer
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  n integer;
-begin
-  update pools p
-     set ext_live0 = coalesce(sw.d0, 0) + coalesce(lq.a0, 0),
-         ext_live1 = coalesce(sw.d1, 0) + coalesce(lq.a1, 0)
-    from pools q
-    left join lateral (
-      select sum(s.delta0) as d0, sum(s.delta1) as d1 from swaps s
-      where s.chain_id = q.chain_id and s.pool_id = q.pool_id and s.block_number > q.ext_floor_block
-    ) sw on true
-    left join lateral (
-      select sum(l.amount0) as a0, sum(l.amount1) as a1 from liquidity_events l
-      where l.chain_id = q.chain_id and l.pool_id = q.pool_id and l.block_number > q.ext_floor_block
-        and l.source <> 'positions' and l.kind in ('add', 'remove', 'modify')
-    ) lq on true
-   where q.chain_id = p_chain and q.external and p.chain_id = q.chain_id and p.pool_id = q.pool_id;
-  get diagnostics n = row_count;
-  return n;
-end;
-$$;
-
--- One transaction (a DO block): no insert may land between the backfill and the trigger, or it would be missed or
--- counted twice. Inserts wait on the lock; the indexer retries on its next run.
+-- Triggers first (a short lock): from here on every new event is added to its pool's sums.
 do $$
 begin
   lock table public.swaps, public.liquidity_events in share row exclusive mode;
@@ -112,10 +85,49 @@ begin
   drop trigger if exists aethra_ext_sums on public.liquidity_events;
   create trigger aethra_ext_sums after insert on public.liquidity_events
     referencing new table as new_rows for each statement execute function public.aethra_ext_sums_liquidity();
-
-  perform public.aethra_rebuild_ext_sums(chain_id) from public.chains;
 end
 $$;
+
+/**
+ * Sets ext_live* of external pools from their stored events and marks them ready, a few pools per call (summing
+ * the whole history at once is too heavy for the free tier). The table lock keeps inserts out while a pool is
+ * summed, so the trigger and the sum never overlap. With p_all every external pool is redone (repair tool).
+ * Until a pool is ready aethra_refresh leaves its reserves as they were.
+ */
+create or replace function public.aethra_backfill_ext_sums(p_chain integer, p_budget interval default interval '15 seconds', p_all boolean default false)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_stop timestamptz := clock_timestamp() + p_budget;
+  r record;
+  n integer := 0;
+begin
+  lock table public.swaps, public.liquidity_events in share row exclusive mode;
+  for r in
+    select q.pool_id, q.ext_floor_block from pools q
+    where q.chain_id = p_chain and q.external and (p_all or not q.ext_sums_ready)
+    order by q.pool_id
+  loop
+    exit when clock_timestamp() > v_stop;
+    update pools p
+       set ext_live0 = coalesce((select sum(s.delta0) from swaps s where s.chain_id = p_chain and s.pool_id = r.pool_id and s.block_number > r.ext_floor_block), 0)
+                     + coalesce((select sum(l.amount0) from liquidity_events l where l.chain_id = p_chain and l.pool_id = r.pool_id and l.block_number > r.ext_floor_block
+                                   and l.source <> 'positions' and l.kind in ('add', 'remove', 'modify')), 0),
+           ext_live1 = coalesce((select sum(s.delta1) from swaps s where s.chain_id = p_chain and s.pool_id = r.pool_id and s.block_number > r.ext_floor_block), 0)
+                     + coalesce((select sum(l.amount1) from liquidity_events l where l.chain_id = p_chain and l.pool_id = r.pool_id and l.block_number > r.ext_floor_block
+                                   and l.source <> 'positions' and l.kind in ('add', 'remove', 'modify')), 0),
+           ext_sums_ready = true
+     where p.chain_id = p_chain and p.pool_id = r.pool_id;
+    n := n + 1;
+  end loop;
+  return jsonb_build_object('pools', n, 'pending', (select count(*) from pools where chain_id = p_chain and external and not ext_sums_ready));
+end;
+$$;
+
+drop function if exists public.aethra_rebuild_ext_sums(integer);
 
 -- ---------------------------------------------------------------------------------------------
 -- 2. prune external events older than p_keep
@@ -150,7 +162,7 @@ begin
 
   for r in
     select q.pool_id, q.ext_floor_block from pools q
-    where q.chain_id = p_chain and q.external and q.ext_floor_block < v_cut
+    where q.chain_id = p_chain and q.external and q.ext_sums_ready and q.ext_floor_block < v_cut
       and q.ext_synced_block is not null and q.ext_synced_block >= v_cut
     order by q.ext_floor_block, q.pool_id
     limit p_max_pools
@@ -192,9 +204,9 @@ end;
 $$;
 
 revoke all on function public.aethra_prune_external(integer, interval, integer) from public, anon, authenticated;
-revoke all on function public.aethra_rebuild_ext_sums(integer) from public, anon, authenticated;
+revoke all on function public.aethra_backfill_ext_sums(integer, interval, boolean) from public, anon, authenticated;
 grant execute on function public.aethra_prune_external(integer, interval, integer) to service_role;
-grant execute on function public.aethra_rebuild_ext_sums(integer) to service_role;
+grant execute on function public.aethra_backfill_ext_sums(integer, interval, boolean) to service_role;
 
 -- ---------------------------------------------------------------------------------------------
 -- 3. pool_overview from a materialized view
@@ -318,7 +330,7 @@ begin
      set reserve0 = greatest(0, p.ext_base0 + p.ext_live0),
          reserve1 = greatest(0, p.ext_base1 + p.ext_live1),
          updated_at = now()
-   where p.chain_id = p_chain and p.external and p.reserves_from_events and p.pool_id = any(v_pools)
+   where p.chain_id = p_chain and p.external and p.ext_sums_ready and p.reserves_from_events and p.pool_id = any(v_pools)
      and (p.reserve0, p.reserve1) is distinct from (greatest(0, p.ext_base0 + p.ext_live0), greatest(0, p.ext_base1 + p.ext_live1));
 
   -- 2. pool mode: oracle when a side is a stock/RWA asset, plain for curves and non-Aethra v4 hooks
@@ -485,6 +497,13 @@ begin
     perform cron.unschedule('aethra-overview');
   end if;
   perform cron.schedule('aethra-overview', '* * * * *', 'select public.aethra_refresh_overview()');
+
+  -- sums of external pools that existed before this migration, a few per minute; a no-op once all are ready
+  if exists (select 1 from cron.job where jobname = 'aethra-ext-backfill') then
+    perform cron.unschedule('aethra-ext-backfill');
+  end if;
+  perform cron.schedule('aethra-ext-backfill', '* * * * *',
+    $job$select public.aethra_backfill_ext_sums(chain_id) from public.chains where enabled$job$);
 
   if exists (select 1 from cron.job where jobname = 'aethra-prune') then
     perform cron.unschedule('aethra-prune');
