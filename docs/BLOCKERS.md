@@ -471,38 +471,54 @@ Setelah selesai, pool tampil di aethra.finance begitu indexer mainnet sampai ke 
 - Job pg_cron sekali-jalan `aethra-compact-once` (jalan di dalam database, tidak putus seperti koneksi CLI): menyimpan 40 pool eksternal teratas berdasarkan TVL, melipat riwayatnya ke jumlah berjalan, menyisakan event 7 hari terakhir plus semua event Aethra, lalu menulis ulang tabel (`TRUNCATE` + insert ulang) sehingga ruang disk kembali. Job menghapus dirinya sendiri setelah sukses.
 - Pencegahan: `aethra-size-guard` tiap jam mencatat ukuran DB ke `db_health`; di atas 400 MB otomatis memadatkan lagi (riwayat 2 hari, watchlist dibagi dua). `/health` menampilkan `database.size_mb` dan berstatus `degraded` di atas 400 MB.
 
-**Status penerapan:**
-- Mainnet: push kamu berhenti di statement 9 (koneksi putus), jadi statement 0–8 sudah masuk: kolom baru, fungsi trigger, trigger penjumlah, dan fungsi backfill. Function `indexer` dan `api` versi baru sudah ter-deploy. Sisa migrasi aman diulang (idempoten).
-- Testnet: belum ada migrasi baru yang masuk (query macet sebelumnya sudah hilang). Push dari sini diblokir izin auto mode ("Cloud Storage Mass Delete", karena job memadatkan menghapus data testnet).
+**Status penerapan (2026-11-01 malam):**
+- Testnet: migrasi `20261101000001` sudah masuk lengkap (server tetap menjalankan sisa statement walau koneksi CLI putus). `20261101000002` belum.
+- Mainnet: push pertama masih jalan di server: `create materialized view public.pool_overview_mv` sudah 43+ menit, dan `pool_overview` sudah di-rename sebelumnya, jadi API pool mainnet rusak. Push kedua mengantre lock di `pools` dan menahan indexer serta API. Aku tidak diizinkan membatalkan query dari sini.
+- Penyebab putus: login role sementara CLI hanya berlaku 300 detik, sementara statement berat di instance yang lambat lebih lama dari itu. Perbaikan (commit setelah `9bd1644`): materialized view dibuat kosong lalu diisi job pg_cron setelah pemadatan; tiap langkah memeriksa kondisi sekarang (aman diulang dari kondisi apa pun); `lock_timeout = 10s` supaya DDL gagal cepat dan tidak membuat antrean yang menahan semua pembaca.
 
 **Langkah (urut, kamu yang menjalankan):**
 
-1. Deploy function terbaru (keduanya berubah lagi):
+1. Mainnet, darurat: buka SQL Editor project `Aethra-Fi-mainnet` di dashboard Supabase dan jalankan blok ini. Blok ini membatalkan dua query migrasi yang macet lalu mengembalikan `pool_overview` supaya situs jalan lagi:
 
-```bash
-# Jalankan di: ROOT
-supabase functions deploy indexer api --project-ref zqbnyshzgxhkfxoyrogq
-supabase functions deploy indexer api --project-ref nczunmovephgtyrmsgvt
+```sql
+select pid, pg_cancel_backend(pid) from pg_stat_activity
+where pid <> pg_backend_pid()
+  and (query like 'create materialized view public.pool_overview_mv%' or query like '%1. running sums for external pools%');
 ```
 
-2. Testnet (project yang ter-link di repo). Kalau putus lagi di tengah, jalankan ulang perintah yang sama:
+Tunggu beberapa detik, lalu:
 
-```bash
-# Jalankan di: ROOT
-supabase db push --linked
+```sql
+do $$
+begin
+  if to_regclass('public.pool_overview') is null and to_regclass('public.pool_overview_live') is not null then
+    alter view public.pool_overview_live rename to pool_overview;
+  end if;
+end
+$$;
+select to_regclass('public.pool_overview') as pool_overview;
 ```
 
-3. Mainnet:
+Baris terakhir harus menampilkan `pool_overview`.
+
+2. Mainnet, migrasi:
 
 ```bash
 # Jalankan di: ROOT
 supabase link --project-ref nczunmovephgtyrmsgvt
 supabase db push --linked
-supabase link --project-ref zqbnyshzgxhkfxoyrogq
 ```
 
-Kalau push mainnet putus lagi, ulangi `supabase db push --linked` (masih ter-link ke mainnet) sampai muncul `Finished supabase db push`, baru jalankan `supabase link --project-ref zqbnyshzgxhkfxoyrogq`.
+Kalau keluar `Connection terminated unexpectedly` atau `lock timeout`, tunggu 1 menit lalu ulangi `supabase db push --linked` sampai muncul `Finished supabase db push`.
 
-4. Tunggu ±10 menit lalu bilang "B29 selesai". Pemadatan jalan di latar belakang dalam beberapa menit setelah push. Aku cek `db_health`, ukuran tiap DB (target jauh di bawah 500 MB), reserve pool, dan kecepatan API, lalu lanjut ke grafik UI dan rilis v1.3.
+3. Testnet, migrasi (`20261101000002` saja):
+
+```bash
+# Jalankan di: ROOT
+supabase link --project-ref zqbnyshzgxhkfxoyrogq
+supabase db push --linked
+```
+
+4. Tunggu ±15 menit lalu bilang "B29 selesai". Di latar belakang, pemadatan jalan dulu, lalu materialized view diisi. Aku cek ukuran tiap DB, `db_health`, reserve pool, dan kecepatan API, lalu lanjut ke grafik UI dan rilis v1.3.
 
 Catatan: halaman Usage Supabase biasanya baru turun setelah perhitungan ulang harian.
