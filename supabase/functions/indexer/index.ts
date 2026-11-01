@@ -25,10 +25,12 @@ import { discoverExternal, type PoolKeyRow } from "./discover.ts";
 
 const BUDGET_MS = 45_000;
 const MAX_LOGS_PER_CALL = 10_000;
-/** Pools per aethra_refresh call (see indexChain). */
-const REFRESH_POOLS = 12;
+/** Pools per aethra_refresh call (see indexChain). External reserves are running sums, so a call stays cheap. */
+const REFRESH_POOLS = 50;
 
 // External v4 pools: bounded watchlist, refreshed on a slow cadence (env overrides, EXTERNAL_POOLS=off disables).
+// The size of the watchlist is set per chain in `chains.external_max` (0 = none); EXTERNAL_MAX can only lower it.
+// Each pool's full history is replayed, so this is what drives database size on the free tier.
 const EXTERNAL_ON = (Deno.env.get("EXTERNAL_POOLS") ?? "on") !== "off";
 const EXTERNAL_MAX = Number(Deno.env.get("EXTERNAL_MAX") ?? 150);
 const EXTERNAL_MIN_USD = Number(Deno.env.get("EXTERNAL_MIN_USD") ?? 2_000);
@@ -193,6 +195,8 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
     return { chainId, skipped: "no deployment" };
   }
 
+  const extMax = Math.min(EXTERNAL_MAX, Number(chain.external_max ?? 0));
+  const extOn = EXTERNAL_ON && extMax > 0;
   const rpc = Deno.env.get(`RPC_URL_${chainId}`) ?? chain.rpc_url;
   const client = createPublicClient({ transport: http(rpc, { batch: true, retryCount: 2 }) }) as PublicClient;
 
@@ -311,7 +315,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
   // join the main loop, so an old event can never overwrite a newer price.
   let extError: string | undefined;
   let extReady: string[] = [];
-  if (EXTERNAL_ON) {
+  if (extOn) {
     try {
       const upto = from - 1;
       const until = Math.min(deadline, Date.now() + BACKFILL_BUDGET_MS);
@@ -804,10 +808,15 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
   // ---------------------------------------------------------------- chain reads + prices
   const chainMeta = await refreshChainState(db, client, chainId, A, pools, tokens, touched);
 
-  // The API role cuts statements at 8s. A replay batch can touch many external pools over a long window, so refresh
-  // them in small groups (the global steps are cheap); with nothing touched one call refreshes everything.
+  // The API role cuts statements at 8s. A replay batch can touch many external pools over a long window (hourly
+  // stats are rebuilt from their swaps), so refresh them in groups; with nothing touched one call refreshes everything.
+  // External reserves come from running sums kept by a trigger (migration 20261101000001), not from event scans.
+  // Aethra's own pools are few, so they are always recomputed: reserves are rebuilt from events, and a pool whose
+  // events landed in a busy batch must not wait for its next touch while external pools keep every run non-empty.
+  const refreshIds = new Set(touched);
+  if (refreshIds.size) for (const p of pools.values()) if (!p.external) refreshIds.add(p.pool_id);
   let refreshed: unknown;
-  for (const part of touched.size ? chunked([...touched], REFRESH_POOLS) : [null]) {
+  for (const part of refreshIds.size ? chunked([...refreshIds], REFRESH_POOLS) : [null]) {
     const { data, error: refreshErr } = await db.rpc("aethra_refresh", {
       p_chain: chainId,
       p_pools: part,
@@ -821,7 +830,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
 
   // External pool discovery runs when caught up, every 10 minutes (or on demand with ?discover=1)
   let discovered: Record<string, unknown> | undefined;
-  if (EXTERNAL_ON && A.poolManager && (forceDiscover || (caughtUp && Date.now() - discoveryAt > DISCOVER_EVERY_MS))) {
+  if (extOn && A.poolManager && (forceDiscover || (caughtUp && Date.now() - discoveryAt > DISCOVER_EVERY_MS))) {
     try {
       discovered = await discoverAndStore(Date.now() + 40_000);
       discoveryAt = Date.now();
@@ -857,7 +866,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
       return { decimals: c === NATIVE ? 18 : Number(t.decimals), priceUsd: Number(t.price_usd) };
     };
     const have = [...pools.values()].filter((p) => p.external && p.enabled !== false).length;
-    const limit = EXTERNAL_MAX - have;
+    const limit = extMax - have;
     if (limit <= 0) return { skipped: "watchlist full", have };
 
     const result = await discoverExternal({

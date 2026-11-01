@@ -40,6 +40,14 @@ External Uniswap v4 pools (read-only, migration `20261031000002_external_pools.s
 - The public mainnet RPC allows 8M-block `eth_getLogs` ranges only when each topic position has one value (an OR-list caps it at 100k blocks), returns 429 under load, and answers rate-limited JSON-RPC batches with an error viem cannot parse. The indexer queries one pool per request and retries with backoff.
 - Indexer bug fixed alongside: the node returns `blockTimestamp: 0x0` on every log, which was read as 1970. Every `created_at` and swap `ts` was wrong, so 24h volume and the Fresh filter were empty. `logTimestamp()` now treats 0 as missing. Rows written before the fix need repair: delete `swaps` / `liquidity_events` with `ts < '2001-01-01'`, clear `meta.deployment` in `indexer_state` so the cursor rewinds, and let the indexer rebuild.
 
+Free plan budget (2026-11-01, migrations `20261101000001_free_tier_load.sql` and `20261101000002_size_guard.sql`):
+- Database limit 500 MB per project. External pools drive the size (each one's history is replayed), so the watchlist is capped per chain in `chains.external_max` (mainnet 40, testnet 0). `EXTERNAL_MAX` can only lower it.
+- External reserves are running sums (`ext_base*` + `ext_live*`, trigger on insert). Their events older than 7 days are pruned every 10 minutes (`aethra-prune`); hourly stats stay.
+- `aethra-size-guard` (hourly) writes the size to `db_health` and runs `aethra_compact` past 400 MB (2 days of history, half the watchlist). `aethra_compact` rewrites the event tables, which is the only way to give disk space back without `VACUUM FULL`.
+- `pool_overview` is a view over the materialized view `pool_overview_mv`, refreshed every minute (`aethra-overview`). The SQL behind it is `pool_overview_live`; recreate the materialized view when its columns change.
+- Run heavy one-off work as a pg_cron job, not through `supabase db push` or `db query`: on this tier a long statement over a client connection gets cut off and keeps running server-side, holding locks.
+- `/health` reports `database.size_mb` and turns `degraded` past 400 MB.
+
 API base URLs:
 - testnet: `https://zqbnyshzgxhkfxoyrogq.supabase.co/functions/v1/api`
 - mainnet (prepared): `https://nczunmovephgtyrmsgvt.supabase.co/functions/v1/api`

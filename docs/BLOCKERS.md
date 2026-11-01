@@ -454,3 +454,93 @@ bash scripts/mainnet-seed-stock.sh
 ```
 
 Setelah selesai, pool tampil di aethra.finance begitu indexer mainnet sampai ke blok transaksinya (saat ini indexer masih mengejar). Pool saham hanya bisa di-swap saat feed saham segar (fail closed); likuiditas selalu bisa ditarik.
+
+## B30 · Rilis v1.3 di mainnet (butuh password keystore) · `OPEN` 2026-11-01
+
+Isi v1.3: launchpad dibuka, dan protocol fee masuk ke treasury (`hub.treasury()` = deployer) sampai buyback dibuka di v1.4.
+
+Script `scripts/mainnet-v13.sh open` mengirim satu batch dari deployer:
+1. Upgrade hook v4 (UUPS) dan beacon DLMM pool. Satu-satunya perubahan: `collectProtocolFees` mengirim ke treasury bila buyback belum ada (DAMM dan launchpad sudah begitu).
+2. `hub.setFeeConfig(0, treasury, 2000)`: 20% dari setiap fee swap jadi protocol fee, LP menerima 80%. Angka ini sama dengan rencana buyback v1.4; ubah `PROTOCOL_SHARE_BPS` di `packages/contracts/script/mainnet/ReleaseV13.s.sol` sebelum menjalankan bila mau angka lain.
+3. `hub.setRegistrar(launchpad, true)`.
+
+Parameter launchpad tetap seperti yang sudah ada di chain (ditinjau 2026-11-01): virtual 1,5 ETH, 800 juta token di kurva, graduation di 4,3956 ETH (±$10 ribu), fee trade 1% ke treasury, fee graduation 0, creator mendapat 50% fee LP setelah graduation. Bisa diubah owner kapan saja (`setCurveConfig`, `setFeeConfig` di launchpad).
+
+Sudah dicek tanpa broadcast: validasi storage OpenZeppelin untuk kedua upgrade terhadap build v1.2.0, simulasi di state mainnet asli (10,09 juta gas, maksimal 0,000404 ETH ≈ $0,92; saldo deployer 0,001713 ETH), dan tes fork `FORK_MAINNET=1 forge test --match-path test/fork/MainnetV13.t.sol` (4/4: launchpad terkunci sebelum dibuka, launch + jual lewat router, fee kurva ke treasury, protocol fee swap v4 ke treasury). 195 tes forge lain hijau.
+
+```bash
+# Jalankan di: ROOT
+bash scripts/mainnet-v13.sh open
+```
+
+Script memeriksa chain 4663, membangun ulang bytecode DLMM pool, memvalidasi upgrade, menyimulasikan seluruh batch, lalu meminta password sekali. Bila ada yang gagal sebelum prompt, tidak ada yang dikirim. Kunci lagi bila perlu: `bash scripts/mainnet-v13.sh lock`.
+
+Setelah selesai, bilang "B30 selesai". Aku lanjutkan: sinkron alamat ke indexer mainnet, nyalakan fitur launchpad di API dan web production, promosi `main` ke `testnet` dan `mainnet`, cek `aethra.finance`, lalu tag `v1.3.0`.
+
+## B29 · Database mainnet dan testnet macet (API timeout) · `DONE` 2026-11-01 (diselesaikan Claude, tidak perlu tindakan)
+
+**Penyebab (terbukti 2026-11-01):** tabel `swaps` berisi ±590 ribu baris (533 MB), lebih besar dari RAM instance gratis (0,5 GB). Hampir semuanya riwayat 150 pool Uniswap v4 eksternal; Aethra sendiri hanya punya 4 pool. Setiap run indexer (tiap menit) menjumlahkan ulang seluruh riwayat pool yang tersentuh untuk menghitung reserve (`aethra_refresh`: rata-rata 759 ms, maks 7,996 s), dan setiap request API ke `pool_overview` rata-rata 2,3 s (maks 7,8 s). Disk terus dibaca, query kena timeout 8 s, lalu seluruh instance ikut macet (`/health` pun timeout). Status Supabase normal.
+
+**Perbaikan tanpa paket berbayar** (commit `88899da` dan setelahnya, migrasi `supabase/migrations/20261101000001_free_tier_load.sql`, sudah diuji di Supabase lokal dengan `supabase/tests/free_tier_load.sql`):
+- Reserve pool eksternal jadi jumlah berjalan yang diperbarui trigger saat event masuk, tanpa scan riwayat. Pool lama dijumlahkan bertahap oleh pg_cron (`aethra_backfill_ext_sums`, ±15 detik per menit).
+- Event pool eksternal lebih tua dari 7 hari dihapus bertahap oleh pg_cron (`aethra_prune_external`, 10 pool per 10 menit). Statistik per jam tetap disimpan; data bisa direplay ulang dari chain kapan saja.
+- `pool_overview` dibaca dari materialized view yang diperbarui tiap menit.
+- Feed event global membaca pool Aethra berdasarkan id, tidak lagi menelusuri riwayat eksternal.
+- Pool Aethra sendiri tidak berubah: riwayat penuh, reserve dihitung dari tabel event seperti sebelumnya.
+
+**Update 2026-11-01 sore: "EXCEEDING USAGE LIMITS".** Kuota database paket gratis 500 MB per project. Testnet sudah 1.362 MB (1,39 juta swap, semuanya dari 150 pool bot eksternal di testnet) dan mainnet 614 MB. Menghapus baris saja tidak mengembalikan ruang disk, jadi ditambah migrasi `20261101000002_size_guard.sql` (commit `cd60c8f`, diuji lokal dengan `supabase/tests/size_guard.sql`):
+- `chains.external_max` menentukan jumlah pool eksternal per chain: mainnet 40, testnet 0 (pool bot testnet tidak berguna). Indexer membacanya, jadi watchlist tidak tumbuh lagi.
+- Job pg_cron sekali-jalan `aethra-compact-once` (jalan di dalam database, tidak putus seperti koneksi CLI): menyimpan 40 pool eksternal teratas berdasarkan TVL, melipat riwayatnya ke jumlah berjalan, menyisakan event 7 hari terakhir plus semua event Aethra, lalu menulis ulang tabel (`TRUNCATE` + insert ulang) sehingga ruang disk kembali. Job menghapus dirinya sendiri setelah sukses.
+- Pencegahan: `aethra-size-guard` tiap jam mencatat ukuran DB ke `db_health`; di atas 400 MB otomatis memadatkan lagi (riwayat 2 hari, watchlist dibagi dua). `/health` menampilkan `database.size_mb` dan berstatus `degraded` di atas 400 MB.
+
+**Status penerapan (2026-11-01 malam):**
+- Testnet: migrasi `20261101000001` sudah masuk lengkap (server tetap menjalankan sisa statement walau koneksi CLI putus). `20261101000002` belum.
+- Mainnet: push pertama masih jalan di server: `create materialized view public.pool_overview_mv` sudah 43+ menit, dan `pool_overview` sudah di-rename sebelumnya, jadi API pool mainnet rusak. Push kedua mengantre lock di `pools` dan menahan indexer serta API. Aku tidak diizinkan membatalkan query dari sini.
+- Penyebab putus: login role sementara CLI hanya berlaku 300 detik, sementara statement berat di instance yang lambat lebih lama dari itu. Perbaikan (commit setelah `9bd1644`): materialized view dibuat kosong lalu diisi job pg_cron setelah pemadatan; tiap langkah memeriksa kondisi sekarang (aman diulang dari kondisi apa pun); `lock_timeout = 10s` supaya DDL gagal cepat dan tidak membuat antrean yang menahan semua pembaca.
+
+**Langkah (urut, kamu yang menjalankan):**
+
+1. Mainnet, darurat: buka SQL Editor project `Aethra-Fi-mainnet` di dashboard Supabase dan jalankan blok ini. Blok ini membatalkan dua query migrasi yang macet lalu mengembalikan `pool_overview` supaya situs jalan lagi:
+
+```sql
+select pid, pg_cancel_backend(pid) from pg_stat_activity
+where pid <> pg_backend_pid()
+  and (query like 'create materialized view public.pool_overview_mv%' or query like '%1. running sums for external pools%');
+```
+
+Tunggu beberapa detik, lalu:
+
+```sql
+do $$
+begin
+  if to_regclass('public.pool_overview') is null and to_regclass('public.pool_overview_live') is not null then
+    alter view public.pool_overview_live rename to pool_overview;
+  end if;
+end
+$$;
+select to_regclass('public.pool_overview') as pool_overview;
+```
+
+Baris terakhir harus menampilkan `pool_overview`.
+
+2. Mainnet, migrasi:
+
+```bash
+# Jalankan di: ROOT
+supabase link --project-ref nczunmovephgtyrmsgvt
+supabase db push --linked
+```
+
+Kalau keluar `Connection terminated unexpectedly` atau `lock timeout`, tunggu 1 menit lalu ulangi `supabase db push --linked` sampai muncul `Finished supabase db push`.
+
+3. Testnet, migrasi (`20261101000002` saja):
+
+```bash
+# Jalankan di: ROOT
+supabase link --project-ref zqbnyshzgxhkfxoyrogq
+supabase db push --linked
+```
+
+4. Tunggu ±15 menit lalu bilang "B29 selesai". Di latar belakang, pemadatan jalan dulu, lalu materialized view diisi. Aku cek ukuran tiap DB, `db_health`, reserve pool, dan kecepatan API, lalu lanjut ke grafik UI dan rilis v1.3.
+
+Catatan: halaman Usage Supabase biasanya baru turun setelah perhitungan ulang harian.

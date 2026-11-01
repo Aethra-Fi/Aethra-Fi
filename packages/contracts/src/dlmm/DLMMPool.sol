@@ -446,16 +446,18 @@ contract DLMMPool is IDLMMPool, Initializable, ReentrancyGuardTransient {
 
     // ------------------------------------------------------------------ protocol fees & admin
 
-    /// @notice Send accrued protocol fees to the hub's buyback. Callable by anyone; no-op while buyback is unset.
+    /// @notice Send accrued protocol fees to the hub's buyback, or to its treasury while no buyback is set.
+    ///         Callable by anyone; no-op while both are unset.
     function collectProtocolFees() external nonReentrant returns (uint256 amount0, uint256 amount1) {
         PoolStorage storage $ = _s();
-        address buyback = IAethraHub($.hub).buyback();
-        if (buyback == address(0)) return (0, 0);
+        address to = IAethraHub($.hub).buyback();
+        if (to == address(0)) to = IAethraHub($.hub).treasury();
+        if (to == address(0)) return (0, 0);
         (amount0, amount1) = ($.protocolFees0, $.protocolFees1);
         ($.protocolFees0, $.protocolFees1) = (0, 0);
-        if (amount0 != 0) IERC20($.token0).safeTransfer(buyback, amount0);
-        if (amount1 != 0) IERC20($.token1).safeTransfer(buyback, amount1);
-        emit ProtocolFeesCollected(buyback, amount0, amount1);
+        if (amount0 != 0) IERC20($.token0).safeTransfer(to, amount0);
+        if (amount1 != 0) IERC20($.token1).safeTransfer(to, amount1);
+        emit ProtocolFeesCollected(to, amount0, amount1);
     }
 
     /// @notice Replace the dynamic fee parameters (factory owner only, through the factory).

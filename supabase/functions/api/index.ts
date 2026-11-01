@@ -60,14 +60,23 @@ async function chainClient(chain: number) {
 
 // ------------------------------------------------------------------ handlers
 
+/** Free plan database limit is 500 MB; aethra_size_guard (hourly) compacts past 400 MB. */
+const DB_WARN_BYTES = 400 * 1024 * 1024;
+
 async function health() {
-  const rows = await q(db.from("indexer_state").select("chain_id,last_block,head_block,status,updated_at"));
+  const [rows, size] = await Promise.all([
+    q(db.from("indexer_state").select("chain_id,last_block,head_block,status,updated_at")),
+    db.from("db_health").select("db_bytes,checked_at").maybeSingle(),
+  ]);
   const live = rows.filter((r) => r.status !== "disabled" && r.last_block !== null);
   const stale = live.some((r) => Date.now() - Date.parse(r.updated_at) > 5 * 60_000 || r.status === "error");
   const lag = live.some((r) => r.head_block && r.last_block && r.head_block - r.last_block > 500);
+  const dbBytes = (size.data?.db_bytes as number | undefined) ?? null;
+  const full = dbBytes !== null && dbBytes > DB_WARN_BYTES;
   return {
-    status: live.length === 0 ? "down" : stale ? "degraded" : lag ? "degraded" : "ok",
+    status: live.length === 0 ? "down" : stale || lag || full ? "degraded" : "ok",
     service: "aethra-api",
+    database: { size_mb: dbBytes === null ? null : Math.round(dbBytes / 1024 / 1024), limit_mb: 500, checked_at: size.data?.checked_at ?? null },
     chains: live.map((r) => r.chain_id),
     indexing: live.map((r) => ({ chain_id: r.chain_id, last_block: r.last_block, head_block: r.head_block, updated_at: r.updated_at })),
     timestamp: new Date().toISOString(),
@@ -113,11 +122,12 @@ async function poolDetail(chain: number, id: string) {
   if (!rows.length) return null;
   const p = pool(rows[0]);
   const hours = await q(
-    db.from("pool_stats_hourly").select("hour,open_price,high_price,low_price,close_price,volume_usd").eq("chain_id", chain).eq("pool_id", p.pool_id)
+    db.from("pool_stats_hourly").select("hour,open_price,high_price,low_price,close_price,volume_usd,fees_usd,tvl_usd,trades").eq("chain_id", chain).eq("pool_id", p.pool_id)
       .gte("hour", new Date(Date.now() - 30 * 86_400_000).toISOString()).order("hour"),
   );
   const candles = hours.filter((h) => h.close_price !== null).map((h) => ({
     t: h.hour, open: h.open_price ?? h.close_price, high: h.high_price ?? h.close_price, low: h.low_price ?? h.close_price, close: h.close_price, volume_usd: h.volume_usd ?? 0,
+    fees_usd: h.fees_usd ?? 0, tvl_usd: h.tvl_usd, trades: h.trades ?? 0,
   }));
   return { ...p, oracle: oracleState(p, tokens), candles, price_series: candles.map((c) => ({ t: c.t, price: c.close })) };
 }
@@ -159,9 +169,14 @@ async function events(chain: number, params: URLSearchParams) {
   const limit = Math.min(200, Math.max(1, Number(params.get("limit") ?? 50)));
   const poolId = params.get("pool");
   // route rows duplicate their swaps; vault Borrowed/Repaid/InterestAccrued mirror credit Borrow/Repay.
-  // The global feed is Aethra activity only; a pool page reads event_feed_all so external pools show their trades.
-  let query = db.from(poolId ? "event_feed_all" : "event_feed").select("*").eq("chain_id", chain).neq("type", "route")
+  // The global feed is Aethra activity only: rows without a pool plus the pools Aethra owns, named explicitly so the
+  // planner reads those pools' index ranges instead of walking the (much larger) external history newest-first.
+  // A pool page reads one pool, external ones included.
+  const poolRows = await q(db.from("pools").select("pool_id,token0,token1,external").eq("chain_id", chain));
+  const own = poolRows.filter((p) => !p.external).map((p) => p.pool_id as string);
+  let query = db.from("event_feed_all").select("*").eq("chain_id", chain).neq("type", "route")
     .not("action", "in", "(borrowed,repaid,interestaccrued)").order("block_number", { ascending: false }).order("log_index", { ascending: false }).limit(limit);
+  if (!poolId) query = own.length ? query.or(`pool_id.is.null,pool_id.in.(${own.join(",")})`) : query.is("pool_id", null);
   if (HIDDEN_EVENT_TYPES.length) query = query.not("type", "in", `(${HIDDEN_EVENT_TYPES.join(",")})`);
   const type = params.get("type");
   if (type && EVENT_TYPES[type]) {
@@ -169,7 +184,7 @@ async function events(chain: number, params: URLSearchParams) {
     query = query.in("type", EVENT_TYPES[type]);
   }
   if (poolId) query = query.eq("pool_id", poolId.toLowerCase());
-  const [rows, tokens, poolRows] = await Promise.all([q(query), tokenMap(chain), q(db.from("pools").select("pool_id,token0,token1").eq("chain_id", chain))]);
+  const [rows, tokens] = await Promise.all([q(query), tokenMap(chain)]);
   const poolTokens = new Map(poolRows.map((p) => [p.pool_id, p]));
   const sym = (a: string | undefined) => (a && tokens.get(a)?.symbol) || "?";
   const dec = (a: string | undefined) => (a && tokens.get(a)?.decimals) ?? 18;

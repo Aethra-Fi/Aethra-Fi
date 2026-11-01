@@ -300,6 +300,21 @@ contract DLMMPoolTest is DLMMBase {
         assertEq(token1.balanceOf(buyback), f1);
     }
 
+    function test_protocolFeesGoToTreasuryWithoutBuyback() public {
+        address treasury = makeAddr("treasury");
+        vm.prank(owner);
+        hub.setFeeConfig(address(0), treasury, 1000);
+        _seed(pool, lp, 3, 1e18);
+        _swap(pool, trader, false, 1e18);
+        (, uint128 f1) = pool.protocolFees();
+        assertGt(f1, 0);
+        (, uint256 c1) = pool.collectProtocolFees();
+        assertEq(c1, f1);
+        assertEq(token1.balanceOf(treasury), f1);
+        (, uint128 f1b) = pool.protocolFees();
+        assertEq(f1b, 0);
+    }
+
     function test_zeroProtocolShare() public {
         vm.prank(owner);
         hub.setFeeConfig(buyback, address(0), 0);

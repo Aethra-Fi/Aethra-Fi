@@ -414,10 +414,12 @@ contract AethraHook is IHooks, IUnlockCallback, UUPSUpgradeable, Ownable2StepUpg
 
     // ------------------------------------------------------------------ protocol fee sweep
 
-    /// @notice Sweep accrued protocol fees in `currency` to the hub's buyback contract. Callable by anyone.
+    /// @notice Sweep accrued protocol fees in `currency` to the hub's buyback contract, or to its treasury while no
+    ///         buyback is set. Callable by anyone; no-op while both are unset.
     function collectProtocolFees(Currency currency) external returns (uint256 amount) {
         HookStorage storage $ = _s();
         address to = $.hub.buyback();
+        if (to == address(0)) to = $.hub.treasury();
         amount = $.protocolFees[currency];
         if (to == address(0) || amount == 0) return 0;
         $.protocolFees[currency] = 0;
