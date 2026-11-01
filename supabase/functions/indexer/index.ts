@@ -29,6 +29,8 @@ const MAX_LOGS_PER_CALL = 10_000;
 const REFRESH_POOLS = 50;
 
 // External v4 pools: bounded watchlist, refreshed on a slow cadence (env overrides, EXTERNAL_POOLS=off disables).
+// The size of the watchlist is set per chain in `chains.external_max` (0 = none); EXTERNAL_MAX can only lower it.
+// Each pool's full history is replayed, so this is what drives database size on the free tier.
 const EXTERNAL_ON = (Deno.env.get("EXTERNAL_POOLS") ?? "on") !== "off";
 const EXTERNAL_MAX = Number(Deno.env.get("EXTERNAL_MAX") ?? 150);
 const EXTERNAL_MIN_USD = Number(Deno.env.get("EXTERNAL_MIN_USD") ?? 2_000);
@@ -193,6 +195,8 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
     return { chainId, skipped: "no deployment" };
   }
 
+  const extMax = Math.min(EXTERNAL_MAX, Number(chain.external_max ?? 0));
+  const extOn = EXTERNAL_ON && extMax > 0;
   const rpc = Deno.env.get(`RPC_URL_${chainId}`) ?? chain.rpc_url;
   const client = createPublicClient({ transport: http(rpc, { batch: true, retryCount: 2 }) }) as PublicClient;
 
@@ -311,7 +315,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
   // join the main loop, so an old event can never overwrite a newer price.
   let extError: string | undefined;
   let extReady: string[] = [];
-  if (EXTERNAL_ON) {
+  if (extOn) {
     try {
       const upto = from - 1;
       const until = Math.min(deadline, Date.now() + BACKFILL_BUDGET_MS);
@@ -826,7 +830,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
 
   // External pool discovery runs when caught up, every 10 minutes (or on demand with ?discover=1)
   let discovered: Record<string, unknown> | undefined;
-  if (EXTERNAL_ON && A.poolManager && (forceDiscover || (caughtUp && Date.now() - discoveryAt > DISCOVER_EVERY_MS))) {
+  if (extOn && A.poolManager && (forceDiscover || (caughtUp && Date.now() - discoveryAt > DISCOVER_EVERY_MS))) {
     try {
       discovered = await discoverAndStore(Date.now() + 40_000);
       discoveryAt = Date.now();
@@ -862,7 +866,7 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
       return { decimals: c === NATIVE ? 18 : Number(t.decimals), priceUsd: Number(t.price_usd) };
     };
     const have = [...pools.values()].filter((p) => p.external && p.enabled !== false).length;
-    const limit = EXTERNAL_MAX - have;
+    const limit = extMax - have;
     if (limit <= 0) return { skipped: "watchlist full", have };
 
     const result = await discoverExternal({

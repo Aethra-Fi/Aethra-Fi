@@ -60,14 +60,23 @@ async function chainClient(chain: number) {
 
 // ------------------------------------------------------------------ handlers
 
+/** Free plan database limit is 500 MB; aethra_size_guard (hourly) compacts past 400 MB. */
+const DB_WARN_BYTES = 400 * 1024 * 1024;
+
 async function health() {
-  const rows = await q(db.from("indexer_state").select("chain_id,last_block,head_block,status,updated_at"));
+  const [rows, size] = await Promise.all([
+    q(db.from("indexer_state").select("chain_id,last_block,head_block,status,updated_at")),
+    db.from("db_health").select("db_bytes,checked_at").maybeSingle(),
+  ]);
   const live = rows.filter((r) => r.status !== "disabled" && r.last_block !== null);
   const stale = live.some((r) => Date.now() - Date.parse(r.updated_at) > 5 * 60_000 || r.status === "error");
   const lag = live.some((r) => r.head_block && r.last_block && r.head_block - r.last_block > 500);
+  const dbBytes = (size.data?.db_bytes as number | undefined) ?? null;
+  const full = dbBytes !== null && dbBytes > DB_WARN_BYTES;
   return {
-    status: live.length === 0 ? "down" : stale ? "degraded" : lag ? "degraded" : "ok",
+    status: live.length === 0 ? "down" : stale || lag || full ? "degraded" : "ok",
     service: "aethra-api",
+    database: { size_mb: dbBytes === null ? null : Math.round(dbBytes / 1024 / 1024), limit_mb: 500, checked_at: size.data?.checked_at ?? null },
     chains: live.map((r) => r.chain_id),
     indexing: live.map((r) => ({ chain_id: r.chain_id, last_block: r.last_block, head_block: r.head_block, updated_at: r.updated_at })),
     timestamp: new Date().toISOString(),
