@@ -9,6 +9,7 @@ Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ tod
 - Databases after compaction: mainnet 615 MB to 231 MB (40 external pools kept, 110 dropped), testnet 1,363 MB to 26 MB (no external pools). API answers in under 1 s.
 - Fixed while verifying: look-alike stable tokens priced at $1 (external TVL and volume in the billions), refresh calls of 50 pools timing out during catch-up (now 10), the overview fill running during the compaction (cron.job RLS), and an unnecessary full re-index after publishing the launchpad.
 - Playwright screenshots of landing, swap, pools, pool, analytics, positions and launch in dark and light on production: both themes apply, new charts render.
+- Incident 2026-11-02 (B31): the one-shot re-valuation of external swaps (migration `20261101000003`) restarted the free-tier mainnet server twice and filled its disk (read-only mode). Rescued with `scripts/rescue-mainnet-db.sh` (drop indexes, truncate, restore Aethra events, recreate indexes): 790 MB to 33 MB. External pools restart their swap history; their reserves are unaffected. Lesson: bulk rewrites on this tier must be batched (`20261102000001` does three pools per minute).
 
 ## 2026-11-01 · Free-tier database, charts, v1.3 prepared
 

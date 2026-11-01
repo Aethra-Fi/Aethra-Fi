@@ -455,7 +455,9 @@ bash scripts/mainnet-seed-stock.sh
 
 Setelah selesai, pool tampil di aethra.finance begitu indexer mainnet sampai ke blok transaksinya (saat ini indexer masih mengejar). Pool saham hanya bisa di-swap saat feed saham segar (fail closed); likuiditas selalu bisa ditarik.
 
-## B31 · Database mainnet read-only (disk penuh) · `OPEN` 2026-11-02 · perlu kamu jalankan
+## B31 · Database mainnet read-only (disk penuh) · `DONE` 2026-11-02
+
+Selesai: kamu menjalankan `scripts/rescue-mainnet-db.sh` (versi yang menghapus index dulu). Database mainnet 790 MB menjadi 33 MB, read-only mati, semua job jalan lagi, indexer kembali ke head (`/health` ok). Migrasi `20261102000001` masuk di mainnet dan testnet. Teks di bawah adalah catatan asli.
 
 Job satu kali untuk menilai ulang USD swap eksternal (migrasi `20261101000003`) terlalu berat untuk instance gratis: server mainnet restart dua kali di tengahnya. Sisanya: tabel `swaps` 696 MB dengan ±550 ribu baris mati, WAL 1 GB, dan disk penuh (`No space left on device`). Supabase memasang mode read-only karena database di atas 500 MB. Situs dan API masih bisa membaca; tulisan baru (indexer, migrasi) gagal. Job itu sudah aku hapus dari jadwal.
 
