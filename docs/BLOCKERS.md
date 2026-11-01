@@ -455,7 +455,29 @@ bash scripts/mainnet-seed-stock.sh
 
 Setelah selesai, pool tampil di aethra.finance begitu indexer mainnet sampai ke blok transaksinya (saat ini indexer masih mengejar). Pool saham hanya bisa di-swap saat feed saham segar (fail closed); likuiditas selalu bisa ditarik.
 
-## B29 · Database mainnet dan testnet macet (API timeout) · `OPEN` 2026-11-01 · perlu kamu jalankan
+## B30 · Rilis v1.3 di mainnet (butuh password keystore) · `OPEN` 2026-11-01
+
+Isi v1.3: launchpad dibuka, dan protocol fee masuk ke treasury (`hub.treasury()` = deployer) sampai buyback dibuka di v1.4.
+
+Script `scripts/mainnet-v13.sh open` mengirim satu batch dari deployer:
+1. Upgrade hook v4 (UUPS) dan beacon DLMM pool. Satu-satunya perubahan: `collectProtocolFees` mengirim ke treasury bila buyback belum ada (DAMM dan launchpad sudah begitu).
+2. `hub.setFeeConfig(0, treasury, 2000)`: 20% dari setiap fee swap jadi protocol fee, LP menerima 80%. Angka ini sama dengan rencana buyback v1.4; ubah `PROTOCOL_SHARE_BPS` di `packages/contracts/script/mainnet/ReleaseV13.s.sol` sebelum menjalankan bila mau angka lain.
+3. `hub.setRegistrar(launchpad, true)`.
+
+Parameter launchpad tetap seperti yang sudah ada di chain (ditinjau 2026-11-01): virtual 1,5 ETH, 800 juta token di kurva, graduation di 4,3956 ETH (±$10 ribu), fee trade 1% ke treasury, fee graduation 0, creator mendapat 50% fee LP setelah graduation. Bisa diubah owner kapan saja (`setCurveConfig`, `setFeeConfig` di launchpad).
+
+Sudah dicek tanpa broadcast: validasi storage OpenZeppelin untuk kedua upgrade terhadap build v1.2.0, simulasi di state mainnet asli (10,09 juta gas, maksimal 0,000404 ETH ≈ $0,92; saldo deployer 0,001713 ETH), dan tes fork `FORK_MAINNET=1 forge test --match-path test/fork/MainnetV13.t.sol` (4/4: launchpad terkunci sebelum dibuka, launch + jual lewat router, fee kurva ke treasury, protocol fee swap v4 ke treasury). 195 tes forge lain hijau.
+
+```bash
+# Jalankan di: ROOT
+bash scripts/mainnet-v13.sh open
+```
+
+Script memeriksa chain 4663, membangun ulang bytecode DLMM pool, memvalidasi upgrade, menyimulasikan seluruh batch, lalu meminta password sekali. Bila ada yang gagal sebelum prompt, tidak ada yang dikirim. Kunci lagi bila perlu: `bash scripts/mainnet-v13.sh lock`.
+
+Setelah selesai, bilang "B30 selesai". Aku lanjutkan: sinkron alamat ke indexer mainnet, nyalakan fitur launchpad di API dan web production, promosi `main` ke `testnet` dan `mainnet`, cek `aethra.finance`, lalu tag `v1.3.0`.
+
+## B29 · Database mainnet dan testnet macet (API timeout) · `DONE` 2026-11-01 (diselesaikan Claude, tidak perlu tindakan)
 
 **Penyebab (terbukti 2026-11-01):** tabel `swaps` berisi ±590 ribu baris (533 MB), lebih besar dari RAM instance gratis (0,5 GB). Hampir semuanya riwayat 150 pool Uniswap v4 eksternal; Aethra sendiri hanya punya 4 pool. Setiap run indexer (tiap menit) menjumlahkan ulang seluruh riwayat pool yang tersentuh untuk menghitung reserve (`aethra_refresh`: rata-rata 759 ms, maks 7,996 s), dan setiap request API ke `pool_overview` rata-rata 2,3 s (maks 7,8 s). Disk terus dibaca, query kena timeout 8 s, lalu seluruh instance ikut macet (`/health` pun timeout). Status Supabase normal.
 
