@@ -25,8 +25,8 @@ import { discoverExternal, type PoolKeyRow } from "./discover.ts";
 
 const BUDGET_MS = 45_000;
 const MAX_LOGS_PER_CALL = 10_000;
-/** Pools per aethra_refresh call (see indexChain). */
-const REFRESH_POOLS = 12;
+/** Pools per aethra_refresh call (see indexChain). External reserves are running sums, so a call stays cheap. */
+const REFRESH_POOLS = 50;
 
 // External v4 pools: bounded watchlist, refreshed on a slow cadence (env overrides, EXTERNAL_POOLS=off disables).
 const EXTERNAL_ON = (Deno.env.get("EXTERNAL_POOLS") ?? "on") !== "off";
@@ -804,8 +804,9 @@ async function indexChain(db: SupabaseClient, chainId: number, deadline: number,
   // ---------------------------------------------------------------- chain reads + prices
   const chainMeta = await refreshChainState(db, client, chainId, A, pools, tokens, touched);
 
-  // The API role cuts statements at 8s. A replay batch can touch many external pools over a long window, so refresh
-  // them in small groups (the global steps are cheap); with nothing touched one call refreshes everything.
+  // The API role cuts statements at 8s. A replay batch can touch many external pools over a long window (hourly
+  // stats are rebuilt from their swaps), so refresh them in groups; with nothing touched one call refreshes everything.
+  // External reserves come from running sums kept by a trigger (migration 20261101000001), not from event scans.
   // Aethra's own pools are few, so they are always recomputed: reserves are rebuilt from events, and a pool whose
   // events landed in a busy batch must not wait for its next touch while external pools keep every run non-empty.
   const refreshIds = new Set(touched);

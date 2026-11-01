@@ -159,9 +159,14 @@ async function events(chain: number, params: URLSearchParams) {
   const limit = Math.min(200, Math.max(1, Number(params.get("limit") ?? 50)));
   const poolId = params.get("pool");
   // route rows duplicate their swaps; vault Borrowed/Repaid/InterestAccrued mirror credit Borrow/Repay.
-  // The global feed is Aethra activity only; a pool page reads event_feed_all so external pools show their trades.
-  let query = db.from(poolId ? "event_feed_all" : "event_feed").select("*").eq("chain_id", chain).neq("type", "route")
+  // The global feed is Aethra activity only: rows without a pool plus the pools Aethra owns, named explicitly so the
+  // planner reads those pools' index ranges instead of walking the (much larger) external history newest-first.
+  // A pool page reads one pool, external ones included.
+  const poolRows = await q(db.from("pools").select("pool_id,token0,token1,external").eq("chain_id", chain));
+  const own = poolRows.filter((p) => !p.external).map((p) => p.pool_id as string);
+  let query = db.from("event_feed_all").select("*").eq("chain_id", chain).neq("type", "route")
     .not("action", "in", "(borrowed,repaid,interestaccrued)").order("block_number", { ascending: false }).order("log_index", { ascending: false }).limit(limit);
+  if (!poolId) query = own.length ? query.or(`pool_id.is.null,pool_id.in.(${own.join(",")})`) : query.is("pool_id", null);
   if (HIDDEN_EVENT_TYPES.length) query = query.not("type", "in", `(${HIDDEN_EVENT_TYPES.join(",")})`);
   const type = params.get("type");
   if (type && EVENT_TYPES[type]) {
@@ -169,7 +174,7 @@ async function events(chain: number, params: URLSearchParams) {
     query = query.in("type", EVENT_TYPES[type]);
   }
   if (poolId) query = query.eq("pool_id", poolId.toLowerCase());
-  const [rows, tokens, poolRows] = await Promise.all([q(query), tokenMap(chain), q(db.from("pools").select("pool_id,token0,token1").eq("chain_id", chain))]);
+  const [rows, tokens] = await Promise.all([q(query), tokenMap(chain)]);
   const poolTokens = new Map(poolRows.map((p) => [p.pool_id, p]));
   const sym = (a: string | undefined) => (a && tokens.get(a)?.symbol) || "?";
   const dec = (a: string | undefined) => (a && tokens.get(a)?.decimals) ?? 18;
