@@ -466,37 +466,43 @@ Setelah selesai, pool tampil di aethra.finance begitu indexer mainnet sampai ke 
 - Feed event global membaca pool Aethra berdasarkan id, tidak lagi menelusuri riwayat eksternal.
 - Pool Aethra sendiri tidak berubah: riwayat penuh, reserve dihitung dari tabel event seperti sebelumnya.
 
+**Update 2026-11-01 sore: "EXCEEDING USAGE LIMITS".** Kuota database paket gratis 500 MB per project. Testnet sudah 1.362 MB (1,39 juta swap, semuanya dari 150 pool bot eksternal di testnet) dan mainnet 614 MB. Menghapus baris saja tidak mengembalikan ruang disk, jadi ditambah migrasi `20261101000002_size_guard.sql` (commit `cd60c8f`, diuji lokal dengan `supabase/tests/size_guard.sql`):
+- `chains.external_max` menentukan jumlah pool eksternal per chain: mainnet 40, testnet 0 (pool bot testnet tidak berguna). Indexer membacanya, jadi watchlist tidak tumbuh lagi.
+- Job pg_cron sekali-jalan `aethra-compact-once` (jalan di dalam database, tidak putus seperti koneksi CLI): menyimpan 40 pool eksternal teratas berdasarkan TVL, melipat riwayatnya ke jumlah berjalan, menyisakan event 7 hari terakhir plus semua event Aethra, lalu menulis ulang tabel (`TRUNCATE` + insert ulang) sehingga ruang disk kembali. Job menghapus dirinya sendiri setelah sukses.
+- Pencegahan: `aethra-size-guard` tiap jam mencatat ukuran DB ke `db_health`; di atas 400 MB otomatis memadatkan lagi (riwayat 2 hari, watchlist dibagi dua). `/health` menampilkan `database.size_mb` dan berstatus `degraded` di atas 400 MB.
+
 **Status penerapan:**
-- Testnet: `supabase db push` pertama putus di tengah backfill. Query itu masih jalan di server (pid 1187798, `IO DataFileRead`) dan memegang lock; push kedua (pid 1188329) menunggu lock itu. Aku tidak diizinkan membatalkannya dari sini. Migrasinya aman diulang (idempoten).
-- Mainnet: belum ada yang diterapkan. Push ke production diblokir izin auto mode, jadi langkah ini kamu yang menjalankan.
+- Mainnet: push kamu berhenti di statement 9 (koneksi putus), jadi statement 0–8 sudah masuk: kolom baru, fungsi trigger, trigger penjumlah, dan fungsi backfill. Function `indexer` dan `api` versi baru sudah ter-deploy. Sisa migrasi aman diulang (idempoten).
+- Testnet: belum ada migrasi baru yang masuk (query macet sebelumnya sudah hilang). Push dari sini diblokir izin auto mode ("Cloud Storage Mass Delete", karena job memadatkan menghapus data testnet).
 
-**Langkah (urut):**
+**Langkah (urut, kamu yang menjalankan):**
 
-1. Testnet: hentikan query migrasi yang macet. Buka SQL Editor project `Aethra-Fi-testnet` di dashboard Supabase, lalu jalankan:
+1. Deploy function terbaru (keduanya berubah lagi):
 
-```sql
-select pid, pg_cancel_backend(pid) from pg_stat_activity
-where pid <> pg_backend_pid() and (query like '%One transaction (a DO block)%' or query like '%1. running sums for%');
+```bash
+# Jalankan di: ROOT
+supabase functions deploy indexer api --project-ref zqbnyshzgxhkfxoyrogq
+supabase functions deploy indexer api --project-ref nczunmovephgtyrmsgvt
 ```
 
-2. Terapkan migrasi dan deploy function ke testnet (project yang ter-link di repo adalah testnet):
+2. Testnet (project yang ter-link di repo). Kalau putus lagi di tengah, jalankan ulang perintah yang sama:
 
 ```bash
 # Jalankan di: ROOT
 supabase db push --linked
-supabase functions deploy indexer api --project-ref zqbnyshzgxhkfxoyrogq
 ```
 
-3. Mainnet (production):
+3. Mainnet:
 
 ```bash
 # Jalankan di: ROOT
 supabase link --project-ref nczunmovephgtyrmsgvt
 supabase db push --linked
-supabase functions deploy indexer api --project-ref nczunmovephgtyrmsgvt
-supabase link --project-ref zqbnyshzgxhkfxoyrogq   # kembalikan link ke testnet
+supabase link --project-ref zqbnyshzgxhkfxoyrogq
 ```
 
-Kalau `db push` mainnet berhenti lebih dari 5 menit di satu statement, cek `pg_stat_activity` di SQL Editor mainnet dengan query langkah 1 (tanpa `pg_cancel_backend`) dan kabari aku.
+Kalau push mainnet putus lagi, ulangi `supabase db push --linked` (masih ter-link ke mainnet) sampai muncul `Finished supabase db push`, baru jalankan `supabase link --project-ref zqbnyshzgxhkfxoyrogq`.
 
-4. Bilang "B29 selesai". Setelah itu aku memantau backfill dan prune sampai selesai, mengukur ulang API, lalu lanjut ke grafik UI dan rilis v1.3.
+4. Tunggu ±10 menit lalu bilang "B29 selesai". Pemadatan jalan di latar belakang dalam beberapa menit setelah push. Aku cek `db_health`, ukuran tiap DB (target jauh di bawah 500 MB), reserve pool, dan kecepatan API, lalu lanjut ke grafik UI dan rilis v1.3.
+
+Catatan: halaman Usage Supabase biasanya baru turun setelah perhitungan ulang harian.
