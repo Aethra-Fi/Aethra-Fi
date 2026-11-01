@@ -2,6 +2,8 @@
 -- Run against local Supabase: psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f supabase/tests/free_tier_load.sql
 -- Everything runs in one transaction and is rolled back.
 begin;
+-- a pending one-shot compaction makes the backfill wait; take it out of the picture for this test
+select cron.unschedule('aethra-compact-once') from cron.job where jobname = 'aethra-compact-once';
 insert into chains (chain_id, name, network, rpc_url) values (999, 'test', 'local', 'http://x');
 insert into pools (chain_id, pool_id, venue, token0, token1, external, ext_synced_block) values
   (999, '0xext', 'V4', '0xa', '0xb', true, 5000), (999, '0xown', 'V4', '0xa', '0xb', false, null);

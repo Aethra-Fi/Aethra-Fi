@@ -13,7 +13,10 @@
 -- 3. pool_overview is served from a materialized view refreshed every minute by pg_cron.
 -- Aethra's own pools are unchanged: full history, reserves summed from the event tables.
 
-set statement_timeout = 0;
+-- Fail fast instead of queueing: a DDL statement waiting for a lock blocks every later reader of that table.
+-- On a timeout, rerun `supabase db push`; every step is safe to repeat.
+set lock_timeout = '10s';
+set statement_timeout = '120s';
 
 -- ---------------------------------------------------------------------------------------------
 -- 1. running sums for external pools
@@ -105,6 +108,10 @@ declare
   r record;
   n integer := 0;
 begin
+  -- the one-shot compaction (migration 20261101000002) sums every kept pool itself
+  if exists (select 1 from cron.job where jobname = 'aethra-compact-once') then
+    return jsonb_build_object('skipped', 'compaction pending');
+  end if;
   lock table public.swaps, public.liquidity_events in share row exclusive mode;
   for r in
     select q.pool_id, q.ext_floor_block from pools q
@@ -211,16 +218,32 @@ grant execute on function public.aethra_backfill_ext_sums(integer, interval, boo
 -- ---------------------------------------------------------------------------------------------
 -- 3. pool_overview from a materialized view
 -- ---------------------------------------------------------------------------------------------
+-- Nothing heavy runs here: the materialized view is created empty and first filled by the pg_cron job below, which
+-- then points pool_overview at it. (Filling it inline took over 40 minutes on the starved mainnet instance while
+-- pool_overview was already renamed away, see B29.) Each step checks the current state, so a rerun after a cut
+-- connection picks up where it stopped.
 -- The dashboard views (SQL mirror of functions/_shared/ranking.ts, not read by the API) expanded `o.*` when they
--- were first created, so they are dropped and recreated on the new view with the current column list.
-drop view if exists public.dashboard_trending, public.dashboard_established, public.dashboard_most_traded,
-  public.dashboard_highest_volume, public.dashboard_fresh, public.dashboard_launch;
-alter view public.pool_overview rename to pool_overview_live;
+-- were first created, so they are dropped and recreated with the current column list.
+do $$
+begin
+  drop view if exists public.dashboard_trending, public.dashboard_established, public.dashboard_most_traded,
+    public.dashboard_highest_volume, public.dashboard_fresh, public.dashboard_launch;
 
-create materialized view public.pool_overview_mv as select * from public.pool_overview_live;
-create unique index pool_overview_mv_pk on public.pool_overview_mv (chain_id, pool_id);
-
-create view public.pool_overview with (security_invoker = true) as select * from public.pool_overview_mv;
+  -- pool_overview_live: the SQL of the view as it is now
+  if to_regclass('public.pool_overview_live') is null then
+    execute 'create view public.pool_overview_live with (security_invoker = true) as '
+      || rtrim(pg_get_viewdef('public.pool_overview'::regclass), '; ' || chr(10));
+  end if;
+  -- an earlier run renamed pool_overview away: serve the live SQL until the materialized view is filled
+  if to_regclass('public.pool_overview') is null then
+    create view public.pool_overview with (security_invoker = true) as select * from public.pool_overview_live;
+  end if;
+  if to_regclass('public.pool_overview_mv') is null then
+    create materialized view public.pool_overview_mv as select * from public.pool_overview_live with no data;
+    create unique index pool_overview_mv_pk on public.pool_overview_mv (chain_id, pool_id);
+  end if;
+end
+$$;
 
 create view public.dashboard_trending with (security_invoker = true) as
 select o.*, (o.trades_1h * (1 + log(1 + greatest(o.volume_1h_usd, 0))))::float8 as score
@@ -258,7 +281,11 @@ grant select on public.pool_overview_mv, public.pool_overview to anon, authentic
 grant select on public.dashboard_trending, public.dashboard_established, public.dashboard_most_traded,
   public.dashboard_highest_volume, public.dashboard_fresh, public.dashboard_launch to anon, authenticated, service_role;
 
-/** Refreshes pool_overview_mv; readers keep the previous rows meanwhile. */
+/**
+ * pg_cron, every minute. Waits while the one-shot compaction (migration 20261101000002) is scheduled, since the
+ * overview is cheap only after it. The first run fills the materialized view and points pool_overview at it; later
+ * runs refresh it concurrently, so readers keep the previous rows meanwhile.
+ */
 create or replace function public.aethra_refresh_overview()
 returns void
 language plpgsql
@@ -266,7 +293,15 @@ security definer
 set search_path = public
 as $$
 begin
-  refresh materialized view concurrently public.pool_overview_mv;
+  if exists (select 1 from cron.job where jobname = 'aethra-compact-once') then
+    return;
+  end if;
+  if not (select ispopulated from pg_matviews where schemaname = 'public' and matviewname = 'pool_overview_mv') then
+    refresh materialized view public.pool_overview_mv;
+    create or replace view public.pool_overview with (security_invoker = true) as select * from public.pool_overview_mv;
+  else
+    refresh materialized view concurrently public.pool_overview_mv;
+  end if;
 end;
 $$;
 

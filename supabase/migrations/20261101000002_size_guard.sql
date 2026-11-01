@@ -12,7 +12,9 @@
 -- 4. aethra_size_guard() records the size every hour into db_health and compacts harder past 400 MB. /health
 --    reports the size and turns "degraded" past 400 MB.
 
-set statement_timeout = 0;
+-- Fail fast instead of queueing behind a lock; the heavy work runs later as a pg_cron job. Safe to rerun.
+set lock_timeout = '10s';
+set statement_timeout = '120s';
 
 alter table public.chains add column if not exists external_max integer not null default 0;
 comment on column public.chains.external_max is 'Watchlist size for external Uniswap v4 pools (0 = none). Each one adds its replayed history to the database.';
