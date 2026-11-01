@@ -25,8 +25,12 @@ import { discoverExternal, type PoolKeyRow } from "./discover.ts";
 
 const BUDGET_MS = 45_000;
 const MAX_LOGS_PER_CALL = 10_000;
-/** Pools per aethra_refresh call (see indexChain). External reserves are running sums, so a call stays cheap. */
-const REFRESH_POOLS = 50;
+/**
+ * Pools per aethra_refresh call (see indexChain). External reserves are running sums, but the hourly stats of each
+ * touched pool are rebuilt from its swaps since the run's first block; while catching up (a rewind or a throttled
+ * free-tier CPU) 50 pools per call ran past the API's 8 s statement timeout.
+ */
+const REFRESH_POOLS = 10;
 
 // External v4 pools: bounded watchlist, refreshed on a slow cadence (env overrides, EXTERNAL_POOLS=off disables).
 // The size of the watchlist is set per chain in `chains.external_max` (0 = none); EXTERNAL_MAX can only lower it.
