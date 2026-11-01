@@ -455,21 +455,48 @@ bash scripts/mainnet-seed-stock.sh
 
 Setelah selesai, pool tampil di aethra.finance begitu indexer mainnet sampai ke blok transaksinya (saat ini indexer masih mengejar). Pool saham hanya bisa di-swap saat feed saham segar (fail closed); likuiditas selalu bisa ditarik.
 
-## B29 · Database mainnet dan testnet tidak merespons (API timeout) · `OPEN` 2026-11-01
+## B29 · Database mainnet dan testnet macet (API timeout) · `OPEN` 2026-11-01 · perlu kamu jalankan
 
-Gejala (dicek 2026-11-01 sekitar 12:10–12:40 UTC):
-- API mainnet: `/pools`, `/dashboard`, `/analytics`, `/events` membalas `{"error":"canceling statement due to statement timeout"}`. `/health` membalas `degraded` setelah 9,5 detik, lalu timeout 30 detik pada percobaan berikutnya.
-- API testnet: `/pools` timeout 35 detik, `/health` tidak menjawab dalam 40 detik.
-- Indexer mainnet sendiri jalan: `last_block` hanya 2 blok di belakang head.
-- Status Supabase: semua sistem normal. Kedua project `ACTIVE_HEALTHY`.
+**Penyebab (terbukti 2026-11-01):** tabel `swaps` berisi ±590 ribu baris (533 MB), lebih besar dari RAM instance gratis (0,5 GB). Hampir semuanya riwayat 150 pool Uniswap v4 eksternal; Aethra sendiri hanya punya 4 pool. Setiap run indexer (tiap menit) menjumlahkan ulang seluruh riwayat pool yang tersentuh untuk menghitung reserve (`aethra_refresh`: rata-rata 759 ms, maks 7,996 s), dan setiap request API ke `pool_overview` rata-rata 2,3 s (maks 7,8 s). Disk terus dibaca, query kena timeout 8 s, lalu seluruh instance ikut macet (`/health` pun timeout). Status Supabase normal.
 
-Yang sudah dicek:
-- Ukuran DB mainnet 614 MB, tabel `swaps` dan indeks dipakai (tanpa seq scan). Koneksi aktif sedikit, tidak ada query panjang atau lock.
-- `pg_stat_statements`: 72% waktu DB ada di `select public.aethra_invoke_indexer()` (13.966 panggilan, rata-rata 75 ms). Tidak ada query API yang menonjol.
-- Koneksi langsung (`db.<ref>.supabase.co:5432`) timeout (IPv6), pooler `aws-0` menjawab `EAUTHQUERY ... connection to database not available`, dan `supabase db query` sering gagal dengan `Connection terminated due to connection timeout`.
-- Kesimpulan sementara: `/health` yang hanya membaca tabel kecil ikut lambat, jadi masalahnya instance yang kehabisan CPU/IO (dugaan: compute kecil), bukan satu view. Belum terbukti.
+**Perbaikan tanpa paket berbayar** (commit `88899da` dan setelahnya, migrasi `supabase/migrations/20261101000001_free_tier_load.sql`, sudah diuji di Supabase lokal dengan `supabase/tests/free_tier_load.sql`):
+- Reserve pool eksternal jadi jumlah berjalan yang diperbarui trigger saat event masuk, tanpa scan riwayat. Pool lama dijumlahkan bertahap oleh pg_cron (`aethra_backfill_ext_sums`, ±15 detik per menit).
+- Event pool eksternal lebih tua dari 7 hari dihapus bertahap oleh pg_cron (`aethra_prune_external`, 10 pool per 10 menit). Statistik per jam tetap disimpan; data bisa direplay ulang dari chain kapan saja.
+- `pool_overview` dibaca dari materialized view yang diperbarui tiap menit.
+- Feed event global membaca pool Aethra berdasarkan id, tidak lagi menelusuri riwayat eksternal.
+- Pool Aethra sendiri tidak berubah: riwayat penuh, reserve dihitung dari tabel event seperti sebelumnya.
 
-Butuh keputusan kamu (belum saya ubah apa pun di produksi):
-1. Cek grafik CPU/IO dan ukuran compute di dashboard Supabase `Aethra-Fi-mainnet` dan `Aethra-Fi-testnet`. Jika kehabisan burst, naikkan compute (berbayar).
-2. Atau izinkan saya mematikan sementara replay pool eksternal (`supabase secrets set EXTERNAL_POOLS=off`) untuk menguji dugaan beban indexer. Ini menyembunyikan daftar pool Uniswap v4 sampai dinyalakan lagi.
-3. Setelah DB pulih, saya ukur `explain analyze select * from pool_overview` dan mengoptimalkan view (materialized view atau cache) bila perlu.
+**Status penerapan:**
+- Testnet: `supabase db push` pertama putus di tengah backfill. Query itu masih jalan di server (pid 1187798, `IO DataFileRead`) dan memegang lock; push kedua (pid 1188329) menunggu lock itu. Aku tidak diizinkan membatalkannya dari sini. Migrasinya aman diulang (idempoten).
+- Mainnet: belum ada yang diterapkan. Push ke production diblokir izin auto mode, jadi langkah ini kamu yang menjalankan.
+
+**Langkah (urut):**
+
+1. Testnet: hentikan query migrasi yang macet. Buka SQL Editor project `Aethra-Fi-testnet` di dashboard Supabase, lalu jalankan:
+
+```sql
+select pid, pg_cancel_backend(pid) from pg_stat_activity
+where pid <> pg_backend_pid() and (query like '%One transaction (a DO block)%' or query like '%1. running sums for%');
+```
+
+2. Terapkan migrasi dan deploy function ke testnet (project yang ter-link di repo adalah testnet):
+
+```bash
+# Jalankan di: ROOT
+supabase db push --linked
+supabase functions deploy indexer api --project-ref zqbnyshzgxhkfxoyrogq
+```
+
+3. Mainnet (production):
+
+```bash
+# Jalankan di: ROOT
+supabase link --project-ref nczunmovephgtyrmsgvt
+supabase db push --linked
+supabase functions deploy indexer api --project-ref nczunmovephgtyrmsgvt
+supabase link --project-ref zqbnyshzgxhkfxoyrogq   # kembalikan link ke testnet
+```
+
+Kalau `db push` mainnet berhenti lebih dari 5 menit di satu statement, cek `pg_stat_activity` di SQL Editor mainnet dengan query langkah 1 (tanpa `pg_cancel_backend`) dan kabari aku.
+
+4. Bilang "B29 selesai". Setelah itu aku memantau backfill dan prune sampai selesai, mengukur ulang API, lalu lanjut ke grafik UI dan rilis v1.3.
