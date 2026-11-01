@@ -161,13 +161,27 @@ contract Upgrade is Script {
         if (h == keccak256("dlmmFactory")) return address(new DLMMFactory());
         if (h == keccak256("dlmmLimitOrders")) return address(new DLMMLimitOrders());
         if (h == keccak256("dammFactory")) return address(new DAMMFactory());
-        if (h == keccak256("dlmmPool")) return address(new DLMMPool());
+        if (h == keccak256("dlmmPool")) return _verifiable("DLMMPool", type(DLMMPool).creationCode);
         if (h == keccak256("dammPool")) return address(new DAMMPool(IAethraHub(vm.parseJsonAddress(json, ".hub"))));
         if (h == keccak256("launchpad")) return address(new AethraLaunchpad());
         if (h == keccak256("buyback")) return address(new AethraBuyback());
         if (h == keccak256("lendingVault")) return address(new LendingVault());
         if (h == keccak256("creditManager")) return address(new CreditManager());
         revert("Upgrade: unknown CONTRACT");
+    }
+
+    /// @dev Same as Deploy.s.sol: deploys verifiable/<name>.bin (scripts/build-verifiable.mjs) so the explorer can verify
+    ///      it; local runs fall back to the forge build. Rebuild the .bin after changing the source.
+    function _verifiable(string memory name, bytes memory fallbackCode) internal returns (address a) {
+        string memory path = string.concat(vm.projectRoot(), "/verifiable/", name, ".bin");
+        bytes memory code;
+        if (vm.exists(path)) code = vm.parseBytes(vm.trim(vm.readFile(path)));
+        else if (block.chainid == 31337) code = fallbackCode;
+        else revert(string.concat("Upgrade: missing verifiable/", name, ".bin, run node scripts/build-verifiable.mjs"));
+        assembly {
+            a := create(0, add(code, 0x20), mload(code))
+        }
+        require(a != address(0), "Upgrade: verifiable create failed");
     }
 
     /// @dev "Name.sol:Name" -> "Name"
