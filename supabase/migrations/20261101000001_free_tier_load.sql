@@ -108,9 +108,12 @@ declare
   r record;
   n integer := 0;
 begin
-  -- the one-shot compaction (migration 20261101000002) sums every kept pool itself
-  if exists (select 1 from cron.job where jobname = 'aethra-compact-once') then
-    return jsonb_build_object('skipped', 'compaction pending');
+  -- the one-shot compaction (migration 20261101000002) sums every kept pool itself; it leaves its result in db_health
+  -- (cron.job is not a usable signal: its row-level security hides jobs scheduled by other roles)
+  if to_regclass('public.db_health') is not null then
+    if not exists (select 1 from public.db_health where action is not null) then
+      return jsonb_build_object('skipped', 'compaction pending');
+    end if;
   end if;
   lock table public.swaps, public.liquidity_events in share row exclusive mode;
   for r in
@@ -282,7 +285,7 @@ grant select on public.dashboard_trending, public.dashboard_established, public.
   public.dashboard_highest_volume, public.dashboard_fresh, public.dashboard_launch to anon, authenticated, service_role;
 
 /**
- * pg_cron, every minute. Waits while the one-shot compaction (migration 20261101000002) is scheduled, since the
+ * pg_cron, every minute. Waits until the one-shot compaction (migration 20261101000002) has run, since the
  * overview is cheap only after it. The first run fills the materialized view and points pool_overview at it; later
  * runs refresh it concurrently, so readers keep the previous rows meanwhile.
  */
@@ -293,8 +296,11 @@ security definer
 set search_path = public
 as $$
 begin
-  if exists (select 1 from cron.job where jobname = 'aethra-compact-once') then
-    return;
+  -- wait for the one-shot compaction: it leaves its result in db_health (cron.job hides other roles' jobs)
+  if to_regclass('public.db_health') is not null then
+    if not exists (select 1 from public.db_health where action is not null) then
+      return;
+    end if;
   end if;
   if not (select ispopulated from pg_matviews where schemaname = 'public' and matviewname = 'pool_overview_mv') then
     refresh materialized view public.pool_overview_mv;
