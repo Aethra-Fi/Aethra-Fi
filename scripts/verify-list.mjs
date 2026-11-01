@@ -19,7 +19,11 @@ const RUNS = {
     { file: "DeployGated.s.sol/46630/run-latest.json" },
   ],
   // VERIFY_DRY_RUN=1 reads the dry run instead, to prove the packages before the real broadcast
-  mainnet: [{ file: process.env.VERIFY_DRY_RUN ? "DeployMainnet.s.sol/4663/dry-run/deployAll-latest.json" : "DeployMainnet.s.sol/4663/deployAll-latest.json" }],
+  mainnet: [
+    { file: process.env.VERIFY_DRY_RUN ? "DeployMainnet.s.sol/4663/dry-run/deployAll-latest.json" : "DeployMainnet.s.sol/4663/deployAll-latest.json" },
+    // v1.3: new hook and DLMM pool implementations (the v1.0 ones above no longer match the source and are skipped)
+    { file: "ReleaseV13.s.sol/4663/run-latest.json", implementations: true },
+  ],
 };
 
 const LABEL = {
@@ -110,7 +114,7 @@ for (const run of RUNS[network]) {
     if (run.only && !run.only.includes(hit.name)) continue;
     if (run.skip?.includes(hit.name)) continue;
     const address = tx.contractAddress.toLowerCase();
-    rows.push({ address, source: hit.source, name: hit.name, args: hit.args });
+    rows.push({ address, source: hit.source, name: hit.name, args: hit.args, implementation: !!run.implementations });
     byAddress.set(address, rows.at(-1));
   }
 }
@@ -155,7 +159,7 @@ for (const r of rows) {
 for (const r of rows) {
   if (r.label) continue;
   const base = LABEL[r.name] ?? r.name;
-  r.label = proxied.has(r.address) || /Pool$|Factory|Orders|Positions|Launchpad|Buyback|Vault|Manager/.test(r.name) ? `${base} (implementation)` : base;
+  r.label = r.implementation || proxied.has(r.address) || /Pool$|Factory|Orders|Positions|Launchpad|Buyback|Vault|Manager/.test(r.name) ? `${base} (implementation)` : base;
 }
 // test tokens are named by their symbol
 for (const [sym, t] of Object.entries(deployment.tokens ?? {})) {

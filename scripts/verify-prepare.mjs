@@ -96,6 +96,15 @@ function compile(input, path, name) {
 
 // ------------------------------------------------------------------ prepare
 
+// Contracts from an earlier run that no longer match the current source (an upgrade replaced their code, or via-IR
+// output moved) stay in the manifest with their proven package: they are still live and verified on-chain.
+const previous = [];
+if (existsSync(join(OUT, "manifest.json"))) {
+  for (const m of JSON.parse(readFileSync(join(OUT, "manifest.json"), "utf8"))) {
+    if (rows.some((r) => r.address === m.address) || !existsSync(join(OUT, m.file))) continue;
+    previous.push({ ...m, input: readFileSync(join(OUT, m.file), "utf8") });
+  }
+}
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 const manifest = [];
@@ -131,6 +140,21 @@ for (const [i, row] of rows.entries()) {
   log(`✓ ${row.label.padEnd(36)} ${row.address}  (${hit.tag})`);
 }
 
+// a beacon whose original implementation was replaced cannot be named from its constructor argument any more
+for (const m of manifest) {
+  if (m.label !== "Beacon") continue;
+  const impl = `0x${m.args.slice(24, 64)}`.toLowerCase();
+  const was = previous.find((p) => p.address === impl);
+  if (was) m.label = `${was.label.replace(/ \(implementation\)$/, "")} beacon`;
+}
+for (const m of previous) {
+  const file = `kept-${m.address}.json`;
+  writeFileSync(join(OUT, file), m.input);
+  // a replaced implementation gives its label to the code that runs now
+  const label = manifest.some((x) => x.label === m.label) ? `${m.label.replace(/\)$/, "")}, replaced)` : m.label;
+  manifest.push({ ...m, label, file, input: undefined });
+  log(`= ${label.padEnd(36)} ${m.address}  (kept)`);
+}
 writeFileSync(join(OUT, "manifest.json"), JSON.stringify(manifest, null, 2));
-log(`${manifest.length} of ${rows.length} contracts have a source package that reproduces the deployed bytecode`);
+log(`${manifest.length - previous.length} of ${rows.length} contracts have a source package that reproduces the deployed bytecode${previous.length ? `, ${previous.length} kept from the previous run` : ""}`);
 process.exit(failed ? 1 : 0);

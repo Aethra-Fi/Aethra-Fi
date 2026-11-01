@@ -455,6 +455,17 @@ bash scripts/mainnet-seed-stock.sh
 
 Setelah selesai, pool tampil di aethra.finance begitu indexer mainnet sampai ke blok transaksinya (saat ini indexer masih mengejar). Pool saham hanya bisa di-swap saat feed saham segar (fail closed); likuiditas selalu bisa ditarik.
 
+## B32 · Rekam layar verifikasi v1.3 · `OPEN` 2026-11-02
+
+Script interaktif `scripts/verify-v13.sh` (read-only, tanpa keystore), 7 tahap: jaringan, bytecode, source code di Sourcify, upgrade v1.3 (6 transaksi rilis, kode yang sekarang dijalankan proxy dan beacon, baris kode baru dibaca dari source terverifikasi), wiring launchpad, fee (20% ke treasury, parameter kurva), dan gerbang rilis. Rehearsal 2026-11-02: 52 dari 52 cek lolos. Kedua implementasi baru (hook `0xd2e3…0d23`, DLMM pool `0xDbef…A92b`) sudah exact match di Sourcify.
+
+```bash
+# Jalankan di: ROOT
+bash scripts/verify-v13.sh
+```
+
+Tekan Enter di tiap tahap. Di akhir, ketik nomor untuk membuka kontrak di explorer, `s` + nomor untuk Sourcify, `t` + nomor untuk transaksi rilis, `q` untuk keluar. `FAST=1` menghilangkan jeda antarbaris.
+
 ## B31 · Database mainnet read-only (disk penuh) · `DONE` 2026-11-02
 
 Selesai: kamu menjalankan `scripts/rescue-mainnet-db.sh` (versi yang menghapus index dulu). Database mainnet 790 MB menjadi 33 MB, read-only mati, semua job jalan lagi, indexer kembali ke head (`/health` ok). Migrasi `20261102000001` masuk di mainnet dan testnet. Teks di bawah adalah catatan asli.
