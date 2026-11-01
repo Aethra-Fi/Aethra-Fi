@@ -203,6 +203,21 @@ contract CoreV4Test is AethraFixture {
         assertEq(hook.protocolFees(Currency.wrap(address(usd))), 0);
     }
 
+    function test_protocolFeeSweepsToTreasuryWithoutBuyback() public {
+        address treasury = makeAddr("treasury");
+        (address hubOwner, uint16 share) = (hub.owner(), hub.protocolFeeShareBps());
+        vm.prank(hubOwner);
+        hub.setFeeConfig(address(0), treasury, share);
+        IAethraRouter.Hop[] memory h = _hops1(ethUsd, address(weth), address(usd));
+        vm.prank(bob);
+        router.swap(h, 5e18, 0, bob, block.timestamp, false);
+        uint256 accrued = hook.protocolFees(Currency.wrap(address(usd)));
+        assertGt(accrued, 0);
+        assertEq(hook.collectProtocolFees(Currency.wrap(address(usd))), accrued);
+        assertEq(usd.balanceOf(treasury), accrued);
+        assertEq(hook.protocolFees(Currency.wrap(address(usd))), 0);
+    }
+
     // ------------------------------------------------------------------ oracle guard
 
     function test_oracleGuardTowardOraclePaysBase() public {

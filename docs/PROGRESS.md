@@ -2,6 +2,13 @@
 
 Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ todo
 
+## 2026-11-01 · Free-tier database, charts, v1.3 prepared
+
+- Supabase free plan: both databases were over the 500 MB limit (testnet 1,362 MB, mainnet 614 MB) and stalled (API statement timeouts). Cause: replayed history of 150 external v4 pools (`swaps` larger than RAM), full-history reserve sums every minute, and a per-request `pool_overview`. Fixed by migrations `20261101000001_free_tier_load.sql` and `20261101000002_size_guard.sql`: running sums for external reserves (insert trigger), 7-day retention for external events, a materialized `pool_overview`, a per-chain watchlist size (`chains.external_max`: mainnet 40, testnet 0), a one-shot compaction that rewrites the event tables, and an hourly size guard (compacts past 400 MB, `/health` reports the size). Details in `docs/infrastructure.md` and B29.
+- Lessons: the CLI login role lasts 300 s, and a cut `db push` keeps running server-side; pg_cron statements stop after 2 minutes unless the job sets `statement_timeout`. Heavy work runs as pg_cron jobs, migrations check state and set `lock_timeout`.
+- Web: fee and trade charts plus venue TVL share on Analytics; price, volume, TVL and fee tabs on pool pages (API returns hourly TVL, fees and trades); liquidity-by-bin chart for DLMM pools; in-range badge and range bar on v4 positions.
+- v1.3 prepared (B30): hook and DLMM pool sweep protocol fees to the treasury while no buyback is set; `ReleaseV13` upgrades both, sets a 20% protocol share and opens the launchpad. 195 forge tests, fork rehearsal 4/4, mainnet simulation 10.09M gas (≤ 0.000404 ETH ≈ $0.92). Decision: launchpad curve kept as deployed (graduation 4.3956 ETH).
+
 ## Phase status
 
 | # | Phase | Status | Notes |

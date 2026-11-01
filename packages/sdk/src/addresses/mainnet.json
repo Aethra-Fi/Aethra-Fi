@@ -11,7 +11,7 @@
   "dlmmFactory": "0xc2364a63291672Bce714255ff1e8D4bE3771Bc7b",
   "dlmmLimitOrders": "0x7Ebc6dFF0d10eE822B55464b1F1e3a318E60f823",
   "dammFactory": "0x99aC6317725593D0be7462eC88b218Ce758eEDB7",
-  "launchpad": null,
+  "launchpad": "0x3fB9ad92DB9D2AE816535770b6697CD7625325bC",
   "lendingVault": null,
   "creditManager": null,
   "buyback": null,
@@ -62,7 +62,6 @@
   },
   "startBlock": 101899930,
   "hidden": {
-    "launchpad": "0x3fB9ad92DB9D2AE816535770b6697CD7625325bC",
     "lendingVault": "0x2c3e9bE161FdcA7E293b3d7448637c8Af66f4566",
     "creditManager": "0x1E1302c950f0e95dbBae503A7E11181a061C8b20",
     "buyback": "0xB033823d54bE38b2cd8F9AEEc1dE609D406c166e",
