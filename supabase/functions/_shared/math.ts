@@ -140,11 +140,15 @@ export function swapUsd(
   return { amountUsd, feeUsd };
 }
 
-/** Symbols treated as USD stables (priced at 1) unless the token is a launchpad token. */
+/**
+ * USD stables (priced at 1): tokens marked usd/stable, or a stable symbol on a token the deployment lists. A token
+ * only seen in an external pool has kind "unknown" and is never trusted by its symbol: on mainnet a look-alike "USDG"
+ * (0x3c5f…6ed6a, 18 decimals) priced at $1 turned a dust pool into $1.5B of TVL.
+ */
 export function isStableToken(symbol: string | null | undefined, kind: string | null | undefined): boolean {
   const k = (kind ?? "").toLowerCase();
   if (k === "usd" || k === "stable") return true;
-  if (k === "launch") return false;
+  if (k === "launch" || k === "unknown" || k === "") return false;
   const s = (symbol ?? "").toUpperCase();
   return /^(USD[A-Z0-9.]{0,4}|M?USDC|M?USDG|DAI|PYUSD|FRAX)$/.test(s) && s !== "USDOGE";
 }
