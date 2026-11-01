@@ -454,3 +454,22 @@ bash scripts/mainnet-seed-stock.sh
 ```
 
 Setelah selesai, pool tampil di aethra.finance begitu indexer mainnet sampai ke blok transaksinya (saat ini indexer masih mengejar). Pool saham hanya bisa di-swap saat feed saham segar (fail closed); likuiditas selalu bisa ditarik.
+
+## B29 · Database mainnet dan testnet tidak merespons (API timeout) · `OPEN` 2026-11-01
+
+Gejala (dicek 2026-11-01 sekitar 12:10–12:40 UTC):
+- API mainnet: `/pools`, `/dashboard`, `/analytics`, `/events` membalas `{"error":"canceling statement due to statement timeout"}`. `/health` membalas `degraded` setelah 9,5 detik, lalu timeout 30 detik pada percobaan berikutnya.
+- API testnet: `/pools` timeout 35 detik, `/health` tidak menjawab dalam 40 detik.
+- Indexer mainnet sendiri jalan: `last_block` hanya 2 blok di belakang head.
+- Status Supabase: semua sistem normal. Kedua project `ACTIVE_HEALTHY`.
+
+Yang sudah dicek:
+- Ukuran DB mainnet 614 MB, tabel `swaps` dan indeks dipakai (tanpa seq scan). Koneksi aktif sedikit, tidak ada query panjang atau lock.
+- `pg_stat_statements`: 72% waktu DB ada di `select public.aethra_invoke_indexer()` (13.966 panggilan, rata-rata 75 ms). Tidak ada query API yang menonjol.
+- Koneksi langsung (`db.<ref>.supabase.co:5432`) timeout (IPv6), pooler `aws-0` menjawab `EAUTHQUERY ... connection to database not available`, dan `supabase db query` sering gagal dengan `Connection terminated due to connection timeout`.
+- Kesimpulan sementara: `/health` yang hanya membaca tabel kecil ikut lambat, jadi masalahnya instance yang kehabisan CPU/IO (dugaan: compute kecil), bukan satu view. Belum terbukti.
+
+Butuh keputusan kamu (belum saya ubah apa pun di produksi):
+1. Cek grafik CPU/IO dan ukuran compute di dashboard Supabase `Aethra-Fi-mainnet` dan `Aethra-Fi-testnet`. Jika kehabisan burst, naikkan compute (berbayar).
+2. Atau izinkan saya mematikan sementara replay pool eksternal (`supabase secrets set EXTERNAL_POOLS=off`) untuk menguji dugaan beban indexer. Ini menyembunyikan daftar pool Uniswap v4 sampai dinyalakan lagi.
+3. Setelah DB pulih, saya ukur `explain analyze select * from pool_overview` dan mengoptimalkan view (materialized view atau cache) bila perlu.
