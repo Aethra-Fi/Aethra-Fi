@@ -2,6 +2,14 @@
 
 Legend: ✅ done · 🔄 in progress · ⏳ waiting (see BLOCKERS.md) · ⬜ todo
 
+## 2026-11-01 · v1.3 released
+
+- Mainnet broadcast (B30): 6 transactions, 7.69M gas ≈ 0.000154 ETH ≈ $0.35 (simulation upper bound was $0.92). Launchpad open, 20% protocol share to the treasury. Deployer balance 0.001559 ETH.
+- Web 1.3.0 on aethra.finance (PR #49 to testnet, #50 to mainnet), `NEXT_PUBLIC_FEATURES=launchpad` in production, API `FEATURES=launchpad`, launchpad address in `addresses/mainnet.json`.
+- Databases after compaction: mainnet 615 MB to 231 MB (40 external pools kept, 110 dropped), testnet 1,363 MB to 26 MB (no external pools). API answers in under 1 s.
+- Fixed while verifying: look-alike stable tokens priced at $1 (external TVL and volume in the billions), refresh calls of 50 pools timing out during catch-up (now 10), the overview fill running during the compaction (cron.job RLS), and an unnecessary full re-index after publishing the launchpad.
+- Playwright screenshots of landing, swap, pools, pool, analytics, positions and launch in dark and light on production: both themes apply, new charts render.
+
 ## 2026-11-01 · Free-tier database, charts, v1.3 prepared
 
 - Supabase free plan: both databases were over the 500 MB limit (testnet 1,362 MB, mainnet 614 MB) and stalled (API statement timeouts). Cause: replayed history of 150 external v4 pools (`swaps` larger than RAM), full-history reserve sums every minute, and a per-request `pool_overview`. Fixed by migrations `20261101000001_free_tier_load.sql` and `20261101000002_size_guard.sql`: running sums for external reserves (insert trigger), 7-day retention for external events, a materialized `pool_overview`, a per-chain watchlist size (`chains.external_max`: mainnet 40, testnet 0), a one-shot compaction that rewrites the event tables, and an hourly size guard (compacts past 400 MB, `/health` reports the size). Details in `docs/infrastructure.md` and B29.

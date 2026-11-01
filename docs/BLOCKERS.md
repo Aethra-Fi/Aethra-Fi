@@ -455,7 +455,9 @@ bash scripts/mainnet-seed-stock.sh
 
 Setelah selesai, pool tampil di aethra.finance begitu indexer mainnet sampai ke blok transaksinya (saat ini indexer masih mengejar). Pool saham hanya bisa di-swap saat feed saham segar (fail closed); likuiditas selalu bisa ditarik.
 
-## B30 · Rilis v1.3 di mainnet (butuh password keystore) · `OPEN` 2026-11-01
+## B30 · Rilis v1.3 di mainnet (butuh password keystore) · `DONE` 2026-11-01
+
+Selesai: 6 transaksi sukses, 7.686.275 gas (≈ 0,000154 ETH ≈ $0,35). Implementasi baru: hook `0xd2e3…0d23`, DLMM pool `0xDbef…A92b`. On-chain: launchpad registrar, protocol share 2000 bps, treasury = deployer. Web 1.3.0 live (PR #49 testnet, #50 mainnet), API `FEATURES=launchpad`, indexer mengindeks launchpad sejak blok broadcast 103.506.123. Saldo deployer 0,001559 ETH. Teks di bawah adalah catatan asli.
 
 Isi v1.3: launchpad dibuka, dan protocol fee masuk ke treasury (`hub.treasury()` = deployer) sampai buyback dibuka di v1.4.
 
