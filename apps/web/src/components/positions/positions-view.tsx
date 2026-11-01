@@ -14,9 +14,32 @@ import { FEATURES } from "@/lib/features";
 import { formatDateTime, formatTokenAmount } from "@/lib/format";
 import { CHAIN_ID } from "@/lib/network";
 import { fullRangeTicks } from "@/lib/v4math";
+import { cn } from "@/lib/utils";
 
 const deadline = () => BigInt(Math.floor(Date.now() / 1000) + 600);
 const PERMANENT = 2n ** 64n - 1n;
+
+/** The position's tick range with the pool's current tick marked; the window is padded by half the range on each side. */
+function RangeBar({ lower, upper, tick }: { lower: number; upper: number; tick: number }) {
+  const width = Math.max(1, upper - lower);
+  const from = Math.min(lower - width / 2, tick);
+  const to = Math.max(upper + width / 2, tick);
+  const pct = (x: number) => ((x - from) / (to - from)) * 100;
+  const inside = tick >= lower && tick < upper;
+  return (
+    <div className="my-2" aria-label={`Current tick ${tick}, range ${lower} to ${upper}`}>
+      <div className="relative h-2 bg-surface-2">
+        <div className={cn("absolute inset-y-0", inside ? "bg-primary/60" : "bg-warning/50")} style={{ left: `${pct(lower)}%`, width: `${pct(upper) - pct(lower)}%` }} />
+        <div className="absolute -inset-y-1 w-0.5 bg-fg" style={{ left: `${pct(tick)}%` }} />
+      </div>
+      <div className="mt-1 flex justify-between font-mono text-[11px] text-muted">
+        <span>{lower}</span>
+        <span>tick {tick}</span>
+        <span>{upper}</span>
+      </div>
+    </div>
+  );
+}
 
 function lockLabel(p: ApiV4Position) {
   if (!p.locked) return null;
@@ -33,6 +56,9 @@ function V4Card({ p, owner }: { p: ApiV4Position; owner: Address }) {
   const spacing = p.pool?.tick_spacing ?? 60;
   const full = fullRangeTicks(spacing);
   const isFull = p.tick_lower === full[0] && p.tick_upper === full[1];
+  const tick = p.pool?.active_index ?? null;
+  // a v4 position earns fees only while the pool tick sits inside [tick_lower, tick_upper)
+  const inRange = isFull || (tick !== null && tick >= p.tick_lower && tick < p.tick_upper);
   const free = withdrawable.data ?? 0n;
 
   return (
@@ -40,6 +66,11 @@ function V4Card({ p, owner }: { p: ApiV4Position; owner: Address }) {
       title={`#${p.token_id}`}
       aside={
         <span className="flex gap-1">
+          {p.liquidity !== "0" && (isFull || tick !== null) && (
+            <Badge variant={inRange ? "default" : "warning"} title={tick !== null ? `Pool tick ${tick}` : undefined}>
+              {inRange ? "In range" : "Out of range"}
+            </Badge>
+          )}
           {FEATURES.credit && p.pledged && <Badge variant="accent">Pledged</Badge>}
           {lockLabel(p)}
         </span>
@@ -49,6 +80,7 @@ function V4Card({ p, owner }: { p: ApiV4Position; owner: Address }) {
         {p.pool && <PairLabel pool={p.pool} />}
         <div>
           <KV label="Range" value={isFull ? "Full range" : `${p.tick_lower} → ${p.tick_upper}`} />
+          {!isFull && tick !== null && <RangeBar lower={p.tick_lower} upper={p.tick_upper} tick={tick} />}
           {amounts.data && p.pool && (
             <>
               <KV label={p.pool.token0.symbol} value={formatTokenAmount(amounts.data[0], p.pool.token0.decimals)} />

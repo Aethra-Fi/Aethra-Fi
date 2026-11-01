@@ -122,11 +122,12 @@ async function poolDetail(chain: number, id: string) {
   if (!rows.length) return null;
   const p = pool(rows[0]);
   const hours = await q(
-    db.from("pool_stats_hourly").select("hour,open_price,high_price,low_price,close_price,volume_usd").eq("chain_id", chain).eq("pool_id", p.pool_id)
+    db.from("pool_stats_hourly").select("hour,open_price,high_price,low_price,close_price,volume_usd,fees_usd,tvl_usd,trades").eq("chain_id", chain).eq("pool_id", p.pool_id)
       .gte("hour", new Date(Date.now() - 30 * 86_400_000).toISOString()).order("hour"),
   );
   const candles = hours.filter((h) => h.close_price !== null).map((h) => ({
     t: h.hour, open: h.open_price ?? h.close_price, high: h.high_price ?? h.close_price, low: h.low_price ?? h.close_price, close: h.close_price, volume_usd: h.volume_usd ?? 0,
+    fees_usd: h.fees_usd ?? 0, tvl_usd: h.tvl_usd, trades: h.trades ?? 0,
   }));
   return { ...p, oracle: oracleState(p, tokens), candles, price_series: candles.map((c) => ({ t: c.t, price: c.close })) };
 }

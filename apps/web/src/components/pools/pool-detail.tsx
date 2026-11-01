@@ -1,8 +1,12 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { ArrowLeftRight } from "lucide-react";
-import { ThemedAreaChart } from "@/components/charts/area-chart";
+import type { Address } from "viem";
+import { useReadContracts } from "wagmi";
+import { ThemedAreaChart, type Point } from "@/components/charts/area-chart";
+import { ThemedBarChart } from "@/components/charts/bar-chart";
 import { EventTable } from "@/components/events/event-table";
 import { AddressLink, EmptyState, KV, ModeBadge, PairLabel, Panel, QueryState, Stat, StatGrid, VenueBadge } from "@/components/kit";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +15,103 @@ import { useEvents, usePool } from "@/hooks/use-api";
 import type { ApiPoolDetail } from "@/lib/api";
 import { formatBps, formatFeePips, formatNumber, formatPct, formatUsd, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { ABIS } from "@/lib/contracts";
+import { CHAIN_ID } from "@/lib/network";
+import { priceFromBin } from "@/lib/dlmm";
 import { DepositPanel } from "./deposit";
+
+type ChartTab = "price" | "volume" | "tvl" | "fees";
+const TABS: { key: ChartTab; label: string }[] = [
+  { key: "price", label: "Price" },
+  { key: "volume", label: "Volume" },
+  { key: "tvl", label: "TVL" },
+  { key: "fees", label: "Fees" },
+];
+
+/** Price, volume, TVL and fee history of one pool from its hourly stats (last 30 days). */
+function PoolCharts({ pool }: { pool: ApiPoolDetail }) {
+  const [tab, setTab] = React.useState<ChartTab>("price");
+  const candles = pool.candles ?? [];
+  const series: Record<ChartTab, Point[]> = {
+    price: (pool.price_series ?? candles.map((c) => ({ t: c.t, price: c.close }))).map((x) => ({ t: x.t, v: x.price })),
+    volume: candles.map((c) => ({ t: c.t, v: c.volume_usd ?? 0 })),
+    tvl: candles.filter((c) => c.tvl_usd !== null && c.tvl_usd !== undefined).map((c) => ({ t: c.t, v: c.tvl_usd as number })),
+    fees: candles.map((c) => ({ t: c.t, v: c.fees_usd ?? 0 })),
+  };
+  const data = series[tab];
+  const usd = (v: number) => formatUsd(v, { compact: true });
+  const title = tab === "price" ? `Price · ${pool.token1.symbol} per ${pool.token0.symbol}` : TABS.find((t) => t.key === tab)!.label;
+  const empty = tab === "price" || tab === "tvl" ? data.length < 2 : !data.some((p) => p.v > 0);
+  return (
+    <Panel
+      title={title}
+      aside={
+        <div className="flex border" role="tablist" aria-label="Chart">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              role="tab"
+              aria-selected={tab === t.key}
+              onClick={() => setTab(t.key)}
+              className={cn("px-2.5 py-1 font-mono text-[11px] uppercase tracking-button", tab === t.key ? "bg-surface-2 text-primary-text" : "text-fg-2 hover:text-fg")}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      }
+    >
+      {empty ? (
+        <EmptyState title={tab === "price" ? "No price history yet" : `No ${tab === "tvl" ? "TVL" : tab} recorded yet`}>
+          The chart fills in as the indexer records activity in this pool.
+        </EmptyState>
+      ) : tab === "price" ? (
+        <ThemedAreaChart data={data} format={(v) => formatNumber(v, 5)} />
+      ) : tab === "tvl" ? (
+        <ThemedAreaChart data={data} format={usd} />
+      ) : (
+        <ThemedBarChart data={data} format={usd} color={tab === "fees" ? "primary" : "accent"} />
+      )}
+    </Panel>
+  );
+}
+
+const BIN_RADIUS = 20;
+
+/** Liquidity around the active bin of a DLMM pool, valued in token1 (read from the pool contract). */
+function BinLiquidity({ pool }: { pool: ApiPoolDetail }) {
+  const active = pool.active_index;
+  const step = pool.bin_step_bps ?? 0;
+  const ids = active === null ? [] : Array.from({ length: BIN_RADIUS * 2 + 1 }, (_, i) => active - BIN_RADIUS + i);
+  const bins = useReadContracts({
+    contracts: ids.map((id) => ({ address: pool.pool_address as Address, abi: ABIS.dlmmPool, functionName: "getBin", args: [id], chainId: CHAIN_ID }) as const),
+    query: { enabled: !!pool.pool_address && active !== null && step > 0, refetchInterval: 30_000 },
+  });
+  if (active === null || !step) return null;
+  const d0 = pool.token0.decimals;
+  const d1 = pool.token1.decimals;
+  const data = ids.map((id, i) => {
+    const r = bins.data?.[i]?.result as readonly [bigint, bigint, bigint] | undefined;
+    const price = priceFromBin(id, step, d0, d1);
+    const v = r ? (Number(r[0]) / 10 ** d0) * price + Number(r[1]) / 10 ** d1 : 0;
+    return { t: String(id), v };
+  });
+  const fmt = (v: number) => `${formatNumber(v, 4)}`;
+  return (
+    <Panel title={`Liquidity by bin · in ${pool.token1.symbol}`} aside={<span className="font-mono text-xs text-muted">active bin {active}</span>}>
+      {bins.isLoading ? (
+        <div className="skeleton h-[220px] w-full" />
+      ) : data.some((x) => x.v > 0) ? (
+        <ThemedBarChart data={data} height={220} format={fmt} color="accent" highlight={String(active)} xFormat={(t) => `bin ${t} · ${formatNumber(priceFromBin(Number(t), step, d0, d1), 5)}`} />
+      ) : (
+        <EmptyState title="No liquidity near the active bin" />
+      )}
+      <p className="mt-3 text-xs text-muted">
+        Bins below the active bin hold {pool.token1.symbol}, bins above hold {pool.token0.symbol}. The highlighted bar is the active bin, where swaps trade.
+      </p>
+    </Panel>
+  );
+}
 
 function OraclePanel({ pool }: { pool: ApiPoolDetail }) {
   const o = pool.oracle;
@@ -39,7 +139,6 @@ export function PoolDetail({ poolId }: { poolId: string }) {
   return (
     <QueryState query={q} stateClassName="pt-10" skeleton={<div className="skeleton mt-10 h-[60vh] w-full" />} empty={<EmptyState title="Pool not found" />}>
       {(p) => {
-        const series = (p.price_series ?? p.candles?.map((c) => ({ t: c.t, price: c.close })) ?? []).map((x) => ({ t: x.t, v: x.price }));
         return (
           <>
             <div className="flex flex-col gap-4 border-b pb-8 pt-10 md:flex-row md:items-end md:justify-between">
@@ -78,13 +177,8 @@ export function PoolDetail({ poolId }: { poolId: string }) {
 
             <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
               <div className="space-y-6">
-                <Panel title={`Price · ${p.token1.symbol} per ${p.token0.symbol}`}>
-                  {series.length > 1 ? (
-                    <ThemedAreaChart data={series} format={(v) => formatNumber(v, 5)} />
-                  ) : (
-                    <EmptyState title="No price history yet">The chart fills in as the indexer records swaps.</EmptyState>
-                  )}
-                </Panel>
+                <PoolCharts pool={p} />
+                {p.venue === "DLMM" && <BinLiquidity pool={p} />}
                 <div className="space-y-3">
                   <p className="eyebrow">Recent activity</p>
                   <QueryState query={events} isEmpty={(d) => d.length === 0} empty={<EmptyState title="No activity yet" />}>
