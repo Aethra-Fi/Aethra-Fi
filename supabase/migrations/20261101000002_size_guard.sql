@@ -85,15 +85,22 @@ begin
     ) lq on true
    where q.chain_id = p_chain and q.pool_id = any(v_kept) and p.chain_id = q.chain_id and p.pool_id = q.pool_id;
 
-  -- 2. what stays: every Aethra event (and other chains), and the recent events of the kept pools
+  -- 2. what stays: every Aethra event, the recent events of the kept pools, and other chains' rows. Each part is
+  --    read through an index (an OR over the whole table is a sequential scan, too slow on this tier).
   create temp table aethra_keep_swaps on commit drop as
-    select * from swaps s
-    where s.chain_id <> p_chain or s.pool_id = any(v_own)
-       or (s.pool_id = any(v_kept) and s.ts >= v_cut);
+    select * from swaps s where s.chain_id = p_chain and s.pool_id = any(v_own);
+  insert into aethra_keep_swaps
+    select * from swaps s where s.chain_id = p_chain and s.pool_id = any(v_kept) and s.ts >= v_cut;
+  insert into aethra_keep_swaps
+    select s.* from chains c join swaps s on s.chain_id = c.chain_id where c.chain_id <> p_chain;
   create temp table aethra_keep_liq on commit drop as
-    select * from liquidity_events l
-    where l.chain_id <> p_chain or l.pool_id is null or l.pool_id = any(v_own)
-       or (l.pool_id = any(v_kept) and l.ts >= v_cut);
+    select * from liquidity_events l where l.chain_id = p_chain and l.pool_id = any(v_own);
+  insert into aethra_keep_liq
+    select * from liquidity_events l where l.chain_id = p_chain and l.pool_id is null;
+  insert into aethra_keep_liq
+    select * from liquidity_events l where l.chain_id = p_chain and l.pool_id = any(v_kept) and l.ts >= v_cut;
+  insert into aethra_keep_liq
+    select l.* from chains c join liquidity_events l on l.chain_id = c.chain_id where c.chain_id <> p_chain;
 
   -- 3. rewrite both tables (returns the disk space)
   truncate public.swaps, public.liquidity_events;
@@ -178,11 +185,18 @@ begin
   if exists (select 1 from cron.job where jobname = 'aethra-compact-once') then
     perform cron.unschedule('aethra-compact-once');
   end if;
-  perform cron.schedule('aethra-compact-once', '* * * * *', 'select public.aethra_compact_once()');
+  -- pg_cron statements stop after 2 minutes by default here; the one-shot compaction may need longer
+  perform cron.schedule('aethra-compact-once', '* * * * *', 'set statement_timeout = 0; select public.aethra_compact_once()');
 
   if exists (select 1 from cron.job where jobname = 'aethra-size-guard') then
     perform cron.unschedule('aethra-size-guard');
   end if;
-  perform cron.schedule('aethra-size-guard', '41 * * * *', 'select public.aethra_size_guard()');
+  perform cron.schedule('aethra-size-guard', '41 * * * *', 'set statement_timeout = 0; select public.aethra_size_guard()');
+
+  -- the first fill of pool_overview_mv (migration 20261101000001) can also take longer than 2 minutes
+  if exists (select 1 from cron.job where jobname = 'aethra-overview') then
+    perform cron.unschedule('aethra-overview');
+  end if;
+  perform cron.schedule('aethra-overview', '* * * * *', $job$set statement_timeout = '10min'; select public.aethra_refresh_overview()$job$);
 end
 $$;
