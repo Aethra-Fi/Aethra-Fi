@@ -31,6 +31,9 @@ export function ThemedAreaChart({
   const c = useChartColors();
   if (!c.ready) return <div className="skeleton w-full" style={{ height }} />;
   const stroke = color === "primary" ? c.primary : c.accent;
+  // under two days of data, label ticks with the hour (a day label would repeat on every tick)
+  const span = data.length > 1 ? Date.parse(data[data.length - 1]!.t) - Date.parse(data[0]!.t) : 0;
+  const hourly = span > 0 && span < 2 * 86_400_000;
   const id = `fill-${color}`;
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -45,7 +48,9 @@ export function ThemedAreaChart({
         <XAxis
           dataKey="t"
           tick={{ fill: c.muted, fontSize: 11, fontFamily: "var(--font-geist-mono)" }}
-          tickFormatter={(t: string) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          tickFormatter={(t: string) =>
+            hourly ? new Date(t).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }) : new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+          }
           stroke={c.border}
           minTickGap={32}
         />

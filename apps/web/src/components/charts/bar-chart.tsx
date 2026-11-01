@@ -28,8 +28,10 @@ export function ThemedBarChart({
   const c = useChartColors();
   if (!c.ready) return <div className="skeleton w-full" style={{ height }} />;
   const fill = color === "primary" ? c.primary : c.accent;
+  const span = !xFormat && data.length > 1 ? Date.parse(data[data.length - 1]!.t) - Date.parse(data[0]!.t) : 0;
+  const byHour = hourly || (span > 0 && span < 2 * 86_400_000);
   const tick = (t: string) =>
-    xFormat ? xFormat(t) : hourly ? new Date(t).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }) : new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    xFormat ? xFormat(t) : byHour ? new Date(t).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }) : new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
