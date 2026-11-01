@@ -48,7 +48,8 @@ contract MainnetV13Test is Test {
         string memory json = vm.readFile(string.concat(vm.projectRoot(), "/../sdk/src/addresses/mainnet.json"));
         hub = IAethraHub(vm.parseJsonAddress(json, ".hub"));
         router = IAethraRouter(vm.parseJsonAddress(json, ".router"));
-        launchpad = AethraLaunchpad(vm.parseJsonAddress(json, ".hidden.launchpad"));
+        bytes memory lp = vm.parseJson(json, ".launchpad"); // top level since v1.3, under `hidden` before
+        launchpad = AethraLaunchpad(lp.length == 32 && abi.decode(lp, (address)) != address(0) ? abi.decode(lp, (address)) : vm.parseJsonAddress(json, ".hidden.launchpad"));
         pm = IPoolManager(vm.parseJsonAddress(json, ".poolManager"));
         hook = vm.parseJsonAddress(json, ".hook");
         weth = vm.parseJsonAddress(json, ".weth");
