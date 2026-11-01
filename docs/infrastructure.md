@@ -47,6 +47,11 @@ Free plan budget (2026-11-01, migrations `20261101000001_free_tier_load.sql` and
 - `pool_overview` is a view over the materialized view `pool_overview_mv`, refreshed every minute (`aethra-overview`). The SQL behind it is `pool_overview_live`; recreate the materialized view when its columns change.
 - Run heavy one-off work as a pg_cron job, not through `supabase db push` or `db query`: on this tier a long statement over a client connection gets cut off and keeps running server-side, holding locks.
 - `/health` reports `database.size_mb` and turns `degraded` past 400 MB.
+- pg_cron statements stop after 2 minutes on this tier: a long job must start with `set statement_timeout = 0;` in its cron command.
+- `cron.job` has row-level security: functions cannot see jobs scheduled by another role, so it is not a usable "is X pending" signal. The compaction leaves its result in `db_health.action`; the overview fill and the backfill wait for it.
+- External pools: a token is a stable only if the deployment lists it (kind other than `unknown`), and their swaps are valued only through a stable or oracle priced side, like their TVL (a look-alike "USDG" once showed $1.5B TVL and billions of volume).
+- `pg_database_size` inside the compaction transaction still counts the truncated files; `db_health` shows the real size after the next hourly size guard.
+- Changing `launchpad`, `hub`, `router` or the start block in `deployments` rewinds the indexer to the start block. When only a new module opens, move `indexer_state.last_block` to just before its first possible event instead (done for v1.3: block 103,506,122).
 
 API base URLs:
 - testnet: `https://zqbnyshzgxhkfxoyrogq.supabase.co/functions/v1/api`
